@@ -14,7 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admins: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          password_hash: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          password_hash: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          password_hash?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          staff_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          staff_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          staff_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll: {
+        Row: {
+          absent_days: number
+          base_salary: number
+          bonus: number
+          created_at: string
+          deductions: number
+          half_days: number
+          id: string
+          is_paid: boolean
+          month: number
+          net_salary: number
+          notes: string | null
+          paid_date: string | null
+          present_days: number
+          staff_id: string
+          updated_at: string
+          working_days: number
+          year: number
+        }
+        Insert: {
+          absent_days?: number
+          base_salary?: number
+          bonus?: number
+          created_at?: string
+          deductions?: number
+          half_days?: number
+          id?: string
+          is_paid?: boolean
+          month: number
+          net_salary?: number
+          notes?: string | null
+          paid_date?: string | null
+          present_days?: number
+          staff_id: string
+          updated_at?: string
+          working_days?: number
+          year: number
+        }
+        Update: {
+          absent_days?: number
+          base_salary?: number
+          bonus?: number
+          created_at?: string
+          deductions?: number
+          half_days?: number
+          id?: string
+          is_paid?: boolean
+          month?: number
+          net_salary?: number
+          notes?: string | null
+          paid_date?: string | null
+          present_days?: number
+          staff_id?: string
+          updated_at?: string
+          working_days?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff: {
+        Row: {
+          address: string | null
+          base_salary: number
+          created_at: string
+          designation: string | null
+          id: string
+          is_active: boolean
+          joining_date: string
+          name: string
+          phone: string | null
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          base_salary?: number
+          created_at?: string
+          designation?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string
+          name: string
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          base_salary?: number
+          created_at?: string
+          designation?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +194,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      attendance_status:
+        | "present"
+        | "absent"
+        | "half_day"
+        | "holiday"
+        | "sunday"
+        | "leave"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +327,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      attendance_status: [
+        "present",
+        "absent",
+        "half_day",
+        "holiday",
+        "sunday",
+        "leave",
+      ],
+    },
   },
 } as const
