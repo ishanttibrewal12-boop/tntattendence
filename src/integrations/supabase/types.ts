@@ -38,6 +38,57 @@ export type Database = {
         }
         Relationships: []
       }
+      advances: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          deducted_from_payroll_id: string | null
+          id: string
+          is_deducted: boolean
+          notes: string | null
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          deducted_from_payroll_id?: string | null
+          id?: string
+          is_deducted?: boolean
+          notes?: string | null
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          deducted_from_payroll_id?: string | null
+          id?: string
+          is_deducted?: boolean
+          notes?: string | null
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advances_deducted_from_payroll_id_fkey"
+            columns: ["deducted_from_payroll_id"]
+            isOneToOne: false
+            referencedRelation: "payroll"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advances_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           created_at: string
@@ -148,6 +199,7 @@ export type Database = {
         Row: {
           address: string | null
           base_salary: number
+          category: Database["public"]["Enums"]["staff_category"]
           created_at: string
           designation: string | null
           id: string
@@ -161,6 +213,7 @@ export type Database = {
         Insert: {
           address?: string | null
           base_salary?: number
+          category?: Database["public"]["Enums"]["staff_category"]
           created_at?: string
           designation?: string | null
           id?: string
@@ -174,6 +227,7 @@ export type Database = {
         Update: {
           address?: string | null
           base_salary?: number
+          category?: Database["public"]["Enums"]["staff_category"]
           created_at?: string
           designation?: string | null
           id?: string
@@ -201,6 +255,7 @@ export type Database = {
         | "holiday"
         | "sunday"
         | "leave"
+      staff_category: "petroleum" | "crusher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -336,6 +391,7 @@ export const Constants = {
         "sunday",
         "leave",
       ],
+      staff_category: ["petroleum", "crusher"],
     },
   },
 } as const
