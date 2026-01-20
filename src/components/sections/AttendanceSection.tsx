@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Download, Share2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as CalendarIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, subDays, getDay } from 'date-fns';
@@ -13,7 +16,7 @@ import autoTable from 'jspdf-autotable';
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher';
+  category: 'petroleum' | 'crusher' | 'office';
   phone: string | null;
 }
 
@@ -32,12 +35,13 @@ interface AttendanceSectionProps {
   onBack: () => void;
 }
 
-type AttendanceStatus = '1shift' | '2shift' | 'absent';
+type AttendanceStatus = '1shift' | '2shift' | 'absent' | 'not_marked';
 
 const statusConfig = {
   '1shift': { label: '1', color: 'bg-green-500', fullLabel: '1 Shift' },
   '2shift': { label: '2', color: 'bg-primary', fullLabel: '2 Shifts' },
   'absent': { label: 'A', color: 'bg-destructive', fullLabel: 'Absent' },
+  'not_marked': { label: '-', color: 'bg-muted', fullLabel: 'Not Marked' },
 };
 
 const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
@@ -45,8 +49,10 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update'; status: AttendanceStatus; staffId?: string } | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Skip Sundays
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -84,44 +90,91 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     setIsLoading(false);
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Skip if Sunday
+      if (getDay(date) === 0) {
+        toast.error('Sundays are not working days');
+        return;
+      }
+      setSelectedDate(date);
+      setCalendarOpen(false);
+    }
+  };
+
   const updateAttendance = async (staffId: string, status: AttendanceStatus) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const existing = attendance.find((a) => a.staff_id === staffId);
 
-    const dbStatus = status === 'absent' ? 'absent' : 'present';
+    const dbStatus = status === 'absent' ? 'absent' : status === 'not_marked' ? 'not_marked' : 'present';
     const shiftCount = status === '2shift' ? 2 : 1;
 
     if (existing) {
-      await supabase.from('attendance').update({ status: dbStatus, shift_count: shiftCount }).eq('id', existing.id);
-    } else {
+      if (status === 'not_marked') {
+        // Delete the record
+        await supabase.from('attendance').delete().eq('id', existing.id);
+      } else {
+        await supabase.from('attendance').update({ status: dbStatus, shift_count: shiftCount }).eq('id', existing.id);
+      }
+    } else if (status !== 'not_marked') {
       await supabase.from('attendance').insert({ staff_id: staffId, date: dateStr, status: dbStatus, shift_count: shiftCount });
     }
 
-    toast.success('Attendance updated');
+    toast.success(status === 'not_marked' ? 'Attendance cleared' : 'Attendance updated');
     fetchData();
     setConfirmAction(null);
   };
 
+  const handleQuickTap = (staffId: string) => {
+    const currentStatus = getStaffAttendance(staffId);
+    const staff = staffList.find(s => s.id === staffId);
+    
+    // Cycle through statuses based on category
+    if (staff?.category === 'petroleum') {
+      // For petroleum: not_marked -> 1shift -> 2shift -> absent -> not_marked
+      if (!currentStatus) {
+        updateAttendance(staffId, '1shift');
+      } else if (currentStatus === '1shift') {
+        updateAttendance(staffId, '2shift');
+      } else if (currentStatus === '2shift') {
+        updateAttendance(staffId, 'absent');
+      } else {
+        updateAttendance(staffId, 'not_marked');
+      }
+    } else {
+      // For crusher/office: not_marked -> 1shift -> absent -> not_marked
+      if (!currentStatus) {
+        updateAttendance(staffId, '1shift');
+      } else if (currentStatus === '1shift') {
+        updateAttendance(staffId, 'absent');
+      } else {
+        updateAttendance(staffId, 'not_marked');
+      }
+    }
+  };
+
   const markAllAs = async (status: AttendanceStatus) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const filteredStaff = categoryFilter === 'all' 
-      ? staffList 
-      : staffList.filter(s => s.category === categoryFilter);
+    const filteredStaff = getFilteredStaff();
 
+    // Delete all existing attendance for this date
     await supabase.from('attendance').delete().eq('date', dateStr);
     
-    const dbStatus: 'absent' | 'present' = status === 'absent' ? 'absent' : 'present';
-    const shiftCount = status === '2shift' ? 2 : 1;
+    if (status !== 'not_marked') {
+      const dbStatus: 'absent' | 'present' = status === 'absent' ? 'absent' : 'present';
+      const shiftCount = status === '2shift' ? 2 : 1;
 
-    const records = filteredStaff.map((staff) => ({
-      staff_id: staff.id,
-      date: dateStr,
-      status: dbStatus,
-      shift_count: shiftCount,
-    }));
+      const records = filteredStaff.map((staff) => ({
+        staff_id: staff.id,
+        date: dateStr,
+        status: dbStatus,
+        shift_count: shiftCount,
+      }));
 
-    await supabase.from('attendance').insert(records);
-    toast.success(`All marked as ${statusConfig[status].fullLabel}`);
+      await supabase.from('attendance').insert(records);
+    }
+    
+    toast.success(status === 'not_marked' ? 'All attendance cleared' : `All marked as ${statusConfig[status].fullLabel}`);
     fetchData();
     setConfirmAction(null);
   };
@@ -130,8 +183,17 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     const record = attendance.find((a) => a.staff_id === staffId);
     if (!record) return null;
     if (record.status === 'absent') return 'absent';
+    if (record.status === 'not_marked') return null;
     if (record.shift_count === 2) return '2shift';
     return '1shift';
+  };
+
+  const getFilteredStaff = () => {
+    return staffList.filter((staff) => {
+      const matchesCategory = categoryFilter === 'all' || staff.category === categoryFilter;
+      const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
   };
 
   const exportToPDF = () => {
@@ -143,9 +205,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     doc.setFontSize(12);
     doc.text(`Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}`, 14, 30);
 
-    const filteredStaff = categoryFilter === 'all' 
-      ? staffList 
-      : staffList.filter(s => s.category === categoryFilter);
+    const filteredStaff = getFilteredStaff();
 
     const tableData = filteredStaff.map((staff) => {
       const status = getStaffAttendance(staff.id);
@@ -173,9 +233,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
   const shareToWhatsApp = () => {
     const dateStr = format(selectedDate, 'dd MMM yyyy');
-    const filteredStaff = categoryFilter === 'all' 
-      ? staffList 
-      : staffList.filter(s => s.category === categoryFilter);
+    const filteredStaff = getFilteredStaff();
 
     let message = `📋 *Attendance Report - ${dateStr}*\n`;
     message += `Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter}\n\n`;
@@ -183,14 +241,16 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     const oneShift = filteredStaff.filter(s => getStaffAttendance(s.id) === '1shift').length;
     const twoShift = filteredStaff.filter(s => getStaffAttendance(s.id) === '2shift').length;
     const absent = filteredStaff.filter(s => getStaffAttendance(s.id) === 'absent').length;
+    const notMarked = filteredStaff.filter(s => !getStaffAttendance(s.id)).length;
 
     message += `1️⃣ 1 Shift: ${oneShift}\n`;
     message += `2️⃣ 2 Shifts: ${twoShift}\n`;
-    message += `❌ Absent: ${absent}\n\n`;
+    message += `❌ Absent: ${absent}\n`;
+    message += `➖ Not Marked: ${notMarked}\n\n`;
 
     filteredStaff.forEach((staff) => {
       const status = getStaffAttendance(staff.id);
-      const statusText = status ? statusConfig[status].label : '?';
+      const statusText = status ? statusConfig[status].label : '-';
       message += `${staff.name}: ${statusText}\n`;
     });
 
@@ -198,9 +258,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
-  const filteredStaff = categoryFilter === 'all' 
-    ? staffList 
-    : staffList.filter(s => s.category === categoryFilter);
+  const filteredStaff = getFilteredStaff();
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -212,23 +270,50 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
         <h1 className="text-xl font-bold text-foreground">Attendance</h1>
       </div>
 
-      {/* Date Navigation */}
+      {/* Date Navigation with Calendar Picker */}
       <Card className="mb-4">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div className="text-center">
-              <p className="font-semibold text-foreground">{format(selectedDate, 'EEEE')}</p>
-              <p className="text-sm text-muted-foreground">{format(selectedDate, 'dd MMM yyyy')}</p>
-            </div>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="flex flex-col items-center">
+                  <p className="font-semibold text-foreground">{format(selectedDate, 'EEEE')}</p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <CalendarIcon className="h-3 w-3" />
+                    {format(selectedDate, 'dd MMM yyyy')}
+                  </p>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  disabled={(date) => getDay(date) === 0}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
             <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}>
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          className="pl-10"
+          placeholder="Search staff..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       {/* Category Filter */}
       <div className="mb-4">
@@ -240,20 +325,24 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             <SelectItem value="all">All Staff</SelectItem>
             <SelectItem value="petroleum">Petroleum</SelectItem>
             <SelectItem value="crusher">Crusher</SelectItem>
+            <SelectItem value="office">Office</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-1 mb-4">
         <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
-          All 1 Shift
+          All 1S
         </Button>
         <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
-          All 2 Shifts
+          All 2S
         </Button>
         <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
-          All Absent
+          All Abs
+        </Button>
+        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
+          Clear
         </Button>
       </div>
 
@@ -280,7 +369,12 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
         <span className="flex items-center gap-1">
           <span className="w-4 h-4 rounded bg-destructive"></span> Absent
         </span>
+        <span className="flex items-center gap-1">
+          <span className="w-4 h-4 rounded bg-muted border"></span> Not Marked
+        </span>
       </div>
+
+      <p className="text-xs text-muted-foreground mb-2">💡 Tap once to mark, tap again to cycle through statuses</p>
 
       {/* Staff List */}
       {isLoading ? (
@@ -289,35 +383,30 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
         <div className="space-y-2">
           {filteredStaff.map((staff) => {
             const currentStatus = getStaffAttendance(staff.id);
+            const isPetroleum = staff.category === 'petroleum';
             return (
-              <Card key={staff.id}>
+              <Card 
+                key={staff.id} 
+                className="cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => handleQuickTap(staff.id)}
+              >
                 <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-foreground">{staff.name}</p>
                       <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
                     </div>
-                    {currentStatus && (
-                      <span className={`px-2 py-1 rounded text-xs text-primary-foreground ${statusConfig[currentStatus].color}`}>
-                        {statusConfig[currentStatus].fullLabel}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    {(['1shift', '2shift', 'absent'] as const).map((status) => {
-                      const config = statusConfig[status];
-                      return (
-                        <Button
-                          key={status}
-                          variant={currentStatus === status ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1 text-xs"
-                          onClick={() => setConfirmAction({ type: 'update', status, staffId: staff.id })}
-                        >
-                          {config.fullLabel}
-                        </Button>
-                      );
-                    })}
+                    <div className="flex items-center gap-2">
+                      {currentStatus ? (
+                        <span className={`px-3 py-1.5 rounded text-sm font-medium text-primary-foreground ${statusConfig[currentStatus].color}`}>
+                          {statusConfig[currentStatus].fullLabel}
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded text-sm font-medium border bg-muted text-muted-foreground">
+                          Not Marked
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -332,19 +421,17 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Action</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.type === 'markAll' 
-                ? `Are you sure you want to mark all ${categoryFilter === 'all' ? 'staff' : categoryFilter + ' staff'} as ${statusConfig[confirmAction.status].fullLabel}?`
-                : `Mark attendance as ${confirmAction ? statusConfig[confirmAction.status].fullLabel : ''}?`
+              {confirmAction?.status === 'not_marked'
+                ? `Are you sure you want to clear all attendance for ${categoryFilter === 'all' ? 'all staff' : categoryFilter + ' staff'}?`
+                : `Are you sure you want to mark all ${categoryFilter === 'all' ? 'staff' : categoryFilter + ' staff'} as ${confirmAction?.status ? statusConfig[confirmAction.status].fullLabel : ''}?`
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              if (confirmAction?.type === 'markAll') {
+              if (confirmAction?.status) {
                 markAllAs(confirmAction.status);
-              } else if (confirmAction?.staffId) {
-                updateAttendance(confirmAction.staffId, confirmAction.status);
               }
             }}>
               Confirm

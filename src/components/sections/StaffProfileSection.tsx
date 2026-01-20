@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share2, Calendar, User, Phone, Edit2, Save, X } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Calendar, User, Phone, Edit2, Save, X, Wallet, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,17 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher';
+  category: 'petroleum' | 'crusher' | 'office';
   phone: string | null;
   base_salary: number;
   notes: string | null;
+  address: string | null;
 }
 
 interface AttendanceRecord {
@@ -51,6 +52,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [confirmShare, setConfirmShare] = useState<'whatsapp' | 'pdf' | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -68,7 +70,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   }, [selectedStaffId, selectedMonth, selectedYear]);
 
   const fetchStaffList = async () => {
-    const { data } = await supabase.from('staff').select('id, name, category, phone, base_salary, notes').eq('is_active', true).order('name');
+    const { data } = await supabase.from('staff').select('id, name, category, phone, base_salary, notes, address').eq('is_active', true).order('name');
     if (data) setStaffList(data as Staff[]);
     setIsLoading(false);
   };
@@ -126,11 +128,16 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     const twoShiftDays = attendance.filter(a => a.status === 'present' && a.shift_count === 2).length;
     const absentDays = attendance.filter(a => a.status === 'absent').length;
     const pendingAdvance = advances.filter(a => !a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0);
+    const totalAdvance = advances.reduce((sum, a) => sum + Number(a.amount), 0);
 
-    return { totalShifts, oneShiftDays, twoShiftDays, absentDays, pendingAdvance };
+    return { totalShifts, oneShiftDays, twoShiftDays, absentDays, pendingAdvance, totalAdvance };
   };
 
   const stats = selectedStaff ? getStats() : null;
+
+  const filteredStaffList = staffList.filter(staff =>
+    staff.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const generatePDFContent = () => {
     if (!selectedStaff || !stats) return null;
@@ -144,13 +151,14 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     doc.text(`Category: ${selectedStaff.category}`, 14, 30);
     doc.text(`Phone: ${selectedStaff.phone || 'N/A'}`, 14, 38);
     doc.text(`Month: ${months[selectedMonth - 1]} ${selectedYear}`, 14, 46);
+    doc.text(`Contact: 9386469006`, 14, 54);
     
     if (selectedStaff.notes) {
-      doc.text(`Notes: ${selectedStaff.notes}`, 14, 54);
+      doc.text(`Notes: ${selectedStaff.notes}`, 14, 62);
     }
 
     doc.setFontSize(14);
-    doc.text('Attendance Summary', 14, 66);
+    doc.text('Attendance Summary', 14, 74);
     
     const summaryData = [
       ['Total Shifts', stats.totalShifts.toString()],
@@ -158,11 +166,12 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
       ['2-Shift Days', stats.twoShiftDays.toString()],
       ['Absent Days', stats.absentDays.toString()],
       ['Pending Advance', `₹${stats.pendingAdvance.toLocaleString()}`],
+      ['Total Advance Taken', `₹${stats.totalAdvance.toLocaleString()}`],
     ];
 
     autoTable(doc, {
       body: summaryData,
-      startY: 72,
+      startY: 80,
       theme: 'grid',
     });
 
@@ -179,6 +188,25 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
       autoTable(doc, {
         head: [['Date', 'Status']],
         body: attendanceData,
+        startY: (doc as any).lastAutoTable.finalY + 20,
+      });
+    }
+
+    // Advances
+    if (advances.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Advance Payment History', 14, (doc as any).lastAutoTable.finalY + 15);
+      
+      const advanceData = advances.map(a => [
+        format(new Date(a.date), 'dd MMM yyyy'),
+        `₹${Number(a.amount).toLocaleString()}`,
+        a.is_deducted ? 'Deducted' : 'Pending',
+        a.notes || '-',
+      ]);
+
+      autoTable(doc, {
+        head: [['Date', 'Amount', 'Status', 'Notes']],
+        body: advanceData,
         startY: (doc as any).lastAutoTable.finalY + 20,
       });
     }
@@ -212,14 +240,19 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     message += `• Total Shifts: ${stats.totalShifts}\n`;
     message += `• 1-Shift Days: ${stats.oneShiftDays}\n`;
     message += `• 2-Shift Days: ${stats.twoShiftDays}\n`;
-    message += `• Absent Days: ${stats.absentDays}\n`;
-    message += `• Pending Advance: ₹${stats.pendingAdvance.toLocaleString()}\n\n`;
+    message += `• Absent Days: ${stats.absentDays}\n\n`;
+    
+    message += `💰 *Advance Summary*\n`;
+    message += `• Pending Advance: ₹${stats.pendingAdvance.toLocaleString()}\n`;
+    message += `• Total Advance Taken: ₹${stats.totalAdvance.toLocaleString()}\n\n`;
 
     message += `📅 *Daily Record*\n`;
     attendance.forEach(a => {
       const statusText = a.status === 'present' ? `${a.shift_count || 1} Shift` : 'Absent';
       message += `${format(new Date(a.date), 'dd MMM')}: ${statusText}\n`;
     });
+
+    message += `\n📞 Contact: 9386469006`;
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
@@ -236,6 +269,17 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
         <h1 className="text-xl font-bold text-foreground">Staff Profiles</h1>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          className="pl-10"
+          placeholder="Search staff..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       {/* Staff Selection */}
       <div className="mb-4">
         <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
@@ -243,7 +287,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
             <SelectValue placeholder="Select a staff member" />
           </SelectTrigger>
           <SelectContent>
-            {staffList.map((staff) => (
+            {filteredStaffList.map((staff) => (
               <SelectItem key={staff.id} value={staff.id}>
                 {staff.name} ({staff.category})
               </SelectItem>
@@ -271,7 +315,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2024, 2025, 2026].map((year) => (
+                {[2024, 2025, 2026, 2027].map((year) => (
                   <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                 ))}
               </SelectContent>
@@ -368,15 +412,25 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 </Card>
               </div>
 
-              {/* Pending Advance */}
-              {stats.pendingAdvance > 0 && (
-                <Card className="mb-4 bg-destructive/10">
-                  <CardContent className="p-3">
-                    <p className="text-sm text-muted-foreground">Pending Advance</p>
-                    <p className="text-xl font-bold text-destructive">₹{stats.pendingAdvance.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Advance Summary */}
+              <Card className="mb-4 bg-muted/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    Advance Payment Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Pending Advance</span>
+                    <span className="font-bold text-destructive">₹{stats.pendingAdvance.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Total Advance Taken</span>
+                    <span className="font-bold text-foreground">₹{stats.totalAdvance.toLocaleString()}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Attendance List */}
               <Card className="mb-4">
@@ -403,6 +457,36 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Advance History */}
+              {advances.length > 0 && (
+                <Card className="mb-4">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Wallet className="h-4 w-4" />
+                      Advance History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {advances.map((advance) => (
+                        <div key={advance.id} className="flex justify-between items-center text-sm py-1 border-b border-border last:border-0">
+                          <div>
+                            <span>{format(new Date(advance.date), 'dd MMM yyyy')}</span>
+                            {advance.notes && <span className="text-xs text-muted-foreground ml-2">({advance.notes})</span>}
+                          </div>
+                          <div className="text-right">
+                            <span className="font-medium">₹{Number(advance.amount).toLocaleString()}</span>
+                            <span className={`ml-2 text-xs ${advance.is_deducted ? 'text-green-600' : 'text-destructive'}`}>
+                              {advance.is_deducted ? '✓' : '○'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Export Actions */}
               <div className="grid grid-cols-2 gap-2">

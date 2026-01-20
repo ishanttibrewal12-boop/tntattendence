@@ -89,6 +89,30 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -261,7 +285,8 @@ export type Database = {
         | "holiday"
         | "sunday"
         | "leave"
-      staff_category: "petroleum" | "crusher"
+        | "not_marked"
+      staff_category: "petroleum" | "crusher" | "office"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -396,8 +421,9 @@ export const Constants = {
         "holiday",
         "sunday",
         "leave",
+        "not_marked",
       ],
-      staff_category: ["petroleum", "crusher"],
+      staff_category: ["petroleum", "crusher", "office"],
     },
   },
 } as const
