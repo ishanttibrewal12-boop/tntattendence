@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -17,6 +18,7 @@ interface Staff {
   phone: string | null;
   base_salary: number;
   is_active: boolean;
+  notes: string | null;
 }
 
 interface StaffSectionProps {
@@ -37,6 +39,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
   const [phone, setPhone] = useState('');
   const [category, setCategory] = useState<'petroleum' | 'crusher'>('petroleum');
   const [baseSalary, setBaseSalary] = useState('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -46,7 +49,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setIsLoading(true);
     const { data } = await supabase
       .from('staff')
-      .select('id, name, category, phone, base_salary, is_active')
+      .select('id, name, category, phone, base_salary, is_active, notes')
       .eq('is_active', true)
       .order('name');
 
@@ -59,6 +62,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setPhone('');
     setCategory('petroleum');
     setBaseSalary('');
+    setNotes('');
     setEditingStaff(null);
   };
 
@@ -68,6 +72,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setPhone(staff.phone || '');
     setCategory(staff.category);
     setBaseSalary(staff.base_salary.toString());
+    setNotes(staff.notes || '');
     setDialogOpen(true);
   };
 
@@ -86,6 +91,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
           phone: phone.trim() || null,
           category,
           base_salary: parseFloat(baseSalary) || 0,
+          notes: notes.trim() || null,
         })
         .eq('id', editingStaff.id);
 
@@ -101,6 +107,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
         phone: phone.trim() || null,
         category,
         base_salary: parseFloat(baseSalary) || 0,
+        notes: notes.trim() || null,
       });
 
       if (error) {
@@ -228,6 +235,15 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
                 placeholder="Enter monthly salary"
               />
             </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes about this staff..."
+                className="min-h-[60px]"
+              />
+            </div>
             <Button onClick={handleSubmit} className="w-full">
               {editingStaff ? 'Update Staff' : 'Add Staff'}
             </Button>
@@ -276,6 +292,9 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
                       {staff.phone && <span>• {staff.phone}</span>}
                     </div>
                     <p className="text-xs text-muted-foreground">₹{staff.base_salary.toLocaleString()}/month</p>
+                    {staff.notes && (
+                      <p className="text-xs text-muted-foreground mt-1 bg-muted/30 p-1 rounded">📝 {staff.notes}</p>
+                    )}
                   </div>
                   <div className="flex gap-1">
                     <Button
