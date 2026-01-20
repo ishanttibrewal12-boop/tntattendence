@@ -95,6 +95,7 @@ export type Database = {
           date: string
           id: string
           notes: string | null
+          shift_count: number | null
           staff_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           updated_at: string
@@ -104,6 +105,7 @@ export type Database = {
           date: string
           id?: string
           notes?: string | null
+          shift_count?: number | null
           staff_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
           updated_at?: string
@@ -113,6 +115,7 @@ export type Database = {
           date?: string
           id?: string
           notes?: string | null
+          shift_count?: number | null
           staff_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
           updated_at?: string
@@ -206,6 +209,7 @@ export type Database = {
           is_active: boolean
           joining_date: string
           name: string
+          notes: string | null
           phone: string | null
           photo_url: string | null
           updated_at: string
@@ -220,6 +224,7 @@ export type Database = {
           is_active?: boolean
           joining_date?: string
           name: string
+          notes?: string | null
           phone?: string | null
           photo_url?: string | null
           updated_at?: string
@@ -234,6 +239,7 @@ export type Database = {
           is_active?: boolean
           joining_date?: string
           name?: string
+          notes?: string | null
           phone?: string | null
           photo_url?: string | null
           updated_at?: string

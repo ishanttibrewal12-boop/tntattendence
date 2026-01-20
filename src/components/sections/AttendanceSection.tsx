@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Download, Share2, Check, X, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Download, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, getDay } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -23,20 +24,20 @@ interface AttendanceRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  status: 'present' | 'absent' | 'half_day' | 'holiday' | 'sunday' | 'leave';
+  status: string;
+  shift_count: number | null;
 }
 
 interface AttendanceSectionProps {
   onBack: () => void;
 }
 
+type AttendanceStatus = '1shift' | '2shift' | 'absent';
+
 const statusConfig = {
-  present: { label: 'P', color: 'bg-green-500', icon: Check },
-  absent: { label: 'A', color: 'bg-destructive', icon: X },
-  half_day: { label: 'H', color: 'bg-yellow-500', icon: Clock },
-  holiday: { label: 'HO', color: 'bg-primary', icon: Calendar },
-  sunday: { label: 'S', color: 'bg-muted', icon: Calendar },
-  leave: { label: 'L', color: 'bg-orange-500', icon: Calendar },
+  '1shift': { label: '1', color: 'bg-green-500', fullLabel: '1 Shift' },
+  '2shift': { label: '2', color: 'bg-primary', fullLabel: '2 Shifts' },
+  'absent': { label: 'A', color: 'bg-destructive', fullLabel: 'Absent' },
 };
 
 const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
@@ -45,8 +46,27 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
+  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update'; status: AttendanceStatus; staffId?: string } | null>(null);
+
+  // Skip Sundays
+  const navigateDate = (direction: 'prev' | 'next') => {
+    let newDate = direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
+    // Skip Sundays
+    while (getDay(newDate) === 0) {
+      newDate = direction === 'prev' ? subDays(newDate, 1) : addDays(newDate, 1);
+    }
+    setSelectedDate(newDate);
+  };
+
+  // Check if current date is Sunday
+  const isSunday = getDay(selectedDate) === 0;
 
   useEffect(() => {
+    // If current date is Sunday, move to Monday
+    if (isSunday) {
+      setSelectedDate(addDays(selectedDate, 1));
+      return;
+    }
     fetchData();
   }, [selectedDate]);
 
@@ -60,25 +80,29 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     ]);
 
     if (staffRes.data) setStaffList(staffRes.data as Staff[]);
-    if (attendanceRes.data) setAttendance(attendanceRes.data);
+    if (attendanceRes.data) setAttendance(attendanceRes.data as AttendanceRecord[]);
     setIsLoading(false);
   };
 
-  const updateAttendance = async (staffId: string, status: AttendanceRecord['status']) => {
+  const updateAttendance = async (staffId: string, status: AttendanceStatus) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const existing = attendance.find((a) => a.staff_id === staffId);
 
+    const dbStatus = status === 'absent' ? 'absent' : 'present';
+    const shiftCount = status === '2shift' ? 2 : 1;
+
     if (existing) {
-      await supabase.from('attendance').update({ status }).eq('id', existing.id);
+      await supabase.from('attendance').update({ status: dbStatus, shift_count: shiftCount }).eq('id', existing.id);
     } else {
-      await supabase.from('attendance').insert({ staff_id: staffId, date: dateStr, status });
+      await supabase.from('attendance').insert({ staff_id: staffId, date: dateStr, status: dbStatus, shift_count: shiftCount });
     }
 
     toast.success('Attendance updated');
     fetchData();
+    setConfirmAction(null);
   };
 
-  const markAllAs = async (status: AttendanceRecord['status']) => {
+  const markAllAs = async (status: AttendanceStatus) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const filteredStaff = categoryFilter === 'all' 
       ? staffList 
@@ -86,19 +110,28 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
     await supabase.from('attendance').delete().eq('date', dateStr);
     
+    const dbStatus: 'absent' | 'present' = status === 'absent' ? 'absent' : 'present';
+    const shiftCount = status === '2shift' ? 2 : 1;
+
     const records = filteredStaff.map((staff) => ({
       staff_id: staff.id,
       date: dateStr,
-      status,
+      status: dbStatus,
+      shift_count: shiftCount,
     }));
 
     await supabase.from('attendance').insert(records);
-    toast.success(`All marked as ${status.replace('_', ' ')}`);
+    toast.success(`All marked as ${statusConfig[status].fullLabel}`);
     fetchData();
+    setConfirmAction(null);
   };
 
-  const getStaffAttendance = (staffId: string) => {
-    return attendance.find((a) => a.staff_id === staffId)?.status || null;
+  const getStaffAttendance = (staffId: string): AttendanceStatus | null => {
+    const record = attendance.find((a) => a.staff_id === staffId);
+    if (!record) return null;
+    if (record.status === 'absent') return 'absent';
+    if (record.shift_count === 2) return '2shift';
+    return '1shift';
   };
 
   const exportToPDF = () => {
@@ -116,11 +149,15 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
     const tableData = filteredStaff.map((staff) => {
       const status = getStaffAttendance(staff.id);
+      let statusText = 'Not Marked';
+      if (status) {
+        statusText = statusConfig[status].fullLabel;
+      }
       return [
         staff.name,
         staff.category,
         staff.phone || '-',
-        status ? statusConfig[status].label : 'Not Marked',
+        statusText,
       ];
     });
 
@@ -143,13 +180,13 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     let message = `📋 *Attendance Report - ${dateStr}*\n`;
     message += `Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter}\n\n`;
 
-    const present = filteredStaff.filter(s => getStaffAttendance(s.id) === 'present').length;
+    const oneShift = filteredStaff.filter(s => getStaffAttendance(s.id) === '1shift').length;
+    const twoShift = filteredStaff.filter(s => getStaffAttendance(s.id) === '2shift').length;
     const absent = filteredStaff.filter(s => getStaffAttendance(s.id) === 'absent').length;
-    const halfDay = filteredStaff.filter(s => getStaffAttendance(s.id) === 'half_day').length;
 
-    message += `✅ Present: ${present}\n`;
-    message += `❌ Absent: ${absent}\n`;
-    message += `⏰ Half Day: ${halfDay}\n\n`;
+    message += `1️⃣ 1 Shift: ${oneShift}\n`;
+    message += `2️⃣ 2 Shifts: ${twoShift}\n`;
+    message += `❌ Absent: ${absent}\n\n`;
 
     filteredStaff.forEach((staff) => {
       const status = getStaffAttendance(staff.id);
@@ -179,14 +216,14 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
       <Card className="mb-4">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+            <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="text-center">
               <p className="font-semibold text-foreground">{format(selectedDate, 'EEEE')}</p>
               <p className="text-sm text-muted-foreground">{format(selectedDate, 'dd MMM yyyy')}</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+            <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}>
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
@@ -209,14 +246,14 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllAs('present')}>
-          All Present
+        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
+          All 1 Shift
         </Button>
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllAs('absent')}>
+        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
+          All 2 Shifts
+        </Button>
+        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
           All Absent
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllAs('holiday')}>
-          Holiday
         </Button>
       </div>
 
@@ -230,6 +267,19 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
           <Share2 className="h-4 w-4 mr-2" />
           WhatsApp
         </Button>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2 mb-4 text-xs">
+        <span className="flex items-center gap-1">
+          <span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-4 h-4 rounded bg-primary"></span> 2 Shifts
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-4 h-4 rounded bg-destructive"></span> Absent
+        </span>
       </div>
 
       {/* Staff List */}
@@ -249,12 +299,12 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
                     </div>
                     {currentStatus && (
                       <span className={`px-2 py-1 rounded text-xs text-primary-foreground ${statusConfig[currentStatus].color}`}>
-                        {statusConfig[currentStatus].label}
+                        {statusConfig[currentStatus].fullLabel}
                       </span>
                     )}
                   </div>
                   <div className="flex gap-1">
-                    {(['present', 'absent', 'half_day', 'sunday'] as const).map((status) => {
+                    {(['1shift', '2shift', 'absent'] as const).map((status) => {
                       const config = statusConfig[status];
                       return (
                         <Button
@@ -262,9 +312,9 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
                           variant={currentStatus === status ? 'default' : 'outline'}
                           size="sm"
                           className="flex-1 text-xs"
-                          onClick={() => updateAttendance(staff.id, status)}
+                          onClick={() => setConfirmAction({ type: 'update', status, staffId: staff.id })}
                         >
-                          {config.label}
+                          {config.fullLabel}
                         </Button>
                       );
                     })}
@@ -275,6 +325,33 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
           })}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === 'markAll' 
+                ? `Are you sure you want to mark all ${categoryFilter === 'all' ? 'staff' : categoryFilter + ' staff'} as ${statusConfig[confirmAction.status].fullLabel}?`
+                : `Mark attendance as ${confirmAction ? statusConfig[confirmAction.status].fullLabel : ''}?`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (confirmAction?.type === 'markAll') {
+                markAllAs(confirmAction.status);
+              } else if (confirmAction?.staffId) {
+                updateAttendance(confirmAction.staffId, confirmAction.status);
+              }
+            }}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

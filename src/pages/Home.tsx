@@ -1,21 +1,25 @@
 import { useState } from 'react';
-import { Users, Calendar, Wallet, UserPlus } from 'lucide-react';
+import { Users, Calendar, Wallet, UserPlus, BarChart3, CalendarDays, Upload, User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import AttendanceSection from '@/components/sections/AttendanceSection';
 import AdvanceSalarySection from '@/components/sections/AdvanceSalarySection';
 import StaffSection from '@/components/sections/StaffSection';
+import Dashboard from '@/pages/Dashboard';
+import MonthlyCalendarSection from '@/components/sections/MonthlyCalendarSection';
+import BulkImportSection from '@/components/sections/BulkImportSection';
+import StaffProfileSection from '@/components/sections/StaffProfileSection';
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'dashboard' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | null;
 
 const Home = () => {
   const [activeSection, setActiveSection] = useState<SectionType>(null);
 
-  const sections = [
+  const mainSections = [
     {
       id: 'attendance' as SectionType,
       title: 'Attendance',
       icon: Calendar,
-      description: 'Mark & export attendance',
+      description: 'Mark daily attendance',
       color: 'bg-primary',
     },
     {
@@ -34,6 +38,37 @@ const Home = () => {
     },
   ];
 
+  const extraSections = [
+    {
+      id: 'dashboard' as SectionType,
+      title: 'Dashboard',
+      icon: BarChart3,
+      description: 'View analytics',
+      color: 'bg-chart-1',
+    },
+    {
+      id: 'monthly-calendar' as SectionType,
+      title: 'Monthly Report',
+      icon: CalendarDays,
+      description: 'Calendar view',
+      color: 'bg-chart-2',
+    },
+    {
+      id: 'staff-profile' as SectionType,
+      title: 'Staff Profiles',
+      icon: User,
+      description: 'View & share profiles',
+      color: 'bg-chart-3',
+    },
+    {
+      id: 'bulk-import' as SectionType,
+      title: 'Bulk Import',
+      icon: Upload,
+      description: 'Import from CSV',
+      color: 'bg-chart-4',
+    },
+  ];
+
   if (activeSection) {
     return (
       <div className="min-h-screen bg-background">
@@ -46,6 +81,18 @@ const Home = () => {
         {activeSection === 'staff' && (
           <StaffSection onBack={() => setActiveSection(null)} />
         )}
+        {activeSection === 'dashboard' && (
+          <Dashboard onBack={() => setActiveSection(null)} />
+        )}
+        {activeSection === 'monthly-calendar' && (
+          <MonthlyCalendarSection onBack={() => setActiveSection(null)} />
+        )}
+        {activeSection === 'bulk-import' && (
+          <BulkImportSection onBack={() => setActiveSection(null)} />
+        )}
+        {activeSection === 'staff-profile' && (
+          <StaffProfileSection onBack={() => setActiveSection(null)} />
+        )}
       </div>
     );
   }
@@ -54,7 +101,7 @@ const Home = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 pt-6">
+        <div className="text-center mb-6 pt-4">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Users className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">TNT Staff Manager</h1>
@@ -64,9 +111,9 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Section Cards */}
-        <div className="space-y-4">
-          {sections.map((section) => {
+        {/* Main Section Cards */}
+        <div className="space-y-3 mb-6">
+          {mainSections.map((section) => {
             const Icon = section.icon;
             return (
               <Card
@@ -74,7 +121,7 @@ const Home = () => {
                 className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98]"
                 onClick={() => setActiveSection(section.id)}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-5">
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-xl ${section.color}`}>
                       <Icon className="h-6 w-6 text-primary-foreground" />
@@ -93,6 +140,39 @@ const Home = () => {
               </Card>
             );
           })}
+        </div>
+
+        {/* Extra Sections */}
+        <p className="text-xs text-muted-foreground mb-2 px-1">More Options</p>
+        <div className="grid grid-cols-2 gap-3">
+          {extraSections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Card
+                key={section.id}
+                className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]"
+                onClick={() => setActiveSection(section.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center gap-2">
+                    <div className={`p-2 rounded-lg ${section.color}`}>
+                      <Icon className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{section.title}</p>
+                      <p className="text-xs text-muted-foreground">{section.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-xs text-muted-foreground">
+          <p>Tibrewal & Tibrewal Pvt. Ltd.</p>
+          <p>Mining & Construction • Jharkhand</p>
         </div>
       </div>
     </div>

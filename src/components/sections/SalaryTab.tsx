@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react';
 import { Calculator, Download, Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
+import { format, getDaysInMonth, startOfMonth, endOfMonth, getDay } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -17,6 +15,7 @@ interface Staff {
   name: string;
   category: 'petroleum' | 'crusher';
   base_salary: number;
+  notes: string | null;
 }
 
 interface Advance {
@@ -25,28 +24,21 @@ interface Advance {
   amount: number;
 }
 
-interface AttendanceSummary {
-  present: number;
-  absent: number;
-  half_day: number;
-  holiday: number;
-  sunday: number;
-  leave: number;
-}
-
 interface SalaryCalculation {
   staffId: string;
   name: string;
   category: string;
   baseSalary: number;
   workingDays: number;
-  presentDays: number;
-  halfDays: number;
+  totalShifts: number;
+  oneShiftDays: number;
+  twoShiftDays: number;
   absentDays: number;
-  perDaySalary: number;
+  perShiftSalary: number;
   earnedSalary: number;
   totalAdvance: number;
   netSalary: number;
+  notes: string | null;
 }
 
 const SalaryTab = () => {
@@ -57,8 +49,8 @@ const SalaryTab = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
-  const [editDialog, setEditDialog] = useState<SalaryCalculation | null>(null);
   const [paidStaff, setPaidStaff] = useState<Set<string>>(new Set());
+  const [confirmPay, setConfirmPay] = useState<{ staffId: string; calc: SalaryCalculation } | null>(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -69,11 +61,25 @@ const SalaryTab = () => {
     fetchData();
   }, [selectedMonth, selectedYear]);
 
+  const getWorkingDaysInMonth = (year: number, month: number) => {
+    const daysInMonth = getDaysInMonth(new Date(year, month - 1));
+    let workingDays = 0;
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      if (getDay(date) !== 0) { // Exclude Sundays
+        workingDays++;
+      }
+    }
+    
+    return workingDays;
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
     
     const [staffRes, advancesRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category, base_salary').eq('is_active', true).order('name'),
+      supabase.from('staff').select('id, name, category, base_salary, notes').eq('is_active', true).order('name'),
       supabase.from('advances').select('id, staff_id, amount').eq('is_deducted', false),
     ]);
 
@@ -86,7 +92,7 @@ const SalaryTab = () => {
 
     const { data: attendanceData } = await supabase
       .from('attendance')
-      .select('staff_id, status')
+      .select('staff_id, status, shift_count')
       .gte('date', startDate)
       .lte('date', endDate);
 
@@ -101,24 +107,22 @@ const SalaryTab = () => {
       setPaidStaff(new Set(payrollData.filter(p => p.is_paid).map(p => p.staff_id)));
     }
 
-    // Calculate salary for each staff
+    const workingDays = getWorkingDaysInMonth(selectedYear, selectedMonth);
+
+    // Calculate salary for each staff based on shifts
     if (staffRes.data) {
       const calculations = staffRes.data.map((staff) => {
         const staffAttendance = attendanceData?.filter(a => a.staff_id === staff.id) || [];
-        const summary: AttendanceSummary = {
-          present: staffAttendance.filter(a => a.status === 'present').length,
-          absent: staffAttendance.filter(a => a.status === 'absent').length,
-          half_day: staffAttendance.filter(a => a.status === 'half_day').length,
-          holiday: staffAttendance.filter(a => a.status === 'holiday').length,
-          sunday: staffAttendance.filter(a => a.status === 'sunday').length,
-          leave: staffAttendance.filter(a => a.status === 'leave').length,
-        };
+        
+        const oneShiftDays = staffAttendance.filter(a => a.status === 'present' && (a.shift_count || 1) === 1).length;
+        const twoShiftDays = staffAttendance.filter(a => a.status === 'present' && a.shift_count === 2).length;
+        const absentDays = staffAttendance.filter(a => a.status === 'absent').length;
+        const totalShifts = oneShiftDays + (twoShiftDays * 2);
 
-        const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth - 1));
-        const workingDays = daysInMonth - summary.sunday - summary.holiday;
-        const presentDays = summary.present + (summary.half_day * 0.5);
-        const perDaySalary = workingDays > 0 ? Number(staff.base_salary) / workingDays : 0;
-        const earnedSalary = perDaySalary * presentDays;
+        // Per shift salary = base salary / (working days * 2 possible shifts per day)
+        // Or simpler: per shift = base / working days (assuming 1 shift per day baseline)
+        const perShiftSalary = workingDays > 0 ? Number(staff.base_salary) / workingDays : 0;
+        const earnedSalary = perShiftSalary * totalShifts;
 
         const staffAdvances = advancesRes.data?.filter(a => a.staff_id === staff.id) || [];
         const totalAdvance = staffAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
@@ -131,13 +135,15 @@ const SalaryTab = () => {
           category: staff.category,
           baseSalary: Number(staff.base_salary),
           workingDays,
-          presentDays,
-          halfDays: summary.half_day,
-          absentDays: summary.absent,
-          perDaySalary: Math.round(perDaySalary),
+          totalShifts,
+          oneShiftDays,
+          twoShiftDays,
+          absentDays,
+          perShiftSalary: Math.round(perShiftSalary),
           earnedSalary: Math.round(earnedSalary),
           totalAdvance,
           netSalary: Math.round(netSalary),
+          notes: staff.notes,
         };
       });
 
@@ -147,7 +153,10 @@ const SalaryTab = () => {
     setIsLoading(false);
   };
 
-  const markAsPaid = async (staffId: string, calc: SalaryCalculation) => {
+  const markAsPaid = async () => {
+    if (!confirmPay) return;
+    const { staffId, calc } = confirmPay;
+
     // First deduct advances
     await supabase
       .from('advances')
@@ -164,8 +173,8 @@ const SalaryTab = () => {
         year: selectedYear,
         base_salary: calc.baseSalary,
         working_days: calc.workingDays,
-        present_days: calc.presentDays,
-        half_days: calc.halfDays,
+        present_days: calc.totalShifts,
+        half_days: 0,
         absent_days: calc.absentDays,
         deductions: calc.totalAdvance,
         net_salary: calc.netSalary,
@@ -181,6 +190,7 @@ const SalaryTab = () => {
     }
 
     toast.success('Marked as paid');
+    setConfirmPay(null);
     fetchData();
   };
 
@@ -204,7 +214,7 @@ const SalaryTab = () => {
       s.name,
       s.category,
       `₹${s.baseSalary.toLocaleString()}`,
-      `${s.presentDays}/${s.workingDays}`,
+      `${s.totalShifts} shifts`,
       `₹${s.earnedSalary.toLocaleString()}`,
       `₹${s.totalAdvance.toLocaleString()}`,
       `₹${s.netSalary.toLocaleString()}`,
@@ -212,7 +222,7 @@ const SalaryTab = () => {
     ]);
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Base', 'Days', 'Earned', 'Advance', 'Net', 'Status']],
+      head: [['Name', 'Category', 'Base', 'Shifts', 'Earned', 'Advance', 'Net', 'Status']],
       body: tableData,
       startY: 48,
       styles: { fontSize: 8 },
@@ -229,7 +239,7 @@ const SalaryTab = () => {
 
     filteredSalaryData.forEach((s) => {
       const status = paidStaff.has(s.staffId) ? '✅' : '⏳';
-      message += `${status} ${s.name}: ₹${s.netSalary.toLocaleString()}\n`;
+      message += `${status} ${s.name}: ₹${s.netSalary.toLocaleString()} (${s.totalShifts} shifts)\n`;
     });
 
     const encodedMessage = encodeURIComponent(message);
@@ -325,10 +335,20 @@ const SalaryTab = () => {
                     </div>
                   </div>
 
+                  {calc.notes && (
+                    <p className="text-xs text-muted-foreground mb-2 bg-muted/30 p-1 rounded">
+                      📝 {calc.notes}
+                    </p>
+                  )}
+
                   <div className="text-xs text-muted-foreground space-y-1 mb-2">
                     <div className="flex justify-between">
                       <span>Base: ₹{calc.baseSalary.toLocaleString()}</span>
-                      <span>Days: {calc.presentDays}/{calc.workingDays}</span>
+                      <span>Shifts: {calc.totalShifts}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>1-Shift: {calc.oneShiftDays} | 2-Shift: {calc.twoShiftDays}</span>
+                      <span>Absent: {calc.absentDays}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Earned: ₹{calc.earnedSalary.toLocaleString()}</span>
@@ -340,7 +360,7 @@ const SalaryTab = () => {
                     <Button
                       size="sm"
                       className="w-full"
-                      onClick={() => markAsPaid(calc.staffId, calc)}
+                      onClick={() => setConfirmPay({ staffId: calc.staffId, calc })}
                     >
                       <Check className="h-4 w-4 mr-2" />
                       Mark as Paid
@@ -352,6 +372,23 @@ const SalaryTab = () => {
           })}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmPay} onOpenChange={() => setConfirmPay(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mark {confirmPay?.calc.name}'s salary (₹{confirmPay?.calc.netSalary.toLocaleString()}) as paid? 
+              This will also deduct the pending advance of ₹{confirmPay?.calc.totalAdvance.toLocaleString()}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={markAsPaid}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

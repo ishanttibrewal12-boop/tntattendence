@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -37,6 +38,8 @@ const AdvanceTab = () => {
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
+  const [confirmAdd, setConfirmAdd] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<Advance | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -80,19 +83,23 @@ const AdvanceTab = () => {
 
     toast.success('Advance added');
     setDialogOpen(false);
+    setConfirmAdd(false);
     setSelectedStaffId('');
     setAmount('');
     setNotes('');
     fetchData();
   };
 
-  const handleDeleteAdvance = async (id: string) => {
-    const { error } = await supabase.from('advances').delete().eq('id', id);
+  const handleDeleteAdvance = async () => {
+    if (!deleteConfirm) return;
+
+    const { error } = await supabase.from('advances').delete().eq('id', deleteConfirm.id);
     if (error) {
       toast.error('Failed to delete advance');
       return;
     }
     toast.success('Advance deleted');
+    setDeleteConfirm(null);
     fetchData();
   };
 
@@ -206,7 +213,7 @@ const AdvanceTab = () => {
                   placeholder="Add notes"
                 />
               </div>
-              <Button onClick={handleAddAdvance} className="w-full">
+              <Button onClick={() => setConfirmAdd(true)} className="w-full">
                 Add Advance
               </Button>
             </div>
@@ -269,7 +276,7 @@ const AdvanceTab = () => {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => handleDeleteAdvance(adv.id)}
+                          onClick={() => setDeleteConfirm(adv)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -282,6 +289,38 @@ const AdvanceTab = () => {
           })}
         </div>
       )}
+
+      {/* Confirm Add Dialog */}
+      <AlertDialog open={confirmAdd} onOpenChange={setConfirmAdd}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Advance</AlertDialogTitle>
+            <AlertDialogDescription>
+              Add advance of ₹{amount} for {staffList.find(s => s.id === selectedStaffId)?.name}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddAdvance}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Advance?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this advance of ₹{deleteConfirm?.amount}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAdvance}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
