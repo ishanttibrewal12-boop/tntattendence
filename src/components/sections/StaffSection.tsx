@@ -14,11 +14,12 @@ import { toast } from 'sonner';
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher';
+  category: 'petroleum' | 'crusher' | 'office';
   phone: string | null;
   base_salary: number;
   is_active: boolean;
   notes: string | null;
+  address: string | null;
 }
 
 interface StaffSectionProps {
@@ -29,15 +30,17 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<Staff | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [confirmAdd, setConfirmAdd] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [category, setCategory] = useState<'petroleum' | 'crusher'>('petroleum');
+  const [address, setAddress] = useState('');
+  const [category, setCategory] = useState<'petroleum' | 'crusher' | 'office'>('petroleum');
   const [baseSalary, setBaseSalary] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -49,7 +52,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setIsLoading(true);
     const { data } = await supabase
       .from('staff')
-      .select('id, name, category, phone, base_salary, is_active, notes')
+      .select('id, name, category, phone, base_salary, is_active, notes, address')
       .eq('is_active', true)
       .order('name');
 
@@ -60,6 +63,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
   const resetForm = () => {
     setName('');
     setPhone('');
+    setAddress('');
     setCategory('petroleum');
     setBaseSalary('');
     setNotes('');
@@ -70,6 +74,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setEditingStaff(staff);
     setName(staff.name);
     setPhone(staff.phone || '');
+    setAddress(staff.address || '');
     setCategory(staff.category);
     setBaseSalary(staff.base_salary.toString());
     setNotes(staff.notes || '');
@@ -89,6 +94,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
         .update({
           name: name.trim(),
           phone: phone.trim() || null,
+          address: address.trim() || null,
           category,
           base_salary: parseFloat(baseSalary) || 0,
           notes: notes.trim() || null,
@@ -105,6 +111,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
       const { error } = await supabase.from('staff').insert({
         name: name.trim(),
         phone: phone.trim() || null,
+        address: address.trim() || null,
         category,
         base_salary: parseFloat(baseSalary) || 0,
         notes: notes.trim() || null,
@@ -118,6 +125,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     }
 
     setDialogOpen(false);
+    setConfirmAdd(false);
     resetForm();
     fetchData();
   };
@@ -149,6 +157,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
 
   const petroleumCount = staffList.filter(s => s.category === 'petroleum').length;
   const crusherCount = staffList.filter(s => s.category === 'crusher').length;
+  const officeCount = staffList.filter(s => s.category === 'office').length;
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -161,23 +170,29 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-2 mb-4">
         <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-foreground">{staffList.length}</p>
+          <CardContent className="p-2 text-center">
+            <p className="text-xl font-bold text-foreground">{staffList.length}</p>
             <p className="text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{petroleumCount}</p>
+          <CardContent className="p-2 text-center">
+            <p className="text-xl font-bold text-primary">{petroleumCount}</p>
             <p className="text-xs text-muted-foreground">Petroleum</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-secondary">{crusherCount}</p>
+          <CardContent className="p-2 text-center">
+            <p className="text-xl font-bold text-secondary">{crusherCount}</p>
             <p className="text-xs text-muted-foreground">Crusher</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-2 text-center">
+            <p className="text-xl font-bold text-chart-3">{officeCount}</p>
+            <p className="text-xs text-muted-foreground">Office</p>
           </CardContent>
         </Card>
       </div>
@@ -193,7 +208,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
             Add Staff
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingStaff ? 'Edit Staff' : 'Add New Staff'}</DialogTitle>
           </DialogHeader>
@@ -215,6 +230,15 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
               />
             </div>
             <div>
+              <Label>Address</Label>
+              <Textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter address"
+                className="min-h-[60px]"
+              />
+            </div>
+            <div>
               <Label>Category *</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
                 <SelectTrigger>
@@ -223,6 +247,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
                 <SelectContent>
                   <SelectItem value="petroleum">Petroleum</SelectItem>
                   <SelectItem value="crusher">Crusher</SelectItem>
+                  <SelectItem value="office">Office</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -244,7 +269,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
                 className="min-h-[60px]"
               />
             </div>
-            <Button onClick={handleSubmit} className="w-full">
+            <Button onClick={() => editingStaff ? handleSubmit() : setConfirmAdd(true)} className="w-full">
               {editingStaff ? 'Update Staff' : 'Add Staff'}
             </Button>
           </div>
@@ -270,6 +295,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
             <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="petroleum">Petroleum</SelectItem>
             <SelectItem value="crusher">Crusher</SelectItem>
+            <SelectItem value="office">Office</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -320,6 +346,22 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
           ))}
         </div>
       )}
+
+      {/* Add Confirmation Dialog */}
+      <AlertDialog open={confirmAdd} onOpenChange={setConfirmAdd}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Staff?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to add {name} as a {category} staff member?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit}>Add</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
