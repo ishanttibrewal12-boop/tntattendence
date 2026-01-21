@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, addDays, subDays, getDay } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -54,25 +54,13 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
   const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Skip Sundays
+  // Navigate to prev/next day (Sundays are now working days)
   const navigateDate = (direction: 'prev' | 'next') => {
     let newDate = direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
-    // Skip Sundays
-    while (getDay(newDate) === 0) {
-      newDate = direction === 'prev' ? subDays(newDate, 1) : addDays(newDate, 1);
-    }
     setSelectedDate(newDate);
   };
 
-  // Check if current date is Sunday
-  const isSunday = getDay(selectedDate) === 0;
-
   useEffect(() => {
-    // If current date is Sunday, move to Monday
-    if (isSunday) {
-      setSelectedDate(addDays(selectedDate, 1));
-      return;
-    }
     fetchData();
   }, [selectedDate]);
 
@@ -92,11 +80,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      // Skip if Sunday
-      if (getDay(date) === 0) {
-        toast.error('Sundays are not working days');
-        return;
-      }
       setSelectedDate(date);
       setCalendarOpen(false);
     }
@@ -292,8 +275,8 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
                   mode="single"
                   selected={selectedDate}
                   onSelect={handleDateSelect}
-                  disabled={(date) => getDay(date) === 0}
                   initialFocus
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>

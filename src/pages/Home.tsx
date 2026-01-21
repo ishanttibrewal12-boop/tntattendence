@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog } from 'lucide-react';
+import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import PinLock from '@/components/PinLock';
 import AttendanceSection from '@/components/sections/AttendanceSection';
@@ -9,8 +9,9 @@ import StaffDetailsSection from '@/components/sections/StaffDetailsSection';
 import MonthlyCalendarSection from '@/components/sections/MonthlyCalendarSection';
 import BulkImportSection from '@/components/sections/BulkImportSection';
 import StaffProfileSection from '@/components/sections/StaffProfileSection';
+import SettingsSection from '@/components/sections/SettingsSection';
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | null;
 
 const Home = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -43,6 +44,7 @@ const Home = () => {
         {activeSection === 'monthly-calendar' && <MonthlyCalendarSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'bulk-import' && <BulkImportSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'staff-profile' && <StaffProfileSection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'settings' && <SettingsSection onBack={() => setActiveSection(null)} />}
       </div>
     );
   }
@@ -97,6 +99,25 @@ const Home = () => {
             );
           })}
         </div>
+
+        {/* Settings */}
+        <Card 
+          className="mt-4 cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
+          onClick={() => setActiveSection('settings')}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Settings className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Settings</p>
+                <p className="text-xs text-muted-foreground">PIN & Backup</p>
+              </div>
+              <div className="text-muted-foreground">→</div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="mt-8 text-center text-xs text-muted-foreground">
           <p>Tibrewal & Tibrewal Pvt. Ltd.</p>

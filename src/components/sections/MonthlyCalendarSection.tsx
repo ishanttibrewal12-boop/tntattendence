@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, getDaysInMonth, startOfMonth, getDay } from 'date-fns';
+import { format, getDaysInMonth, startOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher';
+  category: 'petroleum' | 'crusher' | 'office';
 }
 
 interface AttendanceRecord {
@@ -32,14 +32,14 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   useEffect(() => {
     fetchData();
@@ -87,16 +87,13 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
     return { text: '-', color: 'bg-muted/30 text-muted-foreground' };
   };
 
-  // Get days excluding Sundays
+  // Get all days in month (including Sundays - no exclusion)
   const getMonthDays = () => {
     const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth - 1));
     const monthDays: number[] = [];
     
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(selectedYear, selectedMonth - 1, day);
-      if (date.getDay() !== 0) { // Skip Sundays
-        monthDays.push(day);
-      }
+      monthDays.push(day);
     }
     
     return monthDays;
@@ -210,6 +207,7 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
             <SelectItem value="all">All Staff</SelectItem>
             <SelectItem value="petroleum">Petroleum</SelectItem>
             <SelectItem value="crusher">Crusher</SelectItem>
+            <SelectItem value="office">Office</SelectItem>
           </SelectContent>
         </Select>
       </div>
