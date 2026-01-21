@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Lock, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ForgotPin from './ForgotPin';
 
 interface PinLockProps {
   onUnlock: () => void;
@@ -15,6 +16,7 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
   const [showPin, setShowPin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [correctPin, setCorrectPin] = useState('8465');
+  const [showForgotPin, setShowForgotPin] = useState(false);
 
   useEffect(() => {
     // Check if already unlocked in this session
@@ -77,6 +79,15 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
     }
   };
 
+  if (showForgotPin) {
+    return (
+      <ForgotPin 
+        onBack={() => setShowForgotPin(false)} 
+        onSuccess={onUnlock}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
@@ -115,6 +126,16 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
           >
             {isVerifying ? 'Verifying...' : 'Unlock'}
           </Button>
+          
+          <Button
+            variant="link"
+            className="w-full text-muted-foreground"
+            onClick={() => setShowForgotPin(true)}
+          >
+            <HelpCircle className="h-4 w-4 mr-1" />
+            Forgot PIN?
+          </Button>
+          
           <p className="text-xs text-center text-muted-foreground">
             Tibrewal & Tibrewal Pvt. Ltd.
           </p>

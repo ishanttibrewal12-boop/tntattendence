@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Download, Share2 } from 'lucide-react';
+import { Plus, Trash2, Download, Share2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,16 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { cn } from '@/lib/utils';
 
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher';
+  category: 'petroleum' | 'crusher' | 'office';
 }
 
 interface Advance {
@@ -37,9 +40,11 @@ const AdvanceTab = () => {
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Advance | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -73,7 +78,7 @@ const AdvanceTab = () => {
       staff_id: selectedStaffId,
       amount: parseFloat(amount),
       notes: notes || null,
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: format(selectedDate, 'yyyy-MM-dd'),
     });
 
     if (error) {
@@ -87,6 +92,7 @@ const AdvanceTab = () => {
     setSelectedStaffId('');
     setAmount('');
     setNotes('');
+    setSelectedDate(new Date());
     fetchData();
   };
 
@@ -197,6 +203,35 @@ const AdvanceTab = () => {
                 </Select>
               </div>
               <div>
+                <Label>Date</Label>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, 'dd MMM yyyy') : 'Select date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        if (date) setSelectedDate(date);
+                        setCalendarOpen(false);
+                      }}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
                 <Label>Amount (₹)</Label>
                 <Input
                   type="number"
@@ -240,6 +275,7 @@ const AdvanceTab = () => {
             <SelectItem value="all">All Staff</SelectItem>
             <SelectItem value="petroleum">Petroleum</SelectItem>
             <SelectItem value="crusher">Crusher</SelectItem>
+            <SelectItem value="office">Office</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -268,8 +304,8 @@ const AdvanceTab = () => {
                     {staffAdvances.map((adv) => (
                       <div key={adv.id} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
                         <div>
-                          <span className="text-muted-foreground">{format(new Date(adv.date), 'dd MMM')}</span>
-                          <span className="ml-2">₹{Number(adv.amount).toLocaleString()}</span>
+                          <span className="text-muted-foreground font-medium">{format(new Date(adv.date), 'dd MMM yyyy')}</span>
+                          <span className="ml-2 font-semibold">₹{Number(adv.amount).toLocaleString()}</span>
                           {adv.notes && <span className="text-xs text-muted-foreground ml-2">({adv.notes})</span>}
                         </div>
                         <Button
@@ -296,7 +332,7 @@ const AdvanceTab = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Advance</AlertDialogTitle>
             <AlertDialogDescription>
-              Add advance of ₹{amount} for {staffList.find(s => s.id === selectedStaffId)?.name}?
+              Add advance of ₹{amount} for {staffList.find(s => s.id === selectedStaffId)?.name} on {format(selectedDate, 'dd MMM yyyy')}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -312,7 +348,7 @@ const AdvanceTab = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Advance?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this advance of ₹{deleteConfirm?.amount}? This action cannot be undone.
+              Are you sure you want to delete this advance of ₹{deleteConfirm?.amount} from {deleteConfirm?.date ? format(new Date(deleteConfirm.date), 'dd MMM yyyy') : ''}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

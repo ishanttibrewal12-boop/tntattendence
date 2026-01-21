@@ -6,14 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, getDaysInMonth, startOfMonth, endOfMonth, getDay } from 'date-fns';
+import { format, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher';
+  category: 'petroleum' | 'crusher' | 'office';
   base_salary: number;
   notes: string | null;
 }
@@ -48,7 +48,7 @@ const SalaryTab = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [paidStaff, setPaidStaff] = useState<Set<string>>(new Set());
   const [confirmPay, setConfirmPay] = useState<{ staffId: string; calc: SalaryCalculation } | null>(null);
 
@@ -62,17 +62,8 @@ const SalaryTab = () => {
   }, [selectedMonth, selectedYear]);
 
   const getWorkingDaysInMonth = (year: number, month: number) => {
-    const daysInMonth = getDaysInMonth(new Date(year, month - 1));
-    let workingDays = 0;
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month - 1, day);
-      if (getDay(date) !== 0) { // Exclude Sundays
-        workingDays++;
-      }
-    }
-    
-    return workingDays;
+    // All days including Sundays are working days
+    return getDaysInMonth(new Date(year, month - 1));
   };
 
   const fetchData = async () => {
@@ -310,6 +301,7 @@ const SalaryTab = () => {
             <SelectItem value="all">All Staff</SelectItem>
             <SelectItem value="petroleum">Petroleum</SelectItem>
             <SelectItem value="crusher">Crusher</SelectItem>
+            <SelectItem value="office">Office</SelectItem>
           </SelectContent>
         </Select>
       </div>
