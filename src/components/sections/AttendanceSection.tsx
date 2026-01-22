@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as CalendarIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -17,7 +17,6 @@ interface Staff {
   id: string;
   name: string;
   category: 'petroleum' | 'crusher' | 'office';
-  phone: string | null;
 }
 
 interface AttendanceRecord {
@@ -53,6 +52,9 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
   // Navigate to prev/next day (Sundays are now working days)
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -69,7 +71,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
     const [staffRes, attendanceRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category, phone').eq('is_active', true).order('name'),
+      supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
       supabase.from('attendance').select('*').eq('date', dateStr),
     ]);
 
@@ -187,6 +189,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     doc.text(`Attendance Report - ${dateStr}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}`, 14, 30);
+    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 38);
 
     const filteredStaff = getFilteredStaff();
 
@@ -199,15 +202,14 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
       return [
         staff.name,
         staff.category,
-        staff.phone || '-',
         statusText,
       ];
     });
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Phone', 'Status']],
+      head: [['Name', 'Category', 'Status']],
       body: tableData,
-      startY: 40,
+      startY: 46,
     });
 
     doc.save(`attendance-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
@@ -237,11 +239,17 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
       message += `${staff.name}: ${statusText}\n`;
     });
 
+    message += `\n_Tibrewal Staff Manager_`;
+
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   const filteredStaff = getFilteredStaff();
+
+  // Calendar view helpers
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthDays = Array.from({ length: getDaysInMonth(new Date(calendarYear, calendarMonth - 1)) }, (_, i) => i + 1);
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -253,149 +261,234 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
         <h1 className="text-xl font-bold text-foreground">Attendance</h1>
       </div>
 
-      {/* Date Navigation with Calendar Picker */}
-      <Card className="mb-4">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}>
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" className="flex flex-col items-center">
-                  <p className="font-semibold text-foreground">{format(selectedDate, 'EEEE')}</p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <CalendarIcon className="h-3 w-3" />
-                    {format(selectedDate, 'dd MMM yyyy')}
-                  </p>
+      {/* View Toggle */}
+      <div className="flex gap-2 mb-4">
+        <Button 
+          variant={viewMode === 'list' ? 'default' : 'outline'} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setViewMode('list')}
+        >
+          Daily View
+        </Button>
+        <Button 
+          variant={viewMode === 'calendar' ? 'default' : 'outline'} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setViewMode('calendar')}
+        >
+          Calendar View
+        </Button>
+      </div>
+
+      {viewMode === 'list' && (
+        <>
+          {/* Date Navigation with Calendar Picker */}
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}>
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateSelect}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}>
-              <ChevronRight className="h-5 w-5" />
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" className="flex flex-col items-center">
+                      <p className="font-semibold text-foreground">{format(selectedDate, 'EEEE')}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <CalendarIcon className="h-3 w-3" />
+                        {format(selectedDate, 'dd MMM yyyy')}
+                      </p>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="center">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelect}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-10"
+              placeholder="Search staff..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Category Filter */}
+          <div className="mb-4">
+            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Staff</SelectItem>
+                <SelectItem value="petroleum">Petroleum</SelectItem>
+                <SelectItem value="crusher">Crusher</SelectItem>
+                <SelectItem value="office">Office</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-4 gap-1 mb-4">
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
+              All 1S
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
+              All 2S
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
+              All Abs
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
+              Clear
             </Button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          className="pl-10"
-          placeholder="Search staff..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+          {/* Export Actions */}
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            <Button variant="secondary" size="sm" onClick={exportToPDF}>
+              <Download className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
+            <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
+              <Share2 className="h-4 w-4 mr-2" />
+              WhatsApp
+            </Button>
+          </div>
 
-      {/* Category Filter */}
-      <div className="mb-4">
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Staff</SelectItem>
-            <SelectItem value="petroleum">Petroleum</SelectItem>
-            <SelectItem value="crusher">Crusher</SelectItem>
-            <SelectItem value="office">Office</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          {/* Legend */}
+          <div className="flex flex-wrap gap-2 mb-4 text-xs">
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 rounded bg-primary"></span> 2 Shifts
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 rounded bg-destructive"></span> Absent
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 rounded bg-muted border"></span> Not Marked
+            </span>
+          </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-1 mb-4">
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
-          All 1S
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
-          All 2S
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
-          All Abs
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
-          Clear
-        </Button>
-      </div>
+          <p className="text-xs text-muted-foreground mb-2">💡 Tap once to mark, tap again to cycle through statuses</p>
 
-      {/* Export Actions */}
-      <div className="grid grid-cols-2 gap-2 mb-6">
-        <Button variant="secondary" size="sm" onClick={exportToPDF}>
-          <Download className="h-4 w-4 mr-2" />
-          Download PDF
-        </Button>
-        <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
-          <Share2 className="h-4 w-4 mr-2" />
-          WhatsApp
-        </Button>
-      </div>
+          {/* Staff List */}
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : (
+            <div className="space-y-2">
+              {filteredStaff.map((staff) => {
+                const currentStatus = getStaffAttendance(staff.id);
+                return (
+                  <Card 
+                    key={staff.id} 
+                    className="cursor-pointer active:scale-[0.98] transition-transform"
+                    onClick={() => handleQuickTap(staff.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{staff.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {currentStatus ? (
+                            <span className={`px-3 py-1.5 rounded text-sm font-medium text-primary-foreground ${statusConfig[currentStatus].color}`}>
+                              {statusConfig[currentStatus].fullLabel}
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1.5 rounded text-sm font-medium border bg-muted text-muted-foreground">
+                              Not Marked
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-2 mb-4 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-primary"></span> 2 Shifts
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-destructive"></span> Absent
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-muted border"></span> Not Marked
-        </span>
-      </div>
+      {viewMode === 'calendar' && (
+        <>
+          {/* Month/Year Selection */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <Select value={calendarMonth.toString()} onValueChange={(v) => setCalendarMonth(parseInt(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month, i) => (
+                  <SelectItem key={i} value={(i + 1).toString()}>{month}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={calendarYear.toString()} onValueChange={(v) => setCalendarYear(parseInt(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[2024, 2025, 2026, 2027].map((year) => (
+                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <p className="text-xs text-muted-foreground mb-2">💡 Tap once to mark, tap again to cycle through statuses</p>
-
-      {/* Staff List */}
-      {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
-      ) : (
-        <div className="space-y-2">
-          {filteredStaff.map((staff) => {
-            const currentStatus = getStaffAttendance(staff.id);
-            const isPetroleum = staff.category === 'petroleum';
-            return (
-              <Card 
-                key={staff.id} 
-                className="cursor-pointer active:scale-[0.98] transition-transform"
-                onClick={() => handleQuickTap(staff.id)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">{staff.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Calendar View - {months[calendarMonth - 1]} {calendarYear}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                  <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
+                ))}
+                {/* Empty cells for alignment */}
+                {Array.from({ length: new Date(calendarYear, calendarMonth - 1, 1).getDay() === 0 ? 6 : new Date(calendarYear, calendarMonth - 1, 1).getDay() - 1 }).map((_, i) => (
+                  <div key={`empty-${i}`} className="p-1"></div>
+                ))}
+                {monthDays.map(day => {
+                  const dateStr = `${calendarYear}-${String(calendarMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isToday = format(new Date(), 'yyyy-MM-dd') === dateStr;
+                  return (
+                    <div 
+                      key={day} 
+                      className={`p-2 rounded text-center cursor-pointer hover:bg-muted/50 ${isToday ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => {
+                        setSelectedDate(new Date(calendarYear, calendarMonth - 1, day));
+                        setViewMode('list');
+                      }}
+                    >
+                      <div className="text-sm font-medium">{day}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {currentStatus ? (
-                        <span className={`px-3 py-1.5 rounded text-sm font-medium text-primary-foreground ${statusConfig[currentStatus].color}`}>
-                          {statusConfig[currentStatus].fullLabel}
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded text-sm font-medium border bg-muted text-muted-foreground">
-                          Not Marked
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4 text-center">Tap a date to view/edit attendance</p>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Confirmation Dialog */}

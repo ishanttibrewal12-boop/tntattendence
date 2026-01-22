@@ -123,6 +123,8 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
     
     doc.setFontSize(16);
     doc.text(`Monthly Attendance - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 22);
 
     const headers = ['Staff', ...monthDays.map(d => d.toString()), 'Shifts', 'Absent'];
     const tableData = filteredStaff.map((staff) => {
@@ -141,7 +143,7 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
     autoTable(doc, {
       head: [headers],
       body: tableData,
-      startY: 22,
+      startY: 28,
       styles: { fontSize: 6, cellPadding: 1 },
       headStyles: { fillColor: [0, 120, 212] },
     });
