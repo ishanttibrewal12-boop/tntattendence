@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings } from 'lucide-react';
+import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import PinLock from '@/components/PinLock';
 import AttendanceSection from '@/components/sections/AttendanceSection';
@@ -10,8 +10,10 @@ import MonthlyCalendarSection from '@/components/sections/MonthlyCalendarSection
 import BulkImportSection from '@/components/sections/BulkImportSection';
 import StaffProfileSection from '@/components/sections/StaffProfileSection';
 import SettingsSection from '@/components/sections/SettingsSection';
+import DailyReportSection from '@/components/sections/DailyReportSection';
+import companyLogo from '@/assets/company-logo.png';
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | null;
 
 const Home = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -31,7 +33,8 @@ const Home = () => {
     { id: 'staff-details' as SectionType, title: 'Staff Details', icon: UserCog, description: 'View & edit details', color: 'bg-chart-1' },
     { id: 'monthly-calendar' as SectionType, title: 'Monthly Report', icon: CalendarDays, description: 'Calendar view', color: 'bg-chart-2' },
     { id: 'staff-profile' as SectionType, title: 'Staff Profiles', icon: User, description: 'View & share profiles', color: 'bg-chart-3' },
-    { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload, description: 'Bulk operations', color: 'bg-chart-4' },
+    { id: 'daily-report' as SectionType, title: 'Daily Report', icon: FileText, description: 'All-in-one report', color: 'bg-chart-4' },
+    { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload, description: 'Bulk operations', color: 'bg-chart-5' },
   ];
 
   if (activeSection) {
@@ -45,6 +48,7 @@ const Home = () => {
         {activeSection === 'bulk-import' && <BulkImportSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'staff-profile' && <StaffProfileSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'settings' && <SettingsSection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'daily-report' && <DailyReportSection onBack={() => setActiveSection(null)} />}
       </div>
     );
   }
@@ -53,11 +57,10 @@ const Home = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-6 pt-4">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Users className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">TNT Staff Manager</h1>
-          </div>
-          <p className="text-muted-foreground text-sm">Contact: 9386469006</p>
+          <img src={companyLogo} alt="Tibrewal Staff Manager" className="h-20 w-20 mx-auto mb-3 object-contain" />
+          <h1 className="text-2xl font-bold text-foreground">Tibrewal Staff Manager</h1>
+          <p className="text-muted-foreground text-sm">Manager: Abhay Jalan</p>
+          <p className="text-muted-foreground text-xs">Contact: 6203229118</p>
         </div>
 
         <div className="space-y-3 mb-6">
@@ -65,7 +68,7 @@ const Home = () => {
             const Icon = section.icon;
             return (
               <Card key={section.id} className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98]" onClick={() => setActiveSection(section.id)}>
-                <CardContent className="p-5">
+                <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-xl ${section.color}`}><Icon className="h-6 w-6 text-primary-foreground" /></div>
                     <div className="flex-1">
@@ -86,7 +89,7 @@ const Home = () => {
             const Icon = section.icon;
             return (
               <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection(section.id)}>
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex flex-col items-center text-center gap-2">
                     <div className={`p-2 rounded-lg ${section.color}`}><Icon className="h-5 w-5 text-primary-foreground" /></div>
                     <div>

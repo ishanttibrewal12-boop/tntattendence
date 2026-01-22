@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share2, Calendar, User, Phone, Edit2, Save, X, Wallet, Search } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Calendar, User, Edit2, Save, X, Wallet, Search, Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -20,6 +20,7 @@ interface Staff {
   base_salary: number;
   notes: string | null;
   address: string | null;
+  photo_url: string | null;
 }
 
 interface AttendanceRecord {
@@ -53,6 +54,8 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   const [notesValue, setNotesValue] = useState('');
   const [confirmShare, setConfirmShare] = useState<'whatsapp' | 'pdf' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteAdvance, setDeleteAdvance] = useState<Advance | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -70,7 +73,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   }, [selectedStaffId, selectedMonth, selectedYear]);
 
   const fetchStaffList = async () => {
-    const { data } = await supabase.from('staff').select('id, name, category, phone, base_salary, notes, address').eq('is_active', true).order('name');
+    const { data } = await supabase.from('staff').select('id, name, category, phone, base_salary, notes, address, photo_url').eq('is_active', true).order('name');
     if (data) setStaffList(data as Staff[]);
     setIsLoading(false);
   };
@@ -116,6 +119,20 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     }
   };
 
+  const handleDeleteAdvance = async () => {
+    if (!deleteAdvance) return;
+    
+    const { error } = await supabase.from('advances').delete().eq('id', deleteAdvance.id);
+    if (error) {
+      toast.error('Failed to delete advance');
+      return;
+    }
+    
+    toast.success('Advance deleted');
+    setDeleteAdvance(null);
+    fetchStaffDetails();
+  };
+
   const getStats = () => {
     const totalShifts = attendance.reduce((sum, a) => {
       if (a.status === 'present') {
@@ -127,10 +144,9 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     const oneShiftDays = attendance.filter(a => a.status === 'present' && (a.shift_count || 1) === 1).length;
     const twoShiftDays = attendance.filter(a => a.status === 'present' && a.shift_count === 2).length;
     const absentDays = attendance.filter(a => a.status === 'absent').length;
-    const pendingAdvance = advances.filter(a => !a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0);
     const totalAdvance = advances.reduce((sum, a) => sum + Number(a.amount), 0);
 
-    return { totalShifts, oneShiftDays, twoShiftDays, absentDays, pendingAdvance, totalAdvance };
+    return { totalShifts, oneShiftDays, twoShiftDays, absentDays, totalAdvance };
   };
 
   const stats = selectedStaff ? getStats() : null;
@@ -138,6 +154,14 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   const filteredStaffList = staffList.filter(staff =>
     staff.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Calendar view helpers
+  const monthDays = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth - 1)) }, (_, i) => i + 1);
+  
+  const getAttendanceForDay = (day: number) => {
+    const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return attendance.find(a => a.date === dateStr);
+  };
 
   const generatePDFContent = () => {
     if (!selectedStaff || !stats) return null;
@@ -149,29 +173,27 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     
     doc.setFontSize(12);
     doc.text(`Category: ${selectedStaff.category}`, 14, 30);
-    doc.text(`Phone: ${selectedStaff.phone || 'N/A'}`, 14, 38);
-    doc.text(`Month: ${months[selectedMonth - 1]} ${selectedYear}`, 14, 46);
-    doc.text(`Contact: 9386469006`, 14, 54);
+    doc.text(`Month: ${months[selectedMonth - 1]} ${selectedYear}`, 14, 38);
+    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 46);
     
     if (selectedStaff.notes) {
-      doc.text(`Notes: ${selectedStaff.notes}`, 14, 62);
+      doc.text(`Notes: ${selectedStaff.notes}`, 14, 54);
     }
 
     doc.setFontSize(14);
-    doc.text('Attendance Summary', 14, 74);
+    doc.text('Attendance Summary', 14, 66);
     
     const summaryData = [
       ['Total Shifts', stats.totalShifts.toString()],
       ['1-Shift Days', stats.oneShiftDays.toString()],
       ['2-Shift Days', stats.twoShiftDays.toString()],
       ['Absent Days', stats.absentDays.toString()],
-      ['Pending Advance', `₹${stats.pendingAdvance.toLocaleString()}`],
       ['Total Advance Taken', `₹${stats.totalAdvance.toLocaleString()}`],
     ];
 
     autoTable(doc, {
       body: summaryData,
-      startY: 80,
+      startY: 72,
       theme: 'grid',
     });
 
@@ -200,7 +222,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
       const advanceData = advances.map(a => [
         format(new Date(a.date), 'dd MMM yyyy'),
         `₹${Number(a.amount).toLocaleString()}`,
-        a.is_deducted ? 'Deducted' : 'Pending',
+        a.is_deducted ? 'Deducted' : 'Active',
         a.notes || '-',
       ]);
 
@@ -229,7 +251,6 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     let message = `👤 *Staff Profile*\n\n`;
     message += `*Name:* ${selectedStaff.name}\n`;
     message += `*Category:* ${selectedStaff.category}\n`;
-    message += `*Phone:* ${selectedStaff.phone || 'N/A'}\n`;
     message += `*Month:* ${months[selectedMonth - 1]} ${selectedYear}\n\n`;
     
     if (selectedStaff.notes) {
@@ -243,7 +264,6 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     message += `• Absent Days: ${stats.absentDays}\n\n`;
     
     message += `💰 *Advance Summary*\n`;
-    message += `• Pending Advance: ₹${stats.pendingAdvance.toLocaleString()}\n`;
     message += `• Total Advance Taken: ₹${stats.totalAdvance.toLocaleString()}\n\n`;
 
     message += `📅 *Daily Record*\n`;
@@ -252,7 +272,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
       message += `${format(new Date(a.date), 'dd MMM')}: ${statusText}\n`;
     });
 
-    message += `\n📞 Contact: 9386469006`;
+    message += `\n_Tibrewal Staff Manager_`;
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
@@ -327,19 +347,17 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-3 rounded-full bg-primary/10">
-                  <User className="h-6 w-6 text-primary" />
+                  {selectedStaff.photo_url ? (
+                    <img src={selectedStaff.photo_url} alt={selectedStaff.name} className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <User className="h-6 w-6 text-primary" />
+                  )}
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-foreground">{selectedStaff.name}</h2>
                   <p className="text-sm text-muted-foreground capitalize">{selectedStaff.category}</p>
                 </div>
               </div>
-              {selectedStaff.phone && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  {selectedStaff.phone}
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -422,41 +440,103 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Pending Advance</span>
-                    <span className="font-bold text-destructive">₹{stats.pendingAdvance.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Total Advance Taken</span>
                     <span className="font-bold text-foreground">₹{stats.totalAdvance.toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Attendance List */}
-              <Card className="mb-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Attendance Record
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {attendance.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No attendance records</p>
-                  ) : (
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {attendance.map((record, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm py-1 border-b border-border last:border-0">
-                          <span>{format(new Date(record.date), 'dd MMM yyyy')}</span>
-                          <span className={record.status === 'present' ? 'text-green-600 font-medium' : 'text-destructive'}>
-                            {record.status === 'present' ? `${record.shift_count || 1} Shift` : 'Absent'}
-                          </span>
-                        </div>
+              {/* View Toggle */}
+              <div className="flex gap-2 mb-4">
+                <Button 
+                  variant={viewMode === 'list' ? 'default' : 'outline'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setViewMode('list')}
+                >
+                  List View
+                </Button>
+                <Button 
+                  variant={viewMode === 'calendar' ? 'default' : 'outline'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setViewMode('calendar')}
+                >
+                  Calendar View
+                </Button>
+              </div>
+
+              {/* Calendar View */}
+              {viewMode === 'calendar' && (
+                <Card className="mb-4">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Attendance Calendar
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                        <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
                       ))}
+                      {/* Empty cells for alignment */}
+                      {Array.from({ length: new Date(selectedYear, selectedMonth - 1, 1).getDay() === 0 ? 6 : new Date(selectedYear, selectedMonth - 1, 1).getDay() - 1 }).map((_, i) => (
+                        <div key={`empty-${i}`} className="p-1"></div>
+                      ))}
+                      {monthDays.map(day => {
+                        const record = getAttendanceForDay(day);
+                        let bgColor = 'bg-muted/30';
+                        let text = '-';
+                        if (record) {
+                          if (record.status === 'absent') {
+                            bgColor = 'bg-destructive text-destructive-foreground';
+                            text = 'A';
+                          } else if (record.status === 'present') {
+                            const shifts = record.shift_count || 1;
+                            bgColor = shifts === 2 ? 'bg-primary text-primary-foreground' : 'bg-green-500 text-primary-foreground';
+                            text = shifts.toString();
+                          }
+                        }
+                        return (
+                          <div key={day} className={`p-1 rounded text-center min-h-[32px] ${bgColor}`}>
+                            <div className="text-[10px]">{day}</div>
+                            <div className="text-xs font-bold">{text}</div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Attendance List */}
+              {viewMode === 'list' && (
+                <Card className="mb-4">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Attendance Record
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {attendance.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No attendance records</p>
+                    ) : (
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {attendance.map((record, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm py-1 border-b border-border last:border-0">
+                            <span>{format(new Date(record.date), 'dd MMM yyyy')}</span>
+                            <span className={record.status === 'present' ? 'text-green-600 font-medium' : 'text-destructive'}>
+                              {record.status === 'present' ? `${record.shift_count || 1} Shift` : 'Absent'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Advance History */}
               {advances.length > 0 && (
@@ -475,11 +555,19 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                             <span>{format(new Date(advance.date), 'dd MMM yyyy')}</span>
                             {advance.notes && <span className="text-xs text-muted-foreground ml-2">({advance.notes})</span>}
                           </div>
-                          <div className="text-right">
+                          <div className="flex items-center gap-2">
                             <span className="font-medium">₹{Number(advance.amount).toLocaleString()}</span>
-                            <span className={`ml-2 text-xs ${advance.is_deducted ? 'text-green-600' : 'text-destructive'}`}>
+                            <span className={`text-xs ${advance.is_deducted ? 'text-green-600' : 'text-muted-foreground'}`}>
                               {advance.is_deducted ? '✓' : '○'}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => setDeleteAdvance(advance)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -518,6 +606,22 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
             <AlertDialogAction onClick={confirmShare === 'pdf' ? exportToPDF : shareToWhatsApp}>
               Confirm
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Advance Dialog */}
+      <AlertDialog open={!!deleteAdvance} onOpenChange={() => setDeleteAdvance(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Advance?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this advance of ₹{deleteAdvance?.amount} from {deleteAdvance?.date ? format(new Date(deleteAdvance.date), 'dd MMM yyyy') : ''}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAdvance}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

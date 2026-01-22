@@ -16,7 +16,7 @@ const ForgotPin = ({ onBack, onSuccess }: ForgotPinProps) => {
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const CORRECT_PHONE = '9386469006';
+  const CORRECT_PHONE = '6203229118';
   const CORRECT_OTP = '8465';
 
   const handleSendOtp = async () => {
@@ -173,7 +173,7 @@ const ForgotPin = ({ onBack, onSuccess }: ForgotPinProps) => {
           )}
 
           <p className="text-xs text-center text-muted-foreground">
-            Tibrewal & Tibrewal Pvt. Ltd.
+            Tibrewal Staff Manager
           </p>
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Download, Share2, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Trash2, Download, Share2, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { cn } from '@/lib/utils';
@@ -45,16 +45,30 @@ const AdvanceTab = () => {
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Advance | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  
+  // Monthly calendar view
+  const [viewMonth, setViewMonth] = useState(new Date().getMonth() + 1);
+  const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [viewMonth, viewYear]);
 
   const fetchData = async () => {
     setIsLoading(true);
+    
+    const startDate = format(startOfMonth(new Date(viewYear, viewMonth - 1)), 'yyyy-MM-dd');
+    const endDate = format(endOfMonth(new Date(viewYear, viewMonth - 1)), 'yyyy-MM-dd');
+
     const [staffRes, advancesRes] = await Promise.all([
       supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
-      supabase.from('advances').select('*').eq('is_deducted', false).order('date', { ascending: false }),
+      supabase.from('advances').select('*').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
     ]);
 
     if (staffRes.data) setStaffList(staffRes.data as Staff[]);
@@ -125,39 +139,57 @@ const AdvanceTab = () => {
 
   const totalAdvances = advances.reduce((sum, a) => sum + Number(a.amount), 0);
 
+  // Get advances for a specific day
+  const getAdvancesForDay = (day: number) => {
+    const dateStr = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return advances.filter(a => a.date === dateStr);
+  };
+
+  const monthDays = Array.from({ length: getDaysInMonth(new Date(viewYear, viewMonth - 1)) }, (_, i) => i + 1);
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     
     doc.setFontSize(18);
-    doc.text('Pending Advances Report', 14, 20);
+    doc.text(`Advance Report - ${months[viewMonth - 1]} ${viewYear}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy')}`, 14, 30);
-    doc.text(`Total Pending: ₹${totalAdvances.toLocaleString()}`, 14, 38);
+    doc.text(`Total: ₹${totalAdvances.toLocaleString()}`, 14, 38);
+    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 46);
 
-    const tableData = staffWithAdvances.map((staff) => [
-      staff.name,
-      staff.category,
-      `₹${getStaffTotalAdvance(staff.id).toLocaleString()}`,
+    const tableData = advances.map((adv) => [
+      adv.staff?.name || 'Unknown',
+      adv.staff?.category || '-',
+      format(new Date(adv.date), 'dd MMM yyyy'),
+      `₹${Number(adv.amount).toLocaleString()}`,
+      adv.notes || '-',
     ]);
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Pending Advance']],
+      head: [['Name', 'Category', 'Date', 'Amount', 'Notes']],
       body: tableData,
-      startY: 48,
+      startY: 54,
     });
 
-    doc.save(`advances-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`advances-${viewMonth}-${viewYear}.pdf`);
     toast.success('PDF downloaded');
   };
 
   const shareToWhatsApp = () => {
-    let message = `💰 *Pending Advances Report*\n`;
-    message += `Date: ${format(new Date(), 'dd MMM yyyy')}\n\n`;
-    message += `Total Pending: ₹${totalAdvances.toLocaleString()}\n\n`;
+    let message = `💰 *Advance Report - ${months[viewMonth - 1]} ${viewYear}*\n`;
+    message += `Total: ₹${totalAdvances.toLocaleString()}\n\n`;
 
     staffWithAdvances.forEach((staff) => {
-      message += `${staff.name} (${staff.category}): ₹${getStaffTotalAdvance(staff.id).toLocaleString()}\n`;
+      const total = getStaffTotalAdvance(staff.id);
+      const staffAdvances = getStaffAdvances(staff.id);
+      message += `*${staff.name}* (${staff.category}): ₹${total.toLocaleString()}\n`;
+      staffAdvances.forEach(adv => {
+        message += `  • ${format(new Date(adv.date), 'dd MMM')}: ₹${Number(adv.amount).toLocaleString()}\n`;
+      });
+      message += '\n';
     });
+
+    message += '_Tibrewal Staff Manager_';
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
@@ -165,16 +197,40 @@ const AdvanceTab = () => {
 
   return (
     <div>
+      {/* Month/Year Selection */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <Select value={viewMonth.toString()} onValueChange={(v) => setViewMonth(parseInt(v))}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {months.map((month, i) => (
+              <SelectItem key={i} value={(i + 1).toString()}>{month}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={viewYear.toString()} onValueChange={(v) => setViewYear(parseInt(v))}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[2024, 2025, 2026, 2027].map((year) => (
+              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Summary Card */}
       <Card className="mb-4 bg-primary text-primary-foreground">
         <CardContent className="p-4">
-          <p className="text-sm opacity-90">Total Pending Advances</p>
+          <p className="text-sm opacity-90">Total Advances - {months[viewMonth - 1]}</p>
           <p className="text-2xl font-bold">₹{totalAdvances.toLocaleString()}</p>
         </CardContent>
       </Card>
 
-      {/* Actions */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* View Toggle & Actions */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="text-xs">
@@ -255,13 +311,24 @@ const AdvanceTab = () => {
           </DialogContent>
         </Dialog>
 
-        <Button variant="secondary" size="sm" className="text-xs" onClick={exportToPDF}>
-          <Download className="h-4 w-4 mr-1" />
-          PDF
+        <Button 
+          variant={viewMode === 'list' ? 'default' : 'outline'} 
+          size="sm" 
+          className="text-xs"
+          onClick={() => setViewMode('list')}
+        >
+          List
         </Button>
-        <Button variant="secondary" size="sm" className="text-xs" onClick={shareToWhatsApp}>
-          <Share2 className="h-4 w-4 mr-1" />
-          Share
+        <Button 
+          variant={viewMode === 'calendar' ? 'default' : 'outline'} 
+          size="sm" 
+          className="text-xs"
+          onClick={() => setViewMode('calendar')}
+        >
+          Calendar
+        </Button>
+        <Button variant="secondary" size="sm" className="text-xs" onClick={exportToPDF}>
+          <Download className="h-4 w-4" />
         </Button>
       </div>
 
@@ -280,11 +347,49 @@ const AdvanceTab = () => {
         </Select>
       </div>
 
-      {/* Advances List */}
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Monthly Calendar View</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs">
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
+              ))}
+              {/* Empty cells for alignment */}
+              {Array.from({ length: new Date(viewYear, viewMonth - 1, 1).getDay() === 0 ? 6 : new Date(viewYear, viewMonth - 1, 1).getDay() - 1 }).map((_, i) => (
+                <div key={`empty-${i}`} className="p-1"></div>
+              ))}
+              {monthDays.map(day => {
+                const dayAdvances = getAdvancesForDay(day);
+                const dayTotal = dayAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
+                return (
+                  <div 
+                    key={day} 
+                    className={cn(
+                      "p-1 rounded text-center min-h-[40px]",
+                      dayTotal > 0 ? "bg-destructive/10 border border-destructive/30" : "bg-muted/30"
+                    )}
+                  >
+                    <div className="text-xs font-medium">{day}</div>
+                    {dayTotal > 0 && (
+                      <div className="text-[10px] text-destructive font-bold">₹{dayTotal.toLocaleString()}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* List View */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : staffWithAdvances.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">No pending advances</div>
+        <div className="text-center py-8 text-muted-foreground">No advances in {months[viewMonth - 1]}</div>
       ) : (
         <div className="space-y-3">
           {staffWithAdvances.map((staff) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calculator, Download, Share2, Check } from 'lucide-react';
+import { Calculator, Download, Share2, Check, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -51,6 +51,7 @@ const SalaryTab = () => {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [paidStaff, setPaidStaff] = useState<Set<string>>(new Set());
   const [confirmPay, setConfirmPay] = useState<{ staffId: string; calc: SalaryCalculation } | null>(null);
+  const [confirmUnpay, setConfirmUnpay] = useState<{ staffId: string; name: string } | null>(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -185,6 +186,31 @@ const SalaryTab = () => {
     fetchData();
   };
 
+  const markAsUnpaid = async () => {
+    if (!confirmUnpay) return;
+    const { staffId } = confirmUnpay;
+
+    // Update payroll record to unpaid
+    const { error } = await supabase
+      .from('payroll')
+      .update({ is_paid: false, paid_date: null })
+      .eq('staff_id', staffId)
+      .eq('month', selectedMonth)
+      .eq('year', selectedYear);
+
+    if (error) {
+      toast.error('Failed to mark as unpaid');
+      return;
+    }
+
+    // Revert advances to not deducted (optional - uncomment if needed)
+    // await supabase.from('advances').update({ is_deducted: false }).eq('staff_id', staffId);
+
+    toast.success('Marked as unpaid');
+    setConfirmUnpay(null);
+    fetchData();
+  };
+
   const filteredSalaryData = categoryFilter === 'all' 
     ? salaryData 
     : salaryData.filter(s => s.category === categoryFilter);
@@ -200,6 +226,7 @@ const SalaryTab = () => {
     doc.setFontSize(12);
     doc.text(`Total Payable: ₹${totalNetSalary.toLocaleString()}`, 14, 30);
     doc.text(`Total Advances Deducted: ₹${totalAdvances.toLocaleString()}`, 14, 38);
+    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 46);
 
     const tableData = filteredSalaryData.map((s) => [
       s.name,
@@ -215,7 +242,7 @@ const SalaryTab = () => {
     autoTable(doc, {
       head: [['Name', 'Category', 'Base', 'Shifts', 'Earned', 'Advance', 'Net', 'Status']],
       body: tableData,
-      startY: 48,
+      startY: 54,
       styles: { fontSize: 8 },
     });
 
@@ -232,6 +259,8 @@ const SalaryTab = () => {
       const status = paidStaff.has(s.staffId) ? '✅' : '⏳';
       message += `${status} ${s.name}: ₹${s.netSalary.toLocaleString()} (${s.totalShifts} shifts)\n`;
     });
+
+    message += `\n_Tibrewal Staff Manager_`;
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
@@ -256,7 +285,7 @@ const SalaryTab = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[2024, 2025, 2026].map((year) => (
+            {[2024, 2025, 2026, 2027].map((year) => (
               <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
             ))}
           </SelectContent>
@@ -348,7 +377,17 @@ const SalaryTab = () => {
                     </div>
                   </div>
 
-                  {!isPaid && (
+                  {isPaid ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setConfirmUnpay({ staffId: calc.staffId, name: calc.name })}
+                    >
+                      <Undo2 className="h-4 w-4 mr-2" />
+                      Mark as Unpaid
+                    </Button>
+                  ) : (
                     <Button
                       size="sm"
                       className="w-full"
@@ -365,19 +404,36 @@ const SalaryTab = () => {
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Confirm Pay Dialog */}
       <AlertDialog open={!!confirmPay} onOpenChange={() => setConfirmPay(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
             <AlertDialogDescription>
               Mark {confirmPay?.calc.name}'s salary (₹{confirmPay?.calc.netSalary.toLocaleString()}) as paid? 
-              This will also deduct the pending advance of ₹{confirmPay?.calc.totalAdvance.toLocaleString()}.
+              This will also deduct the advance of ₹{confirmPay?.calc.totalAdvance.toLocaleString()}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={markAsPaid}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Unpay Dialog */}
+      <AlertDialog open={!!confirmUnpay} onOpenChange={() => setConfirmUnpay(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revert Payment Status</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark {confirmUnpay?.name}'s salary as unpaid? 
+              This will reverse the payment status.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={markAsUnpaid}>Confirm</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
