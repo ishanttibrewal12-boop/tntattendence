@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText } from 'lucide-react';
+import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, BarChart3 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import PinLock from '@/components/PinLock';
 import AttendanceSection from '@/components/sections/AttendanceSection';
@@ -11,9 +11,13 @@ import BulkImportSection from '@/components/sections/BulkImportSection';
 import StaffProfileSection from '@/components/sections/StaffProfileSection';
 import SettingsSection from '@/components/sections/SettingsSection';
 import DailyReportSection from '@/components/sections/DailyReportSection';
+import CalculatorSection from '@/components/sections/CalculatorSection';
+import PhotoGallerySection from '@/components/sections/PhotoGallerySection';
+import RemindersSection from '@/components/sections/RemindersSection';
+import Dashboard from '@/pages/Dashboard';
 import companyLogo from '@/assets/company-logo.png';
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'dashboard' | null;
 
 const Home = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -30,11 +34,18 @@ const Home = () => {
   ];
 
   const extraSections = [
-    { id: 'staff-details' as SectionType, title: 'Staff Details', icon: UserCog, description: 'View & edit details', color: 'bg-chart-1' },
-    { id: 'monthly-calendar' as SectionType, title: 'Monthly Report', icon: CalendarDays, description: 'Calendar view', color: 'bg-chart-2' },
-    { id: 'staff-profile' as SectionType, title: 'Staff Profiles', icon: User, description: 'View & share profiles', color: 'bg-chart-3' },
-    { id: 'daily-report' as SectionType, title: 'Daily Report', icon: FileText, description: 'All-in-one report', color: 'bg-chart-4' },
-    { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload, description: 'Bulk operations', color: 'bg-chart-5' },
+    { id: 'dashboard' as SectionType, title: 'Dashboard', icon: BarChart3, description: 'Analytics & Charts', color: 'bg-chart-1' },
+    { id: 'staff-details' as SectionType, title: 'Staff Details', icon: UserCog, description: 'View & edit details', color: 'bg-chart-2' },
+    { id: 'monthly-calendar' as SectionType, title: 'Monthly Report', icon: CalendarDays, description: 'Calendar view', color: 'bg-chart-3' },
+    { id: 'staff-profile' as SectionType, title: 'Staff Profiles', icon: User, description: 'View & share profiles', color: 'bg-chart-4' },
+    { id: 'daily-report' as SectionType, title: 'Daily Report', icon: FileText, description: 'All-in-one report', color: 'bg-chart-5' },
+  ];
+
+  const moreSections = [
+    { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator, description: 'Quick calculations', color: 'bg-primary' },
+    { id: 'photo-gallery' as SectionType, title: 'Photo Gallery', icon: Image, description: 'Daily photos', color: 'bg-secondary' },
+    { id: 'reminders' as SectionType, title: 'Reminders', icon: Bell, description: 'Set notifications', color: 'bg-accent-foreground' },
+    { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload, description: 'Bulk operations', color: 'bg-muted-foreground' },
   ];
 
   if (activeSection) {
@@ -49,6 +60,10 @@ const Home = () => {
         {activeSection === 'staff-profile' && <StaffProfileSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'settings' && <SettingsSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'daily-report' && <DailyReportSection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'calculator' && <CalculatorSection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'photo-gallery' && <PhotoGallerySection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'reminders' && <RemindersSection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'dashboard' && <Dashboard onBack={() => setActiveSection(null)} />}
       </div>
     );
   }
@@ -83,9 +98,29 @@ const Home = () => {
           })}
         </div>
 
-        <p className="text-xs text-muted-foreground mb-2 px-1">More Options</p>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="text-xs text-muted-foreground mb-2 px-1">Reports & Profiles</p>
+        <div className="grid grid-cols-2 gap-3 mb-4">
           {extraSections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection(section.id)}>
+                <CardContent className="p-3">
+                  <div className="flex flex-col items-center text-center gap-2">
+                    <div className={`p-2 rounded-lg ${section.color}`}><Icon className="h-5 w-5 text-primary-foreground" /></div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{section.title}</p>
+                      <p className="text-xs text-muted-foreground">{section.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-muted-foreground mb-2 px-1">More Tools</p>
+        <div className="grid grid-cols-2 gap-3">
+          {moreSections.map((section) => {
             const Icon = section.icon;
             return (
               <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection(section.id)}>
