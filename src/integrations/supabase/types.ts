@@ -154,6 +154,33 @@ export type Database = {
           },
         ]
       }
+      daily_photos: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          photo_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll: {
         Row: {
           absent_days: number
@@ -221,6 +248,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reminders: {
+        Row: {
+          created_at: string
+          id: string
+          is_sent: boolean
+          message: string | null
+          reminder_date: string
+          reminder_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_sent?: boolean
+          message?: string | null
+          reminder_date: string
+          reminder_time?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_sent?: boolean
+          message?: string | null
+          reminder_date?: string
+          reminder_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       staff: {
         Row: {

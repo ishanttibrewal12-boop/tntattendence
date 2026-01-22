@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Download, Share2, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Download, Share2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, FileSpreadsheet, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,12 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { cn } from '@/lib/utils';
+import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
 
 interface Staff {
   id: string;
@@ -50,6 +52,10 @@ const AdvanceTab = () => {
   const [viewMonth, setViewMonth] = useState(new Date().getMonth() + 1);
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  
+  // Bulk selection
+  const [selectedAdvances, setSelectedAdvances] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -123,6 +129,43 @@ const AdvanceTab = () => {
     fetchData();
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedAdvances.size === 0) return;
+
+    const { error } = await supabase
+      .from('advances')
+      .delete()
+      .in('id', Array.from(selectedAdvances));
+
+    if (error) {
+      toast.error('Failed to delete advances');
+      return;
+    }
+
+    toast.success(`${selectedAdvances.size} advances deleted`);
+    setSelectedAdvances(new Set());
+    setBulkDeleteConfirm(false);
+    fetchData();
+  };
+
+  const toggleAdvanceSelection = (id: string) => {
+    const newSelected = new Set(selectedAdvances);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedAdvances(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedAdvances.size === advances.length) {
+      setSelectedAdvances(new Set());
+    } else {
+      setSelectedAdvances(new Set(advances.map(a => a.id)));
+    }
+  };
+
   const getStaffAdvances = (staffId: string) => {
     return advances.filter((a) => a.staff_id === staffId);
   };
@@ -155,7 +198,7 @@ const AdvanceTab = () => {
     doc.setFontSize(12);
     doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy')}`, 14, 30);
     doc.text(`Total: ₹${totalAdvances.toLocaleString()}`, 14, 38);
-    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 46);
+    doc.text(REPORT_FOOTER, 14, 46);
 
     const tableData = advances.map((adv) => [
       adv.staff?.name || 'Unknown',
@@ -171,8 +214,25 @@ const AdvanceTab = () => {
       startY: 54,
     });
 
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    addReportNotes(doc, finalY);
+
     doc.save(`advances-${viewMonth}-${viewYear}.pdf`);
     toast.success('PDF downloaded');
+  };
+
+  const exportToExcelFile = () => {
+    const headers = ['Name', 'Category', 'Date', 'Amount', 'Notes'];
+    const data = advances.map((adv) => [
+      adv.staff?.name || 'Unknown',
+      adv.staff?.category || '-',
+      format(new Date(adv.date), 'dd MMM yyyy'),
+      `₹${Number(adv.amount).toLocaleString()}`,
+      adv.notes || '-',
+    ]);
+    
+    exportToExcel(data, headers, `advances-${viewMonth}-${viewYear}`, 'Advances', `Advance Report - ${months[viewMonth - 1]} ${viewYear}`);
+    toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
@@ -330,7 +390,21 @@ const AdvanceTab = () => {
         <Button variant="secondary" size="sm" className="text-xs" onClick={exportToPDF}>
           <Download className="h-4 w-4" />
         </Button>
+        <Button variant="secondary" size="sm" className="text-xs" onClick={exportToExcelFile}>
+          <FileSpreadsheet className="h-4 w-4" />
+        </Button>
       </div>
+
+      {/* Bulk Actions */}
+      {selectedAdvances.size > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-2 bg-destructive/10 rounded-lg">
+          <span className="text-sm flex-1">{selectedAdvances.size} selected</span>
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteConfirm(true)}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
 
       {/* Category Filter */}
       <div className="mb-4">
@@ -392,6 +466,15 @@ const AdvanceTab = () => {
         <div className="text-center py-8 text-muted-foreground">No advances in {months[viewMonth - 1]}</div>
       ) : (
         <div className="space-y-3">
+          {/* Select All */}
+          <div className="flex items-center gap-2 mb-2">
+            <Checkbox
+              checked={selectedAdvances.size === advances.length && advances.length > 0}
+              onCheckedChange={toggleSelectAll}
+            />
+            <span className="text-sm text-muted-foreground">Select All</span>
+          </div>
+          
           {staffWithAdvances.map((staff) => {
             const staffAdvances = getStaffAdvances(staff.id);
             const total = getStaffTotalAdvance(staff.id);
@@ -408,10 +491,16 @@ const AdvanceTab = () => {
                   <div className="space-y-1">
                     {staffAdvances.map((adv) => (
                       <div key={adv.id} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
-                        <div>
-                          <span className="text-muted-foreground font-medium">{format(new Date(adv.date), 'dd MMM yyyy')}</span>
-                          <span className="ml-2 font-semibold">₹{Number(adv.amount).toLocaleString()}</span>
-                          {adv.notes && <span className="text-xs text-muted-foreground ml-2">({adv.notes})</span>}
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedAdvances.has(adv.id)}
+                            onCheckedChange={() => toggleAdvanceSelection(adv.id)}
+                          />
+                          <div>
+                            <span className="text-muted-foreground font-medium">{format(new Date(adv.date), 'dd MMM yyyy')}</span>
+                            <span className="ml-2 font-semibold">₹{Number(adv.amount).toLocaleString()}</span>
+                            {adv.notes && <span className="text-xs text-muted-foreground ml-2">({adv.notes})</span>}
+                          </div>
                         </div>
                         <Button
                           variant="ghost"
@@ -459,6 +548,22 @@ const AdvanceTab = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAdvance}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedAdvances.size} Advances?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedAdvances.size} selected advances? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete}>Delete All</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

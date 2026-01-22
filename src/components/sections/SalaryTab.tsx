@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calculator, Download, Share2, Check, Undo2 } from 'lucide-react';
+import { Calculator, Download, Share2, Check, Undo2, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { format, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
+import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
 interface Staff {
   id: string;
   name: string;
@@ -226,7 +226,7 @@ const SalaryTab = () => {
     doc.setFontSize(12);
     doc.text(`Total Payable: ₹${totalNetSalary.toLocaleString()}`, 14, 30);
     doc.text(`Total Advances Deducted: ₹${totalAdvances.toLocaleString()}`, 14, 38);
-    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 46);
+    doc.text(REPORT_FOOTER, 14, 46);
 
     const tableData = filteredSalaryData.map((s) => [
       s.name,
@@ -246,8 +246,28 @@ const SalaryTab = () => {
       styles: { fontSize: 8 },
     });
 
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    addReportNotes(doc, finalY);
+
     doc.save(`salary-${selectedMonth}-${selectedYear}.pdf`);
     toast.success('PDF downloaded');
+  };
+
+  const exportToExcelFile = () => {
+    const headers = ['Name', 'Category', 'Base Salary', 'Shifts', 'Earned', 'Advance', 'Net Salary', 'Status'];
+    const data = filteredSalaryData.map((s) => [
+      s.name,
+      s.category,
+      `₹${s.baseSalary.toLocaleString()}`,
+      s.totalShifts,
+      `₹${s.earnedSalary.toLocaleString()}`,
+      `₹${s.totalAdvance.toLocaleString()}`,
+      `₹${s.netSalary.toLocaleString()}`,
+      paidStaff.has(s.staffId) ? 'Paid' : 'Pending',
+    ]);
+    
+    exportToExcel(data, headers, `salary-${selectedMonth}-${selectedYear}`, 'Salary Report', `Salary Report - ${months[selectedMonth - 1]} ${selectedYear}`);
+    toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
@@ -309,14 +329,18 @@ const SalaryTab = () => {
       </div>
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         <Button variant="secondary" size="sm" onClick={exportToPDF}>
-          <Download className="h-4 w-4 mr-2" />
-          Download PDF
+          <Download className="h-4 w-4 mr-1" />
+          PDF
+        </Button>
+        <Button variant="secondary" size="sm" onClick={exportToExcelFile}>
+          <FileSpreadsheet className="h-4 w-4 mr-1" />
+          Excel
         </Button>
         <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
-          <Share2 className="h-4 w-4 mr-2" />
-          WhatsApp
+          <Share2 className="h-4 w-4 mr-1" />
+          Share
         </Button>
       </div>
 
