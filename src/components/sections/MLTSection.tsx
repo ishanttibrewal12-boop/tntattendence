@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, User, Calendar, Wallet, FileText, Download, Share2, Search, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Calendar, Wallet, FileText, Download, Share2, Search, Check, Camera, UserCog, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,8 @@ interface MLTStaff {
   notes: string | null;
   base_salary: number;
   is_active: boolean;
+  photo_url: string | null;
+  designation: string | null;
 }
 
 interface MLTAttendance {
@@ -43,13 +45,14 @@ interface MLTAdvance {
   amount: number;
   date: string;
   notes: string | null;
+  is_deducted: boolean;
 }
 
 interface MLTSectionProps {
   onBack: () => void;
 }
 
-type ViewType = 'home' | 'staff' | 'attendance' | 'advances' | 'reports' | 'profile';
+type ViewType = 'home' | 'staff' | 'attendance' | 'advances' | 'reports' | 'profile' | 'staff-details' | 'salary';
 type AttendanceStatus = '1shift' | '2shift' | 'absent' | 'not_marked';
 
 const statusConfig = {
@@ -64,12 +67,13 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [staffList, setStaffList] = useState<MLTStaff[]>([]);
   const [attendance, setAttendance] = useState<MLTAttendance[]>([]);
   const [advances, setAdvances] = useState<MLTAdvance[]>([]);
+  const [monthlyAttendance, setMonthlyAttendance] = useState<MLTAttendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStaff, setSelectedStaff] = useState<MLTStaff | null>(null);
   
   // Staff form
   const [showAddStaff, setShowAddStaff] = useState(false);
-  const [newStaff, setNewStaff] = useState({ name: '', category: 'driver' as 'driver' | 'khalasi', phone: '', address: '', notes: '', base_salary: 0 });
+  const [newStaff, setNewStaff] = useState({ name: '', category: 'driver' as 'driver' | 'khalasi', phone: '', address: '', notes: '', base_salary: 0, designation: '' });
   
   // Attendance
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -84,6 +88,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [advanceDate, setAdvanceDate] = useState(new Date());
   const [advanceNotes, setAdvanceNotes] = useState('');
   const [selectedAdvances, setSelectedAdvances] = useState<string[]>([]);
+  const [advanceCalendarOpen, setAdvanceCalendarOpen] = useState(false);
   
   // Bulk delete
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
@@ -93,6 +98,16 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   // Monthly report
   const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
   const [reportYear, setReportYear] = useState(new Date().getFullYear());
+
+  // Photo upload
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Editing staff
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', notes: '', designation: '' });
+
+  // Salary
+  const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number, isPaid: boolean }}>();
 
   useEffect(() => {
     fetchData();
@@ -105,16 +120,31 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     const daysInMonth = getDaysInMonth(new Date(reportYear, reportMonth - 1));
     const endDate = `${reportYear}-${String(reportMonth).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
-    const [staffRes, attendanceRes, advancesRes, monthlyAdvancesRes] = await Promise.all([
+    const [staffRes, attendanceRes, advancesRes, monthlyAttendanceRes] = await Promise.all([
       supabase.from('mlt_staff').select('*').eq('is_active', true).order('name'),
       supabase.from('mlt_attendance').select('*').eq('date', dateStr),
       supabase.from('mlt_advances').select('*').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
-      supabase.from('mlt_advances').select('*').order('date', { ascending: false }),
+      supabase.from('mlt_attendance').select('*').gte('date', startDate).lte('date', endDate),
     ]);
 
     if (staffRes.data) setStaffList(staffRes.data as MLTStaff[]);
     if (attendanceRes.data) setAttendance(attendanceRes.data as MLTAttendance[]);
-    if (advancesRes.data || monthlyAdvancesRes.data) setAdvances((advancesRes.data || monthlyAdvancesRes.data) as MLTAdvance[]);
+    if (advancesRes.data) setAdvances(advancesRes.data as MLTAdvance[]);
+    if (monthlyAttendanceRes.data) setMonthlyAttendance(monthlyAttendanceRes.data as MLTAttendance[]);
+    
+    // Calculate salary data
+    if (staffRes.data && monthlyAttendanceRes.data && advancesRes.data) {
+      const salaries: {[staffId: string]: { totalShifts: number, totalAdvance: number, isPaid: boolean }} = {};
+      staffRes.data.forEach((staff: MLTStaff) => {
+        const staffAttendance = monthlyAttendanceRes.data.filter((a: MLTAttendance) => a.staff_id === staff.id);
+        const totalShifts = staffAttendance.reduce((sum: number, a: MLTAttendance) => sum + (a.shift_count || 1), 0);
+        const staffAdvances = advancesRes.data.filter((a: MLTAdvance) => a.staff_id === staff.id);
+        const totalAdvance = staffAdvances.reduce((sum: number, a: MLTAdvance) => sum + Number(a.amount), 0);
+        salaries[staff.id] = { totalShifts, totalAdvance, isPaid: false };
+      });
+      setSalaryData(salaries);
+    }
+    
     setIsLoading(false);
   };
 
@@ -131,6 +161,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       address: newStaff.address || null,
       notes: newStaff.notes || null,
       base_salary: newStaff.base_salary,
+      designation: newStaff.designation || null,
     });
 
     if (error) {
@@ -140,7 +171,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
     toast.success('Staff added');
     setShowAddStaff(false);
-    setNewStaff({ name: '', category: 'driver', phone: '', address: '', notes: '', base_salary: 0 });
+    setNewStaff({ name: '', category: 'driver', phone: '', address: '', notes: '', base_salary: 0, designation: '' });
     fetchData();
   };
 
@@ -240,6 +271,53 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     fetchData();
   };
 
+  const updateStaffDetails = async () => {
+    if (!selectedStaff) return;
+
+    const { error } = await supabase.from('mlt_staff').update({
+      name: editForm.name,
+      phone: editForm.phone || null,
+      address: editForm.address || null,
+      category: editForm.category,
+      base_salary: parseFloat(editForm.base_salary) || 0,
+      notes: editForm.notes || null,
+      designation: editForm.designation || null,
+    }).eq('id', selectedStaff.id);
+
+    if (error) {
+      toast.error('Failed to update');
+      return;
+    }
+
+    toast.success('Updated successfully');
+    setIsEditing(false);
+    fetchData();
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!selectedStaff) return;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `mlt-${selectedStaff.id}-${Date.now()}.${fileExt}`;
+      const filePath = `mlt-staff/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('photos').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(filePath);
+
+      await supabase.from('mlt_staff').update({ photo_url: publicUrl }).eq('id', selectedStaff.id);
+
+      toast.success('Photo uploaded');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to upload photo');
+    }
+    setIsUploading(false);
+  };
+
   const filteredStaff = staffList.filter(s => {
     const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -251,10 +329,14 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   };
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthDays = Array.from({ length: getDaysInMonth(new Date(reportYear, reportMonth - 1)) }, (_, i) => i + 1);
+
+  const getMonthlyAttendanceForStaff = (staffId: string) => {
+    return monthlyAttendance.filter(a => a.staff_id === staffId);
+  };
 
   const exportAttendancePDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
-    const monthDays = Array.from({ length: getDaysInMonth(new Date(reportYear, reportMonth - 1)) }, (_, i) => i + 1);
     
     doc.setFontSize(16);
     doc.text(`MLT Monthly Attendance - ${months[reportMonth - 1]} ${reportYear}`, 14, 15);
@@ -263,10 +345,18 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
     const headers = ['Staff', 'Category', ...monthDays.map(d => d.toString()), 'Shifts'];
     const tableData = staffList.map(staff => {
+      const staffAttendance = getMonthlyAttendanceForStaff(staff.id);
       let totalShifts = 0;
       const days = monthDays.map(day => {
         const dateStr = `${reportYear}-${String(reportMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        // This would need actual monthly attendance data
+        const dayRecord = staffAttendance.find(a => a.date === dateStr);
+        if (dayRecord && dayRecord.status === 'present') {
+          const shifts = dayRecord.shift_count || 1;
+          totalShifts += shifts;
+          return shifts.toString();
+        } else if (dayRecord && dayRecord.status === 'absent') {
+          return 'A';
+        }
         return '-';
       });
       return [staff.name, staff.category, ...days, totalShifts.toString()];
@@ -320,6 +410,35 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     toast.success('Excel downloaded');
   };
 
+  const exportStaffProfilePDF = () => {
+    if (!selectedStaff) return;
+    const doc = new jsPDF();
+    const staffAttendance = getMonthlyAttendanceForStaff(selectedStaff.id);
+    const totalShifts = staffAttendance.reduce((sum, a) => sum + (a.shift_count || 1), 0);
+    const staffAdvances = advances.filter(a => a.staff_id === selectedStaff.id);
+    const totalAdvance = staffAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
+
+    doc.setFontSize(18);
+    doc.text(`Staff Profile - ${selectedStaff.name}`, 14, 20);
+    doc.setFontSize(10);
+    doc.text(REPORT_FOOTER, 14, 28);
+    doc.text(`Category: ${selectedStaff.category} | Month: ${months[reportMonth - 1]} ${reportYear}`, 14, 36);
+    
+    doc.setFontSize(12);
+    doc.text('Summary:', 14, 48);
+    doc.text(`Total Shifts: ${totalShifts}`, 14, 56);
+    doc.text(`Total Advance: ₹${totalAdvance.toLocaleString()}`, 14, 64);
+    doc.text(`Base Salary: ₹${selectedStaff.base_salary.toLocaleString()}`, 14, 72);
+
+    if (selectedStaff.phone) doc.text(`Phone: ${selectedStaff.phone}`, 14, 82);
+    if (selectedStaff.address) doc.text(`Address: ${selectedStaff.address}`, 14, 90);
+
+    const finalY = 100;
+    addReportNotes(doc, finalY);
+    doc.save(`mlt-profile-${selectedStaff.name}-${reportMonth}-${reportYear}.pdf`);
+    toast.success('PDF downloaded');
+  };
+
   const renderHome = () => (
     <div className="space-y-3">
       <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('staff')}>
@@ -338,6 +457,18 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         <CardContent className="p-4 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-accent-foreground"><Wallet className="h-6 w-6 text-primary-foreground" /></div>
           <div><h3 className="font-semibold">Advances</h3><p className="text-sm text-muted-foreground">Track advance payments</p></div>
+        </CardContent>
+      </Card>
+      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('salary')}>
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-green-600"><DollarSign className="h-6 w-6 text-primary-foreground" /></div>
+          <div><h3 className="font-semibold">Salary</h3><p className="text-sm text-muted-foreground">Calculate & mark paid</p></div>
+        </CardContent>
+      </Card>
+      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('staff-details')}>
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-chart-2"><UserCog className="h-6 w-6 text-primary-foreground" /></div>
+          <div><h3 className="font-semibold">Staff Details</h3><p className="text-sm text-muted-foreground">View & edit with photos</p></div>
         </CardContent>
       </Card>
       <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('reports')}>
@@ -359,9 +490,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Staff</SelectItem>
-          <SelectItem value="driver">Driver</SelectItem>
-          <SelectItem value="khalasi">Khalasi</SelectItem>
+          <SelectItem value="all">All Staff ({staffList.length})</SelectItem>
+          <SelectItem value="driver">Driver ({staffList.filter(s => s.category === 'driver').length})</SelectItem>
+          <SelectItem value="khalasi">Khalasi ({staffList.filter(s => s.category === 'khalasi').length})</SelectItem>
         </SelectContent>
       </Select>
 
@@ -382,7 +513,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                   else setSelectedStaffIds(selectedStaffIds.filter(id => id !== staff.id));
                 }}
               />
-              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setView('profile'); }}>
+              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), notes: staff.notes || '', designation: staff.designation || '' }); setView('profile'); }}>
                 <p className="font-medium">{staff.name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
               </div>
@@ -393,69 +524,97 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     </div>
   );
 
-  const renderAttendance = () => (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}>←</Button>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" className="flex flex-col items-center">
-                  <p className="font-semibold">{format(selectedDate, 'EEEE')}</p>
-                  <p className="text-sm text-muted-foreground">{format(selectedDate, 'dd MMM yyyy')}</p>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <CalendarComponent mode="single" selected={selectedDate} onSelect={(d) => { if (d) setSelectedDate(d); setCalendarOpen(false); }} initialFocus />
-              </PopoverContent>
-            </Popover>
-            <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}>→</Button>
-          </div>
-        </CardContent>
-      </Card>
+  const renderAttendance = () => {
+    const totalStaff = filteredStaff.length;
+    const markedCount = attendance.filter(a => filteredStaff.some(s => s.id === a.staff_id)).length;
+    const totalShifts = attendance.filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
+    
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}>←</Button>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="flex flex-col items-center">
+                    <p className="font-semibold">{format(selectedDate, 'EEEE')}</p>
+                    <p className="text-sm text-muted-foreground">{format(selectedDate, 'dd MMM yyyy')}</p>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <CalendarComponent mode="single" selected={selectedDate} onSelect={(d) => { if (d) setSelectedDate(d); setCalendarOpen(false); }} initialFocus />
+                </PopoverContent>
+              </Popover>
+              <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}>→</Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Staff</SelectItem>
-          <SelectItem value="driver">Driver</SelectItem>
-          <SelectItem value="khalasi">Khalasi</SelectItem>
-        </SelectContent>
-      </Select>
+        {/* Summary */}
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="bg-primary/10">
+            <CardContent className="p-2 text-center">
+              <p className="text-lg font-bold">{markedCount}/{totalStaff}</p>
+              <p className="text-xs text-muted-foreground">Marked</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-green-500/10">
+            <CardContent className="p-2 text-center">
+              <p className="text-lg font-bold">{totalShifts}</p>
+              <p className="text-xs text-muted-foreground">Total Shifts</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-destructive/10">
+            <CardContent className="p-2 text-center">
+              <p className="text-lg font-bold">{attendance.filter(a => a.status === 'absent').length}</p>
+              <p className="text-xs text-muted-foreground">Absent</p>
+            </CardContent>
+          </Card>
+        </div>
 
-      <div className="flex flex-wrap gap-2 text-xs">
-        <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift</span>
-        <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-primary"></span> 2 Shifts</span>
-        <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-destructive"></span> Absent</span>
+        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Staff</SelectItem>
+            <SelectItem value="driver">Driver</SelectItem>
+            <SelectItem value="khalasi">Khalasi</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-primary"></span> 2 Shifts</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-destructive"></span> Absent</span>
+        </div>
+
+        <p className="text-xs text-muted-foreground">💡 Tap to cycle: 1 Shift → 2 Shifts → Absent → Clear</p>
+
+        <div className="space-y-2">
+          {filteredStaff.map(staff => {
+            const status = getStaffAttendance(staff.id);
+            return (
+              <Card key={staff.id} className="cursor-pointer active:scale-[0.98]" onClick={() => handleQuickTap(staff.id)}>
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{staff.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+                  </div>
+                  {status ? (
+                    <span className={`px-3 py-1.5 rounded text-sm font-medium text-primary-foreground ${statusConfig[status].color}`}>
+                      {statusConfig[status].fullLabel}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1.5 rounded text-sm border bg-muted text-muted-foreground">Not Marked</span>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
-
-      <p className="text-xs text-muted-foreground">💡 Tap to cycle: 1 Shift → 2 Shifts → Absent → Clear</p>
-
-      <div className="space-y-2">
-        {filteredStaff.map(staff => {
-          const status = getStaffAttendance(staff.id);
-          return (
-            <Card key={staff.id} className="cursor-pointer active:scale-[0.98]" onClick={() => handleQuickTap(staff.id)}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{staff.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
-                </div>
-                {status ? (
-                  <span className={`px-3 py-1.5 rounded text-sm font-medium text-primary-foreground ${statusConfig[status].color}`}>
-                    {statusConfig[status].fullLabel}
-                  </span>
-                ) : (
-                  <span className="px-3 py-1.5 rounded text-sm border bg-muted text-muted-foreground">Not Marked</span>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderAdvances = () => (
     <div className="space-y-4">
@@ -504,6 +663,109 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
             </Card>
           );
         })}
+        {advances.length === 0 && <p className="text-center text-muted-foreground py-4">No advances this month</p>}
+      </div>
+    </div>
+  );
+
+  const renderSalary = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={reportMonth.toString()} onValueChange={(v) => setReportMonth(parseInt(v))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {months.map((m, i) => <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={reportYear.toString()} onValueChange={(v) => setReportYear(parseInt(v))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {[2024, 2025, 2026].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        {staffList.map(staff => {
+          const data = salaryData?.[staff.id];
+          const totalShifts = data?.totalShifts || 0;
+          const totalAdvance = data?.totalAdvance || 0;
+          const perShiftRate = staff.base_salary / 26;
+          const earned = Math.round(totalShifts * perShiftRate);
+          const netPayable = earned - totalAdvance;
+
+          return (
+            <Card key={staff.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-semibold">{staff.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+                  </div>
+                  <Button size="sm" variant={data?.isPaid ? 'default' : 'outline'} onClick={() => {
+                    setSalaryData(prev => prev ? {...prev, [staff.id]: {...prev[staff.id], isPaid: !prev[staff.id]?.isPaid}} : prev);
+                  }}>
+                    {data?.isPaid ? <><Check className="h-3 w-3 mr-1" />Paid</> : 'Mark Paid'}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="bg-muted/50 p-2 rounded">
+                    <p className="font-bold">{totalShifts}</p>
+                    <p className="text-muted-foreground">Shifts</p>
+                  </div>
+                  <div className="bg-destructive/10 p-2 rounded">
+                    <p className="font-bold text-destructive">₹{totalAdvance.toLocaleString()}</p>
+                    <p className="text-muted-foreground">Advance</p>
+                  </div>
+                  <div className={`p-2 rounded ${netPayable >= 0 ? 'bg-green-500/10' : 'bg-destructive/10'}`}>
+                    <p className={`font-bold ${netPayable >= 0 ? 'text-green-600' : 'text-destructive'}`}>₹{netPayable.toLocaleString()}</p>
+                    <p className="text-muted-foreground">Net</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderStaffDetails = () => (
+    <div className="space-y-4">
+      <Input placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      
+      <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Staff</SelectItem>
+          <SelectItem value="driver">Driver</SelectItem>
+          <SelectItem value="khalasi">Khalasi</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <div className="space-y-2">
+        {filteredStaff.map(staff => (
+          <Card key={staff.id} className="cursor-pointer hover:shadow-md" onClick={() => { 
+            setSelectedStaff(staff); 
+            setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), notes: staff.notes || '', designation: staff.designation || '' }); 
+            setView('profile'); 
+          }}>
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                {staff.photo_url ? (
+                  <img src={staff.photo_url} alt={staff.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="h-6 w-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">{staff.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{staff.category} {staff.designation && `• ${staff.designation}`}</p>
+              </div>
+              <span className="text-muted-foreground">→</span>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
@@ -526,8 +788,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-sm">Attendance Report</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-sm">Monthly Attendance Report</CardTitle></CardHeader>
         <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground mb-2">All staff attendance for {months[reportMonth - 1]} {reportYear}</p>
           <Button variant="secondary" size="sm" className="w-full" onClick={exportAttendancePDF}>
             <Download className="h-4 w-4 mr-2" />Download PDF
           </Button>
@@ -550,25 +813,85 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
   const renderProfile = () => {
     if (!selectedStaff) return null;
+    const staffAttendance = getMonthlyAttendanceForStaff(selectedStaff.id);
+    const totalShifts = staffAttendance.reduce((sum, a) => sum + (a.shift_count || 1), 0);
+    const staffAdvances = advances.filter(a => a.staff_id === selectedStaff.id);
+    const totalAdvance = staffAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
+
     return (
       <div className="space-y-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
-              <User className="h-10 w-10 text-muted-foreground" />
+            <div className="w-24 h-24 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center overflow-hidden relative">
+              {selectedStaff.photo_url ? (
+                <img src={selectedStaff.photo_url} alt={selectedStaff.name} className="w-full h-full object-cover" />
+              ) : (
+                <User className="h-12 w-12 text-muted-foreground" />
+              )}
+              <label className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full cursor-pointer">
+                <Camera className="h-4 w-4" />
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} disabled={isUploading} />
+              </label>
             </div>
-            <h2 className="text-xl font-bold">{selectedStaff.name}</h2>
+            {isEditing ? (
+              <Input value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} className="text-center text-xl font-bold" />
+            ) : (
+              <h2 className="text-xl font-bold">{selectedStaff.name}</h2>
+            )}
             <p className="text-muted-foreground capitalize">{selectedStaff.category}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            {selectedStaff.phone && <p className="text-sm"><span className="text-muted-foreground">Phone:</span> {selectedStaff.phone}</p>}
-            {selectedStaff.address && <p className="text-sm"><span className="text-muted-foreground">Address:</span> {selectedStaff.address}</p>}
-            <p className="text-sm"><span className="text-muted-foreground">Base Salary:</span> ₹{selectedStaff.base_salary.toLocaleString()}</p>
-            {selectedStaff.notes && <p className="text-sm"><span className="text-muted-foreground">Notes:</span> {selectedStaff.notes}</p>}
-          </CardContent>
-        </Card>
+
+        <div className="flex gap-2">
+          {!isEditing ? (
+            <>
+              <Button variant="outline" className="flex-1" onClick={() => setIsEditing(true)}>Edit</Button>
+              <Button variant="secondary" className="flex-1" onClick={exportStaffProfilePDF}><Download className="h-4 w-4 mr-2" />Export</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
+              <Button className="flex-1" onClick={updateStaffDetails}>Save</Button>
+            </>
+          )}
+        </div>
+
+        {isEditing ? (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div><Label>Phone</Label><Input value={editForm.phone} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} /></div>
+              <div><Label>Address</Label><Textarea value={editForm.address} onChange={(e) => setEditForm({...editForm, address: e.target.value})} /></div>
+              <div><Label>Category</Label>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm({...editForm, category: v as 'driver' | 'khalasi'})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="driver">Driver</SelectItem>
+                    <SelectItem value="khalasi">Khalasi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Designation</Label><Input value={editForm.designation} onChange={(e) => setEditForm({...editForm, designation: e.target.value})} /></div>
+              <div><Label>Base Salary</Label><Input type="number" value={editForm.base_salary} onChange={(e) => setEditForm({...editForm, base_salary: e.target.value})} /></div>
+              <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm({...editForm, notes: e.target.value})} /></div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{totalShifts}</p><p className="text-xs text-muted-foreground">Shifts This Month</p></CardContent></Card>
+              <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-destructive">₹{totalAdvance.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Advance</p></CardContent></Card>
+            </div>
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                {selectedStaff.phone && <p className="text-sm"><span className="text-muted-foreground">Phone:</span> {selectedStaff.phone}</p>}
+                {selectedStaff.address && <p className="text-sm"><span className="text-muted-foreground">Address:</span> {selectedStaff.address}</p>}
+                {selectedStaff.designation && <p className="text-sm"><span className="text-muted-foreground">Designation:</span> {selectedStaff.designation}</p>}
+                <p className="text-sm"><span className="text-muted-foreground">Base Salary:</span> ₹{selectedStaff.base_salary.toLocaleString()}</p>
+                {selectedStaff.notes && <p className="text-sm"><span className="text-muted-foreground">Notes:</span> {selectedStaff.notes}</p>}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     );
   };
@@ -576,7 +899,11 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   return (
     <div className="p-4 max-w-md mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => view === 'home' ? onBack() : (view === 'profile' ? setView('staff') : setView('home'))}>
+        <Button variant="ghost" size="icon" onClick={() => {
+          if (view === 'home') onBack();
+          else if (view === 'profile') setView('staff-details');
+          else setView('home');
+        }}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold">
@@ -586,6 +913,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           {view === 'advances' && 'Advances'}
           {view === 'reports' && 'Monthly Reports'}
           {view === 'profile' && selectedStaff?.name}
+          {view === 'staff-details' && 'Staff Details'}
+          {view === 'salary' && 'Salary'}
         </h1>
       </div>
 
@@ -599,6 +928,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           {view === 'advances' && renderAdvances()}
           {view === 'reports' && renderReports()}
           {view === 'profile' && renderProfile()}
+          {view === 'staff-details' && renderStaffDetails()}
+          {view === 'salary' && renderSalary()}
         </>
       )}
 
@@ -619,6 +950,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
             </div>
             <div><Label>Phone</Label><Input value={newStaff.phone} onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })} /></div>
             <div><Label>Address</Label><Textarea value={newStaff.address} onChange={(e) => setNewStaff({ ...newStaff, address: e.target.value })} /></div>
+            <div><Label>Designation</Label><Input value={newStaff.designation} onChange={(e) => setNewStaff({ ...newStaff, designation: e.target.value })} /></div>
             <div><Label>Base Salary</Label><Input type="number" value={newStaff.base_salary} onChange={(e) => setNewStaff({ ...newStaff, base_salary: parseFloat(e.target.value) || 0 })} /></div>
           </div>
           <DialogFooter><Button onClick={addStaff}>Add Staff</Button></DialogFooter>
@@ -639,6 +971,19 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               </Select>
             </div>
             <div><Label>Amount (₹) *</Label><Input type="number" value={advanceAmount} onChange={(e) => setAdvanceAmount(e.target.value)} /></div>
+            <div><Label>Date</Label>
+              <Popover open={advanceCalendarOpen} onOpenChange={setAdvanceCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {format(advanceDate, 'dd MMM yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent mode="single" selected={advanceDate} onSelect={(d) => { if (d) setAdvanceDate(d); setAdvanceCalendarOpen(false); }} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
             <div><Label>Notes</Label><Textarea value={advanceNotes} onChange={(e) => setAdvanceNotes(e.target.value)} /></div>
           </div>
           <DialogFooter><Button onClick={addAdvance}>Add Advance</Button></DialogFooter>

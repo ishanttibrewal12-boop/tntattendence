@@ -36,7 +36,7 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
   const [showAddSale, setShowAddSale] = useState(false);
   const [selectedSales, setSelectedSales] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar-upi' | 'calendar-cash' | 'calendar-all'>('list');
   const [saleTypeFilter, setSaleTypeFilter] = useState<'all' | 'upi' | 'cash'>('all');
   
   const [newAmount, setNewAmount] = useState('');
@@ -125,6 +125,47 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
   };
 
   const monthDays = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth - 1)) }, (_, i) => i + 1);
+  const firstDayOfMonth = new Date(selectedYear, selectedMonth - 1, 1).getDay();
+  const emptyDays = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+
+  const renderCalendarView = (type?: 'upi' | 'cash') => {
+    const title = type === 'upi' ? 'UPI Sales' : type === 'cash' ? 'Cash Sales' : 'All Sales';
+    const totalForType = type === 'upi' ? totalUPI : type === 'cash' ? totalCash : totalAmount;
+    
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex justify-between items-center">
+            <span>{title} - {months[selectedMonth - 1]} {selectedYear}</span>
+            <span className="text-primary font-bold">₹{totalForType.toLocaleString()}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
+            ))}
+            {Array.from({ length: emptyDays }).map((_, i) => (
+              <div key={`empty-${i}`} className="p-1"></div>
+            ))}
+            {monthDays.map(day => {
+              const amount = getAmountForDate(day, type);
+              const isToday = format(new Date(), 'yyyy-MM-dd') === `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              return (
+                <div 
+                  key={day} 
+                  className={`p-1 rounded text-center ${isToday ? 'ring-2 ring-primary' : ''} ${amount > 0 ? type === 'upi' ? 'bg-primary/20' : type === 'cash' ? 'bg-green-500/20' : 'bg-secondary/30' : 'bg-muted/30'}`}
+                >
+                  <div className="text-xs font-medium">{day}</div>
+                  {amount > 0 && <div className="text-[8px] font-bold">₹{amount >= 1000 ? `${(amount / 1000).toFixed(0)}k` : amount}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -203,9 +244,11 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
       </div>
 
       {/* View Toggle */}
-      <div className="flex gap-2 mb-4">
-        <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => setViewMode('list')}>List</Button>
-        <Button variant={viewMode === 'calendar' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => setViewMode('calendar')}>Calendar</Button>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('list')}>List</Button>
+        <Button variant={viewMode === 'calendar-all' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('calendar-all')}>All Calendar</Button>
+        <Button variant={viewMode === 'calendar-upi' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('calendar-upi')}>UPI Calendar</Button>
+        <Button variant={viewMode === 'calendar-cash' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('calendar-cash')}>Cash Calendar</Button>
       </div>
 
       {/* Summary Cards */}
@@ -230,18 +273,6 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
         </Card>
       </div>
 
-      {/* Type Filter */}
-      <div className="mb-4">
-        <Select value={saleTypeFilter} onValueChange={(v) => setSaleTypeFilter(v as typeof saleTypeFilter)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sales</SelectItem>
-            <SelectItem value="upi">UPI Only</SelectItem>
-            <SelectItem value="cash">Cash Only</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Actions */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <Button onClick={() => setShowAddSale(true)}><Plus className="h-4 w-4 mr-2" />Add Sale</Button>
@@ -262,65 +293,53 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : viewMode === 'list' ? (
-        <div className="space-y-2">
-          {filteredSales.map(sale => (
-            <Card key={sale.id}>
-              <CardContent className="p-3 flex items-center gap-3">
-                <Checkbox 
-                  checked={selectedSales.includes(sale.id)}
-                  onCheckedChange={(checked) => {
-                    if (checked) setSelectedSales([...selectedSales, sale.id]);
-                    else setSelectedSales(selectedSales.filter(id => id !== sale.id));
-                  }}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">₹{Number(sale.amount).toLocaleString()}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded ${sale.sale_type === 'upi' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-600'}`}>
-                      {sale.sale_type.toUpperCase()}
-                    </span>
+        <>
+          {/* Type Filter for List View */}
+          <div className="mb-4">
+            <Select value={saleTypeFilter} onValueChange={(v) => setSaleTypeFilter(v as typeof saleTypeFilter)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sales</SelectItem>
+                <SelectItem value="upi">UPI Only</SelectItem>
+                <SelectItem value="cash">Cash Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            {filteredSales.map(sale => (
+              <Card key={sale.id}>
+                <CardContent className="p-3 flex items-center gap-3">
+                  <Checkbox 
+                    checked={selectedSales.includes(sale.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) setSelectedSales([...selectedSales, sale.id]);
+                      else setSelectedSales(selectedSales.filter(id => id !== sale.id));
+                    }}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">₹{Number(sale.amount).toLocaleString()}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded ${sale.sale_type === 'upi' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-600'}`}>
+                        {sale.sale_type.toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{format(new Date(sale.date), 'dd MMM yyyy')}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{format(new Date(sale.date), 'dd MMM yyyy')}</p>
-                </div>
-                {sale.notes && <p className="text-xs text-muted-foreground max-w-[100px] truncate">{sale.notes}</p>}
-              </CardContent>
-            </Card>
-          ))}
-          {filteredSales.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No sales recorded</p>
-          )}
-        </div>
+                  {sale.notes && <p className="text-xs text-muted-foreground max-w-[100px] truncate">{sale.notes}</p>}
+                </CardContent>
+              </Card>
+            ))}
+            {filteredSales.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">No sales recorded</p>
+            )}
+          </div>
+        </>
       ) : (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Calendar View - {months[selectedMonth - 1]} {selectedYear}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
-              ))}
-              {Array.from({ length: new Date(selectedYear, selectedMonth - 1, 1).getDay() === 0 ? 6 : new Date(selectedYear, selectedMonth - 1, 1).getDay() - 1 }).map((_, i) => (
-                <div key={`empty-${i}`} className="p-1"></div>
-              ))}
-              {monthDays.map(day => {
-                const upiAmount = getAmountForDate(day, 'upi');
-                const cashAmount = getAmountForDate(day, 'cash');
-                const total = upiAmount + cashAmount;
-                const isToday = format(new Date(), 'yyyy-MM-dd') === `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                return (
-                  <div 
-                    key={day} 
-                    className={`p-1 rounded text-center ${isToday ? 'ring-2 ring-primary' : ''} ${total > 0 ? 'bg-secondary/30' : 'bg-muted/30'}`}
-                  >
-                    <div className="text-xs font-medium">{day}</div>
-                    {total > 0 && <div className="text-[8px] font-bold">₹{total >= 1000 ? `${(total / 1000).toFixed(0)}k` : total}</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {viewMode === 'calendar-upi' && renderCalendarView('upi')}
+          {viewMode === 'calendar-cash' && renderCalendarView('cash')}
+          {viewMode === 'calendar-all' && renderCalendarView()}
+        </div>
       )}
 
       {/* Add Sale Dialog */}
