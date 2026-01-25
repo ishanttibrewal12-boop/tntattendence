@@ -181,6 +181,136 @@ export type Database = {
         }
         Relationships: []
       }
+      mlt_advances: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          is_deducted: boolean
+          notes: string | null
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          is_deducted?: boolean
+          notes?: string | null
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          is_deducted?: boolean
+          notes?: string | null
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mlt_advances_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "mlt_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mlt_attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          shift_count: number | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          shift_count?: number | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          shift_count?: number | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mlt_attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "mlt_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mlt_staff: {
+        Row: {
+          address: string | null
+          base_salary: number
+          category: Database["public"]["Enums"]["mlt_staff_category"]
+          created_at: string
+          designation: string | null
+          id: string
+          is_active: boolean
+          joining_date: string
+          name: string
+          notes: string | null
+          phone: string | null
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          base_salary?: number
+          category?: Database["public"]["Enums"]["mlt_staff_category"]
+          created_at?: string
+          designation?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          base_salary?: number
+          category?: Database["public"]["Enums"]["mlt_staff_category"]
+          created_at?: string
+          designation?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll: {
         Row: {
           absent_days: number
@@ -248,6 +378,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      petroleum_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          payment_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          payment_type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          payment_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      petroleum_sales: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          sale_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          sale_type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          sale_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       reminders: {
         Row: {
@@ -346,6 +536,7 @@ export type Database = {
         | "sunday"
         | "leave"
         | "not_marked"
+      mlt_staff_category: "driver" | "khalasi"
       staff_category: "petroleum" | "crusher" | "office"
     }
     CompositeTypes: {
@@ -483,6 +674,7 @@ export const Constants = {
         "leave",
         "not_marked",
       ],
+      mlt_staff_category: ["driver", "khalasi"],
       staff_category: ["petroleum", "crusher", "office"],
     },
   },

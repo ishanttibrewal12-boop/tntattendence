@@ -2,10 +2,10 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-// Bilingual note to add to all exports
-export const REPORT_NOTE_ENGLISH = 'Note: If you have any queries, contact 6203229118 - Abhay Jalan';
-export const REPORT_NOTE_HINDI = 'नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 - अभय जालान से संपर्क करें';
-export const REPORT_FOOTER = 'Tibrewal Staff Manager | Manager: Abhay Jalan';
+// Bilingual note to add to all exports - without name
+export const REPORT_NOTE_ENGLISH = 'Note: If you have any queries, contact 6203229118';
+export const REPORT_NOTE_HINDI = 'नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें';
+export const REPORT_FOOTER = 'Tibrewal Staff Manager';
 
 export const addReportNotes = (doc: jsPDF, yPosition: number) => {
   const pageHeight = doc.internal.pageSize.height;
