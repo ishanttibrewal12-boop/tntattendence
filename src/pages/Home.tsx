@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, BarChart3, Truck, Fuel, FolderArchive } from 'lucide-react';
+import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Truck, Fuel, FolderArchive } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import PinLock from '@/components/PinLock';
 import AttendanceSection from '@/components/sections/AttendanceSection';
@@ -15,13 +15,11 @@ import CalculatorSection from '@/components/sections/CalculatorSection';
 import PhotoGallerySection from '@/components/sections/PhotoGallerySection';
 import RemindersSection from '@/components/sections/RemindersSection';
 import MLTSection from '@/components/sections/MLTSection';
-import PetroleumPaymentsSection from '@/components/sections/PetroleumPaymentsSection';
 import PetroleumSalesSection from '@/components/sections/PetroleumSalesSection';
 import BackupSection from '@/components/sections/BackupSection';
-import Dashboard from '@/pages/Dashboard';
 import companyLogo from '@/assets/company-logo.png';
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'dashboard' | 'mlt' | 'petroleum-payments' | 'petroleum-sales' | 'backup' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | null;
 
 const Home = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -35,19 +33,17 @@ const Home = () => {
     { id: 'attendance' as SectionType, title: 'Attendance', icon: Calendar, description: 'Mark daily attendance', color: 'bg-primary' },
     { id: 'advance-salary' as SectionType, title: 'Advance & Salary', icon: Wallet, description: 'Manage payments', color: 'bg-secondary' },
     { id: 'staff' as SectionType, title: 'Staff', icon: UserPlus, description: 'Add or remove staff', color: 'bg-accent-foreground' },
+    { id: 'mlt' as SectionType, title: 'MLT Section', icon: Truck, description: 'Driver & Khalasi', color: 'bg-chart-1' },
   ];
 
   const extraSections = [
-    { id: 'dashboard' as SectionType, title: 'Dashboard', icon: BarChart3, description: 'Analytics & Charts', color: 'bg-chart-1' },
+    { id: 'daily-report' as SectionType, title: 'Daily Report', icon: FileText, description: 'All-in-one report', color: 'bg-chart-5' },
     { id: 'staff-details' as SectionType, title: 'Staff Details', icon: UserCog, description: 'View & edit details', color: 'bg-chart-2' },
     { id: 'monthly-calendar' as SectionType, title: 'Monthly Report', icon: CalendarDays, description: 'Calendar view', color: 'bg-chart-3' },
     { id: 'staff-profile' as SectionType, title: 'Staff Profiles', icon: User, description: 'View & share profiles', color: 'bg-chart-4' },
-    { id: 'daily-report' as SectionType, title: 'Daily Report', icon: FileText, description: 'All-in-one report', color: 'bg-chart-5' },
   ];
 
   const moreSections = [
-    { id: 'mlt' as SectionType, title: 'MLT Section', icon: Truck, description: 'Driver & Khalasi', color: 'bg-chart-1' },
-    { id: 'petroleum-payments' as SectionType, title: 'Petroleum Payments', icon: Fuel, description: 'UPI payments', color: 'bg-chart-2' },
     { id: 'petroleum-sales' as SectionType, title: 'Petroleum Sales', icon: Fuel, description: 'UPI & Cash sales', color: 'bg-chart-3' },
     { id: 'backup' as SectionType, title: 'Monthly Backup', icon: FolderArchive, description: 'Download reports', color: 'bg-chart-4' },
     { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator, description: 'Quick calculations', color: 'bg-primary' },
@@ -72,10 +68,8 @@ const Home = () => {
         {activeSection === 'photo-gallery' && <PhotoGallerySection onBack={() => setActiveSection(null)} />}
         {activeSection === 'reminders' && <RemindersSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'mlt' && <MLTSection onBack={() => setActiveSection(null)} />}
-        {activeSection === 'petroleum-payments' && <PetroleumPaymentsSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'petroleum-sales' && <PetroleumSalesSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'backup' && <BackupSection onBack={() => setActiveSection(null)} />}
-        {activeSection === 'dashboard' && <Dashboard onBack={() => setActiveSection(null)} />}
       </div>
     );
   }
@@ -86,7 +80,6 @@ const Home = () => {
         <div className="text-center mb-6 pt-4">
           <img src={companyLogo} alt="Tibrewal Staff Manager" className="h-20 w-20 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold text-foreground">Tibrewal Staff Manager</h1>
-          <p className="text-muted-foreground text-sm">Manager: Abhay Jalan</p>
           <p className="text-muted-foreground text-xs">Contact: 6203229118</p>
         </div>
 

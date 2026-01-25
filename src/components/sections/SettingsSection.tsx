@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Lock, Key, Database, Download, Upload, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Lock, Database, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
 
 interface SettingsSectionProps {
   onBack: () => void;
@@ -57,23 +56,43 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
 
     setIsChangingPin(true);
 
-    const { error } = await supabase
-      .from('app_settings')
-      .upsert({ 
-        setting_key: 'app_pin', 
-        setting_value: newPin 
-      }, { 
-        onConflict: 'setting_key' 
-      });
+    try {
+      // First check if setting exists
+      const { data: existing } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('setting_key', 'app_pin')
+        .single();
 
-    if (error) {
+      let error;
+      if (existing) {
+        // Update existing setting
+        const result = await supabase
+          .from('app_settings')
+          .update({ setting_value: newPin, updated_at: new Date().toISOString() })
+          .eq('setting_key', 'app_pin');
+        error = result.error;
+      } else {
+        // Insert new setting
+        const result = await supabase
+          .from('app_settings')
+          .insert({ setting_key: 'app_pin', setting_value: newPin });
+        error = result.error;
+      }
+
+      if (error) {
+        console.error('PIN update error:', error);
+        toast.error('Failed to update PIN. Please try again.');
+      } else {
+        toast.success('PIN updated successfully');
+        setCurrentPin('');
+        setNewPin('');
+        setConfirmPin('');
+        setStoredPin(newPin);
+      }
+    } catch (err) {
+      console.error('PIN update error:', err);
       toast.error('Failed to update PIN');
-    } else {
-      toast.success('PIN updated successfully');
-      setCurrentPin('');
-      setNewPin('');
-      setConfirmPin('');
-      setStoredPin(newPin);
     }
 
     setIsChangingPin(false);
@@ -84,21 +103,29 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
       toast.info('Creating backup...');
 
       // Fetch all data
-      const [staffRes, attendanceRes, advancesRes, payrollRes] = await Promise.all([
+      const [staffRes, attendanceRes, advancesRes, payrollRes, mltStaffRes, mltAttendanceRes, mltAdvancesRes, petroleumSalesRes] = await Promise.all([
         supabase.from('staff').select('*'),
         supabase.from('attendance').select('*'),
         supabase.from('advances').select('*'),
         supabase.from('payroll').select('*'),
+        supabase.from('mlt_staff').select('*'),
+        supabase.from('mlt_attendance').select('*'),
+        supabase.from('mlt_advances').select('*'),
+        supabase.from('petroleum_sales').select('*'),
       ]);
 
       const backupData = {
-        version: '1.0',
+        version: '2.0',
         created_at: new Date().toISOString(),
         data: {
           staff: staffRes.data || [],
           attendance: attendanceRes.data || [],
           advances: advancesRes.data || [],
           payroll: payrollRes.data || [],
+          mlt_staff: mltStaffRes.data || [],
+          mlt_attendance: mltAttendanceRes.data || [],
+          mlt_advances: mltAdvancesRes.data || [],
+          petroleum_sales: petroleumSalesRes.data || [],
         }
       };
 
@@ -138,11 +165,14 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
       }
 
       // Clear existing data (in order to avoid conflicts)
-      // Note: This is a destructive operation
       await supabase.from('payroll').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('advances').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('attendance').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('staff').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('mlt_advances').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('mlt_attendance').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('mlt_staff').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('petroleum_sales').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
       // Restore data
       if (backupData.data.staff?.length) {
@@ -156,6 +186,18 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
       }
       if (backupData.data.payroll?.length) {
         await supabase.from('payroll').insert(backupData.data.payroll);
+      }
+      if (backupData.data.mlt_staff?.length) {
+        await supabase.from('mlt_staff').insert(backupData.data.mlt_staff);
+      }
+      if (backupData.data.mlt_attendance?.length) {
+        await supabase.from('mlt_attendance').insert(backupData.data.mlt_attendance);
+      }
+      if (backupData.data.mlt_advances?.length) {
+        await supabase.from('mlt_advances').insert(backupData.data.mlt_advances);
+      }
+      if (backupData.data.petroleum_sales?.length) {
+        await supabase.from('petroleum_sales').insert(backupData.data.petroleum_sales);
       }
 
       toast.success('Data restored successfully');
@@ -279,7 +321,7 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Create Backup?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will create a backup of all your data (staff, attendance, advances, payroll).
+              This will create a backup of all your data (staff, attendance, advances, payroll, MLT, petroleum sales).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
