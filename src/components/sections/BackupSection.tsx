@@ -231,21 +231,81 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
         return;
       }
 
-      // Generate individual staff PDFs
-      const staffFolder = folder.folder('Staff Reports');
-      for (const staff of staffList) {
-        const pdf = generateStaffPDF(staff);
-        const pdfBlob = pdf.output('blob');
-        staffFolder?.file(`${staff.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`, pdfBlob);
+      // Group staff by category
+      const categories = ['petroleum', 'crusher', 'office'] as const;
+      
+      for (const category of categories) {
+        const categoryStaff = staffList.filter(s => s.category === category);
+        if (categoryStaff.length === 0) continue;
+        
+        const categoryFolder = folder.folder(`Staff Reports - ${category.charAt(0).toUpperCase() + category.slice(1)}`);
+        
+        for (const staff of categoryStaff) {
+          const pdf = generateStaffPDF(staff);
+          const pdfBlob = pdf.output('blob');
+          categoryFolder?.file(`${staff.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`, pdfBlob);
+        }
       }
 
       // Generate common reports
-      const commonFolder = folder.folder('Common Reports');
+      const commonFolder = folder.folder('Summary Reports');
       const attendancePDF = generateCommonAttendancePDF();
       commonFolder?.file('Monthly_Attendance.pdf', attendancePDF.output('blob'));
       
       const advancesPDF = generateCommonAdvancesPDF();
       commonFolder?.file('Monthly_Advances.pdf', advancesPDF.output('blob'));
+      
+      // Add Excel versions
+      const XLSX = require('xlsx');
+      
+      // Attendance Excel
+      const attendanceHeaders = ['Staff', 'Category', 'Total Shifts', 'Absent Days'];
+      const attendanceData = staffList.map(staff => {
+        const staffAtt = attendance.filter(a => a.staff_id === staff.id);
+        const totalShifts = staffAtt.reduce((sum, a) => a.status === 'present' ? sum + (a.shift_count || 1) : sum, 0);
+        const absentDays = staffAtt.filter(a => a.status === 'absent').length;
+        return [staff.name, staff.category, totalShifts, absentDays];
+      });
+      
+      const attWb = XLSX.utils.book_new();
+      const attWsData = [
+        [`Monthly Attendance - ${months[selectedMonth - 1]} ${selectedYear}`],
+        ['Tibrewal Staff Manager'],
+        [],
+        attendanceHeaders,
+        ...attendanceData,
+        [],
+        ['Note: If you have any queries, contact 6203229118'],
+        ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
+      ];
+      const attWs = XLSX.utils.aoa_to_sheet(attWsData);
+      XLSX.utils.book_append_sheet(attWb, attWs, 'Attendance');
+      const attExcelBuffer = XLSX.write(attWb, { type: 'array', bookType: 'xlsx' });
+      commonFolder?.file('Monthly_Attendance.xlsx', new Blob([attExcelBuffer]));
+      
+      // Advances Excel
+      const advanceHeaders = ['Staff', 'Category', 'Times', 'Total Amount'];
+      const advanceData = staffList.map(staff => {
+        const staffAdv = advances.filter(a => a.staff_id === staff.id);
+        const total = staffAdv.reduce((sum, a) => sum + Number(a.amount), 0);
+        return [staff.name, staff.category, staffAdv.length, total] as [string, string, number, number];
+      }).filter(s => s[3] > 0);
+      
+      const advWb = XLSX.utils.book_new();
+      const advWsData = [
+        [`Monthly Advances - ${months[selectedMonth - 1]} ${selectedYear}`],
+        ['Tibrewal Staff Manager'],
+        [],
+        advanceHeaders,
+        ...advanceData,
+        [],
+        ['Note: If you have any queries, contact 6203229118'],
+        ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
+      ];
+      const advWs = XLSX.utils.aoa_to_sheet(advWsData);
+      XLSX.utils.book_append_sheet(advWb, advWs, 'Advances');
+      const advExcelBuffer = XLSX.write(advWb, { type: 'array', bookType: 'xlsx' });
+      commonFolder?.file('Monthly_Advances.xlsx', new Blob([advExcelBuffer]));
 
       // Generate and download ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -343,7 +403,7 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
         </CardContent>
       </Card>
 
-      {/* Individual Staff Reports */}
+      {/* Individual Staff Reports - Grouped by Category */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Individual Staff Reports ({staffList.length})</CardTitle>
@@ -352,18 +412,28 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
           {isLoading ? (
             <p className="text-center text-muted-foreground py-4">Loading...</p>
           ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {staffList.map(staff => (
-                <div key={staff.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
-                  <div>
-                    <p className="font-medium text-sm">{staff.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+            <div className="space-y-4">
+              {(['petroleum', 'crusher', 'office'] as const).map(category => {
+                const categoryStaff = staffList.filter(s => s.category === category);
+                if (categoryStaff.length === 0) return null;
+                return (
+                  <div key={category}>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 capitalize">{category} ({categoryStaff.length})</p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {categoryStaff.map(staff => (
+                        <div key={staff.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{staff.name}</p>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => downloadIndividualReport(staff)}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => downloadIndividualReport(staff)}>
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Download, Share2, Calendar, User, Edit2, Save, X, Wallet, Search, Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,8 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteAdvance, setDeleteAdvance] = useState<Advance | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -98,6 +100,64 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     if (attendanceRes.data) setAttendance(attendanceRes.data as AttendanceRecord[]);
     if (advancesRes.data) setAdvances(advancesRes.data as Advance[]);
     setIsLoading(false);
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedStaff) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string;
+        
+        const { error } = await supabase
+          .from('staff')
+          .update({ photo_url: base64Data })
+          .eq('id', selectedStaff.id);
+
+        if (error) {
+          toast.error('Failed to upload photo');
+        } else {
+          toast.success('Photo uploaded');
+          setSelectedStaff({ ...selectedStaff, photo_url: base64Data });
+          fetchStaffList();
+        }
+        setIsUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to upload photo');
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!selectedStaff) return;
+    
+    const { error } = await supabase
+      .from('staff')
+      .update({ photo_url: null })
+      .eq('id', selectedStaff.id);
+
+    if (error) {
+      toast.error('Failed to remove photo');
+    } else {
+      toast.success('Photo removed');
+      setSelectedStaff({ ...selectedStaff, photo_url: null });
+      fetchStaffList();
+    }
   };
 
   const saveNotes = async () => {
@@ -174,7 +234,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     doc.setFontSize(12);
     doc.text(`Category: ${selectedStaff.category}`, 14, 30);
     doc.text(`Month: ${months[selectedMonth - 1]} ${selectedYear}`, 14, 38);
-    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 46);
+    doc.text('Tibrewal Staff Manager', 14, 46);
     
     if (selectedStaff.notes) {
       doc.text(`Notes: ${selectedStaff.notes}`, 14, 54);
@@ -306,14 +366,16 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
           <SelectTrigger>
             <SelectValue placeholder="Select a staff member" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-[300px]">
             {filteredStaffList.map((staff) => (
               <SelectItem key={staff.id} value={staff.id}>
-                {staff.name} ({staff.category})
+                <span className="truncate">{staff.name}</span>
+                <span className="text-muted-foreground ml-1">({staff.category})</span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <p className="text-xs text-muted-foreground mt-1">{filteredStaffList.length} staff found</p>
       </div>
 
       {selectedStaff && (
@@ -342,20 +404,46 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
             </Select>
           </div>
 
-          {/* Staff Info Card */}
+          {/* Staff Info Card with Photo Upload */}
           <Card className="mb-4">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-3 rounded-full bg-primary/10">
+              <div className="flex items-center gap-4">
+                <div className="relative">
                   {selectedStaff.photo_url ? (
-                    <img src={selectedStaff.photo_url} alt={selectedStaff.name} className="h-10 w-10 rounded-full object-cover" />
+                    <img src={selectedStaff.photo_url} alt={selectedStaff.name} className="h-16 w-16 rounded-full object-cover border-4 border-primary/20" />
                   ) : (
-                    <User className="h-6 w-6 text-primary" />
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-8 w-8 text-primary" />
+                    </div>
                   )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">{selectedStaff.name}</h2>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold text-foreground truncate">{selectedStaff.name}</h2>
                   <p className="text-sm text-muted-foreground capitalize">{selectedStaff.category}</p>
+                  <div className="flex gap-2 mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingPhoto}
+                      className="text-xs h-7"
+                    >
+                      <Camera className="h-3 w-3 mr-1" />
+                      {isUploadingPhoto ? '...' : selectedStaff.photo_url ? 'Change' : 'Add Photo'}
+                    </Button>
+                    {selectedStaff.photo_url && (
+                      <Button variant="outline" size="sm" onClick={removePhoto} className="h-7 px-2">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

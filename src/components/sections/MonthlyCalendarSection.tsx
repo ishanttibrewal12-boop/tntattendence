@@ -124,7 +124,7 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
     doc.setFontSize(16);
     doc.text(`Monthly Attendance - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 15);
     doc.setFontSize(10);
-    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 22);
+    doc.text('Tibrewal Staff Manager', 14, 22);
 
     const headers = ['Staff', ...monthDays.map(d => d.toString()), 'Shifts', 'Absent'];
     const tableData = filteredStaff.map((staff) => {
@@ -147,9 +147,53 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
       styles: { fontSize: 6, cellPadding: 1 },
       headStyles: { fillColor: [0, 120, 212] },
     });
+    
+    // Add bilingual notes at the end
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Note: If you have any queries, contact 6203229118', 14, finalY);
+    doc.text('नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें', 14, finalY + 6);
+    doc.text('Tibrewal Staff Manager', 14, finalY + 14);
 
     doc.save(`monthly-attendance-${selectedMonth}-${selectedYear}.pdf`);
     toast.success('PDF downloaded');
+  };
+
+  const exportToExcel = () => {
+    const XLSX = require('xlsx');
+    
+    const headers = ['Staff', 'Category', ...monthDays.map(d => d.toString()), 'Total Shifts', 'Absent'];
+    const data = filteredStaff.map((staff) => {
+      const summary = getStaffSummary(staff.id, staff);
+      return [
+        staff.name,
+        staff.category,
+        ...monthDays.map(day => {
+          const display = getStatusDisplay(staff.id, day, staff);
+          return display.text;
+        }),
+        summary.totalShifts,
+        summary.absentDays,
+      ];
+    });
+    
+    const wb = XLSX.utils.book_new();
+    const wsData = [
+      [`Monthly Attendance - ${months[selectedMonth - 1]} ${selectedYear}`],
+      ['Tibrewal Staff Manager'],
+      [],
+      headers,
+      ...data,
+      [],
+      ['Note: If you have any queries, contact 6203229118'],
+      ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Monthly Attendance');
+    XLSX.writeFile(wb, `monthly-attendance-${selectedMonth}-${selectedYear}.xlsx`);
+    toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
@@ -215,14 +259,18 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
       </div>
 
       {/* Export Actions */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         <Button variant="secondary" size="sm" onClick={exportToPDF}>
-          <Download className="h-4 w-4 mr-2" />
-          Download PDF
+          <Download className="h-4 w-4 mr-1" />
+          PDF
+        </Button>
+        <Button variant="secondary" size="sm" onClick={exportToExcel}>
+          <Download className="h-4 w-4 mr-1" />
+          Excel
         </Button>
         <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
-          <Share2 className="h-4 w-4 mr-2" />
-          WhatsApp
+          <Share2 className="h-4 w-4 mr-1" />
+          Share
         </Button>
       </div>
 
