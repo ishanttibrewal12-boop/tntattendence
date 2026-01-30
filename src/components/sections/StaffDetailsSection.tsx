@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Edit2, Save, X, User, Phone, MapPin, Wallet, Building2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Plus, Search, Edit2, Save, X, User, Phone, MapPin, Wallet, Building2, Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ interface Staff {
   base_salary: number;
   notes: string | null;
   designation: string | null;
+  photo_url: string | null;
 }
 
 interface StaffDetailsSectionProps {
@@ -34,6 +35,8 @@ const StaffDetailsSection = ({ onBack }: StaffDetailsSectionProps) => {
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [editForm, setEditForm] = useState({
@@ -54,12 +57,72 @@ const StaffDetailsSection = ({ onBack }: StaffDetailsSectionProps) => {
     setIsLoading(true);
     const { data } = await supabase
       .from('staff')
-      .select('id, name, category, phone, address, base_salary, notes, designation')
+      .select('id, name, category, phone, address, base_salary, notes, designation, photo_url')
       .eq('is_active', true)
       .order('name');
 
     if (data) setStaffList(data as Staff[]);
     setIsLoading(false);
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedStaff) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    try {
+      // Convert to base64 for storage
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string;
+        
+        const { error } = await supabase
+          .from('staff')
+          .update({ photo_url: base64Data })
+          .eq('id', selectedStaff.id);
+
+        if (error) {
+          toast.error('Failed to upload photo');
+        } else {
+          toast.success('Photo uploaded');
+          setSelectedStaff({ ...selectedStaff, photo_url: base64Data });
+          fetchData();
+        }
+        setIsUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to upload photo');
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!selectedStaff) return;
+    
+    const { error } = await supabase
+      .from('staff')
+      .update({ photo_url: null })
+      .eq('id', selectedStaff.id);
+
+    if (error) {
+      toast.error('Failed to remove photo');
+    } else {
+      toast.success('Photo removed');
+      setSelectedStaff({ ...selectedStaff, photo_url: null });
+      fetchData();
+    }
   };
 
   const openStaffDetails = (staff: Staff) => {
@@ -194,7 +257,7 @@ const StaffDetailsSection = ({ onBack }: StaffDetailsSectionProps) => {
       ) : filteredStaff.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">No staff found</div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {filteredStaff.map((staff) => (
             <Card 
               key={staff.id} 
@@ -203,17 +266,21 @@ const StaffDetailsSection = ({ onBack }: StaffDetailsSectionProps) => {
             >
               <CardContent className="p-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{staff.name}</p>
+                  {staff.photo_url ? (
+                    <img src={staff.photo_url} alt={staff.name} className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{staff.name}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="capitalize">{staff.category}</span>
-                      {staff.phone && <span>• {staff.phone}</span>}
+                      {staff.phone && <span className="truncate">• {staff.phone}</span>}
                     </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">→</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
                 </div>
               </CardContent>
             </Card>
@@ -315,10 +382,47 @@ const StaffDetailsSection = ({ onBack }: StaffDetailsSectionProps) => {
               ) : (
                 // View Mode
                 <>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="p-3 rounded-full bg-primary/10">
-                      <User className="h-8 w-8 text-primary" />
+                  {/* Photo Section */}
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative">
+                      {selectedStaff.photo_url ? (
+                        <img 
+                          src={selectedStaff.photo_url} 
+                          alt={selectedStaff.name} 
+                          className="h-24 w-24 rounded-full object-cover border-4 border-primary/20" 
+                        />
+                      ) : (
+                        <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-12 w-12 text-primary" />
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                      />
                     </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingPhoto}
+                      >
+                        <Camera className="h-4 w-4 mr-1" />
+                        {isUploadingPhoto ? 'Uploading...' : selectedStaff.photo_url ? 'Change' : 'Add Photo'}
+                      </Button>
+                      {selectedStaff.photo_url && (
+                        <Button variant="outline" size="sm" onClick={removePhoto}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
                     <div>
                       <h3 className="text-lg font-bold text-foreground">{selectedStaff.name}</h3>
                       <p className="text-sm text-muted-foreground capitalize">{selectedStaff.category}</p>

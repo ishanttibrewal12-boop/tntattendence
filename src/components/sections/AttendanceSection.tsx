@@ -189,7 +189,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     doc.text(`Attendance Report - ${dateStr}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}`, 14, 30);
-    doc.text('Tibrewal Staff Manager | Manager: Abhay Jalan', 14, 38);
+    doc.text('Tibrewal Staff Manager', 14, 38);
 
     const filteredStaff = getFilteredStaff();
 
@@ -211,9 +211,50 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
       body: tableData,
       startY: 46,
     });
+    
+    // Add bilingual notes at the end
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Note: If you have any queries, contact 6203229118', 14, finalY);
+    doc.text('नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें', 14, finalY + 6);
+    doc.text('Tibrewal Staff Manager', 14, finalY + 14);
 
     doc.save(`attendance-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
     toast.success('PDF downloaded');
+  };
+
+  const exportToExcel = () => {
+    const XLSX = require('xlsx');
+    const filteredStaff = getFilteredStaff();
+    const dateStr = format(selectedDate, 'dd MMM yyyy');
+    
+    const headers = ['Name', 'Category', 'Status'];
+    const data = filteredStaff.map((staff) => {
+      const status = getStaffAttendance(staff.id);
+      return [
+        staff.name,
+        staff.category,
+        status ? statusConfig[status].fullLabel : 'Not Marked',
+      ];
+    });
+    
+    const wb = XLSX.utils.book_new();
+    const wsData = [
+      [`Attendance Report - ${dateStr}`],
+      ['Tibrewal Staff Manager'],
+      [],
+      headers,
+      ...data,
+      [],
+      ['Note: If you have any queries, contact 6203229118'],
+      ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    XLSX.writeFile(wb, `attendance-${format(selectedDate, 'yyyy-MM-dd')}.xlsx`);
+    toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
@@ -360,15 +401,34 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
           </div>
 
           {/* Export Actions */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             <Button variant="secondary" size="sm" onClick={exportToPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
+            <Button variant="secondary" size="sm" onClick={exportToExcel}>
+              <Download className="h-4 w-4 mr-1" />
+              Excel
             </Button>
             <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
-              <Share2 className="h-4 w-4 mr-2" />
-              WhatsApp
+              <Share2 className="h-4 w-4 mr-1" />
+              Share
             </Button>
+          </div>
+
+          {/* Staff Summary */}
+          <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
+            <div className="text-sm">
+              <span className="font-medium text-foreground">
+                {filteredStaff.filter(s => getStaffAttendance(s.id) !== null).length}/{filteredStaff.length}
+              </span>
+              <span className="text-muted-foreground ml-1">staff marked</span>
+            </div>
+            <div className="flex gap-3 text-xs text-muted-foreground">
+              <span className="text-green-600">{filteredStaff.filter(s => getStaffAttendance(s.id) === '1shift').length}×1S</span>
+              <span className="text-primary">{filteredStaff.filter(s => getStaffAttendance(s.id) === '2shift').length}×2S</span>
+              <span className="text-destructive">{filteredStaff.filter(s => getStaffAttendance(s.id) === 'absent').length}×A</span>
+            </div>
           </div>
 
           {/* Legend */}
