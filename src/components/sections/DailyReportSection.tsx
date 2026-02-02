@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { ArrowLeft, Download, Share2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, subDays } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
+import { addReportNotes, REPORT_FOOTER, exportToExcel } from '@/lib/exportUtils';
+import { formatFullCurrency } from '@/lib/formatUtils';
 
 interface Staff {
   id: string;
@@ -40,6 +42,8 @@ interface DailyReportSectionProps {
   onBack: () => void;
 }
 
+type ExportFilter = 'all' | 'petroleum' | 'crusher' | 'office' | 'mlt' | 'sales';
+
 const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [staffList, setStaffList] = useState<Staff[]>([]);
@@ -52,6 +56,7 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [dailyNote, setDailyNote] = useState('');
+  const [exportFilter, setExportFilter] = useState<ExportFilter>('all');
 
   useEffect(() => {
     fetchData();
@@ -97,6 +102,11 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
     return { text: '-', color: 'text-muted-foreground' };
   };
 
+  const getAdvanceForStaff = (staffId: string, isMlt = false) => {
+    const advList = isMlt ? mltAdvances : advances;
+    return advList.find(a => a.staff_id === staffId);
+  };
+
   const getStats = () => {
     const totalShifts = attendance.filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
     const mltShifts = mltAttendance.filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
@@ -110,85 +120,165 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
     setSelectedDate(direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1));
   };
 
+  const getFilteredData = () => {
+    switch (exportFilter) {
+      case 'petroleum':
+        return { staff: staffList.filter(s => s.category === 'petroleum'), mlt: [], includeSales: false };
+      case 'crusher':
+        return { staff: staffList.filter(s => s.category === 'crusher'), mlt: [], includeSales: false };
+      case 'office':
+        return { staff: staffList.filter(s => s.category === 'office'), mlt: [], includeSales: false };
+      case 'mlt':
+        return { staff: [], mlt: mltStaffList, includeSales: false };
+      case 'sales':
+        return { staff: [], mlt: [], includeSales: true };
+      default:
+        return { staff: staffList, mlt: mltStaffList, includeSales: true };
+    }
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     const dateStr = format(selectedDate, 'dd MMM yyyy, EEEE');
+    const filterData = getFilteredData();
+    const filterName = exportFilter === 'all' ? '' : ` (${exportFilter.charAt(0).toUpperCase() + exportFilter.slice(1)})`;
     
     doc.setFontSize(18);
-    doc.text(`Daily Report - ${dateStr}`, 14, 20);
+    doc.text(`Daily Report${filterName} - ${dateStr}`, 14, 20);
     doc.setFontSize(10);
     doc.text(REPORT_FOOTER, 14, 28);
     
-    doc.setFontSize(12);
-    doc.text(`Summary: Shifts: ${stats.totalShifts + stats.mltShifts} | Advance: ₹${stats.totalAdvance.toLocaleString()} | Petroleum: ₹${(petroleumSales.upi + petroleumSales.cash).toLocaleString()}`, 14, 40);
+    let yPos = 36;
+
+    if (exportFilter === 'all' || exportFilter === 'sales') {
+      doc.setFontSize(12);
+      doc.text(`Summary: Shifts: ${stats.totalShifts + stats.mltShifts} | Advance: ${formatFullCurrency(stats.totalAdvance)} | Petroleum: ${formatFullCurrency(petroleumSales.upi + petroleumSales.cash)}`, 14, yPos);
+      yPos += 8;
+    }
     
     if (dailyNote) {
-      doc.text(`Note: ${dailyNote}`, 14, 50);
+      doc.text(`Note: ${dailyNote}`, 14, yPos);
+      yPos += 8;
     }
 
-    // Main Staff Attendance
-    const mainData = staffList.map(staff => {
-      const status = getAttendanceStatus(staff.id);
-      const adv = advances.find(a => a.staff_id === staff.id);
-      return [staff.name, staff.category, status.text, adv ? `₹${Number(adv.amount).toLocaleString()}` : '-'];
-    });
+    // Staff Attendance
+    if (filterData.staff.length > 0) {
+      const mainData = filterData.staff.map(staff => {
+        const status = getAttendanceStatus(staff.id);
+        const adv = getAdvanceForStaff(staff.id);
+        return [staff.name, staff.category, status.text, adv ? formatFullCurrency(Number(adv.amount)) : '-'];
+      });
 
-    autoTable(doc, {
-      head: [['Name', 'Category', 'Status', 'Advance']],
-      body: mainData,
-      startY: dailyNote ? 56 : 46,
-      styles: { fontSize: 8 },
-    });
+      autoTable(doc, {
+        head: [['Name', 'Category', 'Status', 'Advance']],
+        body: mainData,
+        startY: yPos,
+        styles: { fontSize: 8 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    }
 
     // MLT Staff
-    if (mltStaffList.length > 0) {
-      const lastY = (doc as any).lastAutoTable.finalY + 10;
-      doc.text('MLT Staff:', 14, lastY);
-      const mltData = mltStaffList.map(staff => {
+    if (filterData.mlt.length > 0) {
+      doc.text('MLT Staff:', 14, yPos);
+      const mltData = filterData.mlt.map(staff => {
         const status = getAttendanceStatus(staff.id, true);
-        const adv = mltAdvances.find(a => a.staff_id === staff.id);
-        return [staff.name, staff.category, status.text, adv ? `₹${Number(adv.amount).toLocaleString()}` : '-'];
+        const adv = getAdvanceForStaff(staff.id, true);
+        return [staff.name, staff.category, status.text, adv ? formatFullCurrency(Number(adv.amount)) : '-'];
       });
 
       autoTable(doc, {
         head: [['Name', 'Category', 'Status', 'Advance']],
         body: mltData,
-        startY: lastY + 4,
+        startY: yPos + 4,
+        styles: { fontSize: 8 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // Sales
+    if (filterData.includeSales && (petroleumSales.upi > 0 || petroleumSales.cash > 0)) {
+      doc.text('Petroleum Sales:', 14, yPos);
+      autoTable(doc, {
+        head: [['Type', 'Amount']],
+        body: [
+          ['UPI', formatFullCurrency(petroleumSales.upi)],
+          ['Cash', formatFullCurrency(petroleumSales.cash)],
+          ['Total', formatFullCurrency(petroleumSales.upi + petroleumSales.cash)],
+        ],
+        startY: yPos + 4,
         styles: { fontSize: 8 },
       });
     }
 
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    const finalY = (doc as any).lastAutoTable?.finalY + 15 || yPos + 15;
     addReportNotes(doc, finalY);
-    doc.save(`daily-report-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
+    doc.save(`daily-report-${exportFilter}-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
     toast.success('PDF downloaded');
+  };
+
+  const exportToExcelFile = () => {
+    const filterData = getFilteredData();
+    const dateStr = format(selectedDate, 'dd MMM yyyy');
+    
+    const data: any[][] = [];
+    
+    filterData.staff.forEach(staff => {
+      const status = getAttendanceStatus(staff.id);
+      const adv = getAdvanceForStaff(staff.id);
+      data.push([staff.name, staff.category, status.text, adv ? Number(adv.amount) : 0]);
+    });
+
+    filterData.mlt.forEach(staff => {
+      const status = getAttendanceStatus(staff.id, true);
+      const adv = getAdvanceForStaff(staff.id, true);
+      data.push([staff.name, `MLT-${staff.category}`, status.text, adv ? Number(adv.amount) : 0]);
+    });
+
+    exportToExcel(data, ['Name', 'Category', 'Status', 'Advance'], `daily-report-${exportFilter}-${format(selectedDate, 'yyyy-MM-dd')}`, 'Report', `Daily Report - ${dateStr}`);
+    toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
     const dateStr = format(selectedDate, 'dd MMM yyyy, EEEE');
+    const filterData = getFilteredData();
+    const filterName = exportFilter === 'all' ? '' : ` (${exportFilter.charAt(0).toUpperCase() + exportFilter.slice(1)})`;
     
-    let message = `📋 *Daily Report - ${dateStr}*\n\n`;
-    message += `*Summary*\n`;
-    message += `📊 Total Shifts: ${stats.totalShifts + stats.mltShifts}\n`;
-    message += `💰 Advance Given: ₹${stats.totalAdvance.toLocaleString()}\n`;
-    message += `⛽ Petroleum: ₹${(petroleumSales.upi + petroleumSales.cash).toLocaleString()} (UPI: ₹${petroleumSales.upi.toLocaleString()}, Cash: ₹${petroleumSales.cash.toLocaleString()})\n\n`;
+    let message = `📋 *Daily Report${filterName} - ${dateStr}*\n\n`;
+    
+    if (exportFilter === 'all' || exportFilter === 'sales') {
+      message += `*Summary*\n`;
+      message += `📊 Total Shifts: ${stats.totalShifts + stats.mltShifts}\n`;
+      message += `💰 Advance Given: ${formatFullCurrency(stats.totalAdvance)}\n`;
+      message += `⛽ Petroleum: ${formatFullCurrency(petroleumSales.upi + petroleumSales.cash)} (UPI: ${formatFullCurrency(petroleumSales.upi)}, Cash: ${formatFullCurrency(petroleumSales.cash)})\n\n`;
+    }
 
     if (dailyNote) {
       message += `📝 *Note:* ${dailyNote}\n\n`;
     }
 
-    message += `*Staff Attendance*\n`;
-    staffList.forEach(staff => {
-      const status = getAttendanceStatus(staff.id);
-      message += `${staff.name}: ${status.text}\n`;
-    });
-
-    if (mltStaffList.length > 0) {
-      message += `\n*MLT Staff*\n`;
-      mltStaffList.forEach(staff => {
-        const status = getAttendanceStatus(staff.id, true);
-        message += `${staff.name}: ${status.text}\n`;
+    if (filterData.staff.length > 0) {
+      message += `*Staff Attendance*\n`;
+      filterData.staff.forEach(staff => {
+        const status = getAttendanceStatus(staff.id);
+        const adv = getAdvanceForStaff(staff.id);
+        message += `${staff.name}: ${status.text}${adv ? ` (₹${Number(adv.amount).toLocaleString()})` : ''}\n`;
       });
+    }
+
+    if (filterData.mlt.length > 0) {
+      message += `\n*MLT Staff*\n`;
+      filterData.mlt.forEach(staff => {
+        const status = getAttendanceStatus(staff.id, true);
+        const adv = getAdvanceForStaff(staff.id, true);
+        message += `${staff.name}: ${status.text}${adv ? ` (₹${Number(adv.amount).toLocaleString()})` : ''}\n`;
+      });
+    }
+
+    if (filterData.includeSales && (petroleumSales.upi > 0 || petroleumSales.cash > 0)) {
+      message += `\n*Petroleum Sales*\n`;
+      message += `UPI: ${formatFullCurrency(petroleumSales.upi)}\n`;
+      message += `Cash: ${formatFullCurrency(petroleumSales.cash)}\n`;
     }
 
     message += `\n_${REPORT_FOOTER}_`;
@@ -226,10 +316,29 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
         </CardContent>
       </Card>
 
+      {/* Export Filter */}
+      <div className="mb-4">
+        <Select value={exportFilter} onValueChange={(v) => setExportFilter(v as ExportFilter)}>
+          <SelectTrigger>
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter exports" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="petroleum">Petroleum Staff Only</SelectItem>
+            <SelectItem value="crusher">Crusher Staff Only</SelectItem>
+            <SelectItem value="office">Office Staff Only</SelectItem>
+            <SelectItem value="mlt">MLT Staff Only</SelectItem>
+            <SelectItem value="sales">Petroleum Sales Only</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Export Actions */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <Button variant="secondary" size="sm" onClick={exportToPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
-        <Button variant="secondary" size="sm" onClick={shareToWhatsApp}><Share2 className="h-4 w-4 mr-2" />WhatsApp</Button>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <Button variant="secondary" size="sm" onClick={exportToPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
+        <Button variant="secondary" size="sm" onClick={exportToExcelFile}><Download className="h-4 w-4 mr-1" />Excel</Button>
+        <Button variant="secondary" size="sm" onClick={shareToWhatsApp}><Share2 className="h-4 w-4 mr-1" />Share</Button>
       </div>
 
       {/* Daily Note */}
@@ -248,17 +357,17 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
           <div className="grid grid-cols-3 gap-2 mb-4">
             <Card className="bg-primary/10"><CardContent className="p-2 text-center"><p className="text-lg font-bold text-primary">{stats.totalShifts}</p><p className="text-[10px] text-muted-foreground">Main Shifts</p></CardContent></Card>
             <Card className="bg-secondary/10"><CardContent className="p-2 text-center"><p className="text-lg font-bold text-secondary">{stats.mltShifts}</p><p className="text-[10px] text-muted-foreground">MLT Shifts</p></CardContent></Card>
-            <Card className="bg-destructive/10"><CardContent className="p-2 text-center"><p className="text-lg font-bold text-destructive">₹{stats.totalAdvance >= 1000 ? `${(stats.totalAdvance/1000).toFixed(0)}k` : stats.totalAdvance}</p><p className="text-[10px] text-muted-foreground">Advance</p></CardContent></Card>
+            <Card className="bg-destructive/10"><CardContent className="p-2 text-center"><p className="text-lg font-bold text-destructive">{formatFullCurrency(stats.totalAdvance)}</p><p className="text-[10px] text-muted-foreground">Advance</p></CardContent></Card>
           </div>
 
           {/* Petroleum */}
           <Card className="mb-4 bg-chart-3/10">
             <CardContent className="p-3">
               <p className="text-xs text-muted-foreground mb-1">⛽ Petroleum Sales</p>
-              <div className="flex justify-between">
-                <span>UPI: ₹{petroleumSales.upi.toLocaleString()}</span>
-                <span>Cash: ₹{petroleumSales.cash.toLocaleString()}</span>
-                <span className="font-bold">Total: ₹{(petroleumSales.upi + petroleumSales.cash).toLocaleString()}</span>
+              <div className="flex justify-between text-sm">
+                <span>UPI: {formatFullCurrency(petroleumSales.upi)}</span>
+                <span>Cash: {formatFullCurrency(petroleumSales.cash)}</span>
+                <span className="font-bold">Total: {formatFullCurrency(petroleumSales.upi + petroleumSales.cash)}</span>
               </div>
             </CardContent>
           </Card>
@@ -276,9 +385,11 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
                       <p className="text-xs font-medium text-muted-foreground capitalize mt-2 mb-1">{cat}</p>
                       {catStaff.map(staff => {
                         const status = getAttendanceStatus(staff.id);
+                        const adv = getAdvanceForStaff(staff.id);
                         return (
                           <div key={staff.id} className="flex justify-between text-sm py-0.5">
-                            <span>{staff.name}</span>
+                            <span className="truncate flex-1">{staff.name}</span>
+                            {adv && <span className="text-destructive text-xs mr-2">₹{Number(adv.amount).toLocaleString()}</span>}
                             <span className={`font-medium ${status.color}`}>{status.text}</span>
                           </div>
                         );
@@ -304,9 +415,11 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
                         <p className="text-xs font-medium text-muted-foreground capitalize mt-2 mb-1">{cat}</p>
                         {catStaff.map(staff => {
                           const status = getAttendanceStatus(staff.id, true);
+                          const adv = getAdvanceForStaff(staff.id, true);
                           return (
                             <div key={staff.id} className="flex justify-between text-sm py-0.5">
-                              <span>{staff.name}</span>
+                              <span className="truncate flex-1">{staff.name}</span>
+                              {adv && <span className="text-destructive text-xs mr-2">₹{Number(adv.amount).toLocaleString()}</span>}
                               <span className={`font-medium ${status.color}`}>{status.text}</span>
                             </div>
                           );

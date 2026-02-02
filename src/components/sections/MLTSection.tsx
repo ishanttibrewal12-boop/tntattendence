@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, User, Calendar, Wallet, FileText, Download, Share2, Search, Check, Camera, UserCog, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Calendar, Wallet, FileText, Download, Share2, Search, Check, Camera, UserCog, DollarSign, Truck, FolderArchive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,9 @@ import { toast } from 'sonner';
 import { format, getDaysInMonth, startOfMonth, subDays, addDays } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import JSZip from 'jszip';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
+import { formatFullCurrency } from '@/lib/formatUtils';
 
 interface MLTStaff {
   id: string;
@@ -52,7 +54,7 @@ interface MLTSectionProps {
   onBack: () => void;
 }
 
-type ViewType = 'home' | 'staff' | 'attendance' | 'advances' | 'reports' | 'profile' | 'staff-details' | 'salary';
+type ViewType = 'home' | 'staff' | 'attendance' | 'advances' | 'reports' | 'profile' | 'staff-details' | 'salary' | 'backup' | 'daily-report';
 type AttendanceStatus = '1shift' | '2shift' | 'absent' | 'not_marked';
 
 const statusConfig = {
@@ -385,7 +387,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
     const staffAdvances = advances.map(adv => {
       const staff = staffList.find(s => s.id === adv.staff_id);
-      return [staff?.name || 'Unknown', staff?.category || '-', format(new Date(adv.date), 'dd/MM/yyyy'), `₹${Number(adv.amount).toLocaleString()}`];
+      return [staff?.name || 'Unknown', staff?.category || '-', format(new Date(adv.date), 'dd/MM/yyyy'), formatFullCurrency(Number(adv.amount))];
     });
 
     autoTable(doc, {
@@ -398,6 +400,106 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     addReportNotes(doc, finalY);
     doc.save(`mlt-advances-${reportMonth}-${reportYear}.pdf`);
     toast.success('PDF downloaded');
+  };
+
+  const exportAttendanceExcel = () => {
+    const headers = ['Staff', 'Category', 'Total Shifts', 'Absent Days'];
+    const data = staffList.map(staff => {
+      const staffAtt = getMonthlyAttendanceForStaff(staff.id);
+      const totalShifts = staffAtt.reduce((sum, a) => sum + (a.shift_count || 1), 0);
+      const absentDays = staffAtt.filter(a => a.status === 'absent').length;
+      return [staff.name, staff.category, totalShifts, absentDays];
+    });
+    exportToExcel(data, headers, `mlt-attendance-${reportMonth}-${reportYear}`, 'Attendance', `MLT Attendance - ${months[reportMonth - 1]} ${reportYear}`);
+    toast.success('Excel downloaded');
+  };
+
+  const shareAttendanceWhatsApp = () => {
+    let message = `🚛 *MLT Attendance - ${months[reportMonth - 1]} ${reportYear}*\n\n`;
+    staffList.forEach(staff => {
+      const staffAtt = getMonthlyAttendanceForStaff(staff.id);
+      const totalShifts = staffAtt.reduce((sum, a) => sum + (a.shift_count || 1), 0);
+      message += `${staff.name}: ${totalShifts} shifts\n`;
+    });
+    message += `\n_${REPORT_FOOTER}_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const shareAdvancesWhatsApp = () => {
+    let message = `🚛 *MLT Advances - ${months[reportMonth - 1]} ${reportYear}*\n\n`;
+    const totalAdv = advances.reduce((sum, a) => sum + Number(a.amount), 0);
+    message += `Total: ${formatFullCurrency(totalAdv)}\n\n`;
+    staffList.forEach(staff => {
+      const staffAdv = advances.filter(a => a.staff_id === staff.id);
+      const total = staffAdv.reduce((sum, a) => sum + Number(a.amount), 0);
+      if (total > 0) message += `${staff.name}: ${formatFullCurrency(total)}\n`;
+    });
+    message += `\n_${REPORT_FOOTER}_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const downloadMLTBackupZip = async () => {
+    try {
+      toast.loading('Generating backup...');
+      const zip = new JSZip();
+      const folderName = `MLT-Backup-${months[reportMonth - 1]}-${reportYear}`;
+      const folder = zip.folder(folderName);
+      if (!folder) return;
+
+      for (const category of ['driver', 'khalasi']) {
+        const catStaff = staffList.filter(s => s.category === category);
+        if (catStaff.length === 0) continue;
+        const catFolder = folder.folder(category.charAt(0).toUpperCase() + category.slice(1));
+        
+        for (const staff of catStaff) {
+          const doc = new jsPDF();
+          const staffAtt = getMonthlyAttendanceForStaff(staff.id);
+          const totalShifts = staffAtt.reduce((sum, a) => sum + (a.shift_count || 1), 0);
+          const staffAdv = advances.filter(a => a.staff_id === staff.id);
+          const totalAdvance = staffAdv.reduce((sum, a) => sum + Number(a.amount), 0);
+
+          doc.setFontSize(16);
+          doc.text(`MLT Staff Report - ${staff.name}`, 14, 15);
+          doc.setFontSize(10);
+          doc.text(REPORT_FOOTER, 14, 22);
+          doc.text(`${months[reportMonth - 1]} ${reportYear} | Category: ${staff.category}`, 14, 28);
+          doc.text(`Total Shifts: ${totalShifts} | Total Advance: ${formatFullCurrency(totalAdvance)}`, 14, 36);
+
+          const finalY = 50;
+          addReportNotes(doc, finalY);
+          catFolder?.file(`${staff.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`, doc.output('blob'));
+        }
+      }
+
+      const summaryFolder = folder.folder('Summary');
+      const attPDF = new jsPDF({ orientation: 'landscape' });
+      attPDF.setFontSize(16);
+      attPDF.text(`MLT Attendance Summary - ${months[reportMonth - 1]} ${reportYear}`, 14, 15);
+      attPDF.setFontSize(10);
+      attPDF.text(REPORT_FOOTER, 14, 22);
+      const attData = staffList.map(s => {
+        const att = getMonthlyAttendanceForStaff(s.id);
+        return [s.name, s.category, att.reduce((sum, a) => sum + (a.shift_count || 1), 0).toString()];
+      });
+      autoTable(attPDF, { head: [['Name', 'Category', 'Total Shifts']], body: attData, startY: 28 });
+      addReportNotes(attPDF, (attPDF as any).lastAutoTable.finalY + 15);
+      summaryFolder?.file('Attendance_Summary.pdf', attPDF.output('blob'));
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${folderName}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.dismiss();
+      toast.success('MLT Backup downloaded!');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to generate backup');
+    }
   };
 
   const exportAdvancesExcel = () => {
@@ -427,8 +529,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     doc.setFontSize(12);
     doc.text('Summary:', 14, 48);
     doc.text(`Total Shifts: ${totalShifts}`, 14, 56);
-    doc.text(`Total Advance: ₹${totalAdvance.toLocaleString()}`, 14, 64);
-    doc.text(`Base Salary: ₹${selectedStaff.base_salary.toLocaleString()}`, 14, 72);
+    doc.text(`Total Advance: ${formatFullCurrency(totalAdvance)}`, 14, 64);
+    doc.text(`Base Salary: ${formatFullCurrency(selectedStaff.base_salary)}`, 14, 72);
 
     if (selectedStaff.phone) doc.text(`Phone: ${selectedStaff.phone}`, 14, 82);
     if (selectedStaff.address) doc.text(`Address: ${selectedStaff.address}`, 14, 90);
@@ -441,6 +543,17 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
   const renderHome = () => (
     <div className="space-y-3">
+      {/* Header with Truck Icon */}
+      <Card className="bg-chart-1/10 border-chart-1/20 mb-4">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-chart-1"><Truck className="h-8 w-8 text-primary-foreground" /></div>
+          <div>
+            <h2 className="text-lg font-bold">MLT Department</h2>
+            <p className="text-sm text-muted-foreground">Motor Lorry Transport</p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('staff')}>
         <CardContent className="p-4 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-primary"><User className="h-6 w-6 text-primary-foreground" /></div>
@@ -475,6 +588,12 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         <CardContent className="p-4 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-chart-1"><FileText className="h-6 w-6 text-primary-foreground" /></div>
           <div><h3 className="font-semibold">Monthly Reports</h3><p className="text-sm text-muted-foreground">Export & backup</p></div>
+        </CardContent>
+      </Card>
+      <Card className="cursor-pointer hover:shadow-md" onClick={downloadMLTBackupZip}>
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-chart-4"><FolderArchive className="h-6 w-6 text-primary-foreground" /></div>
+          <div><h3 className="font-semibold">Monthly Backup</h3><p className="text-sm text-muted-foreground">Download ZIP folder</p></div>
         </CardContent>
       </Card>
     </div>
@@ -714,11 +833,11 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                     <p className="text-muted-foreground">Shifts</p>
                   </div>
                   <div className="bg-destructive/10 p-2 rounded">
-                    <p className="font-bold text-destructive">₹{totalAdvance.toLocaleString()}</p>
+                    <p className="font-bold text-destructive">{formatFullCurrency(totalAdvance)}</p>
                     <p className="text-muted-foreground">Advance</p>
                   </div>
                   <div className={`p-2 rounded ${netPayable >= 0 ? 'bg-green-500/10' : 'bg-destructive/10'}`}>
-                    <p className={`font-bold ${netPayable >= 0 ? 'text-green-600' : 'text-destructive'}`}>₹{netPayable.toLocaleString()}</p>
+                    <p className={`font-bold ${netPayable >= 0 ? 'text-green-600' : 'text-destructive'}`}>{formatFullCurrency(netPayable)}</p>
                     <p className="text-muted-foreground">Net</p>
                   </div>
                 </div>
@@ -787,24 +906,50 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </Select>
       </div>
 
+      {/* Attendance Reports */}
       <Card>
         <CardHeader><CardTitle className="text-sm">Monthly Attendance Report</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           <p className="text-xs text-muted-foreground mb-2">All staff attendance for {months[reportMonth - 1]} {reportYear}</p>
-          <Button variant="secondary" size="sm" className="w-full" onClick={exportAttendancePDF}>
-            <Download className="h-4 w-4 mr-2" />Download PDF
-          </Button>
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="secondary" size="sm" onClick={exportAttendancePDF}>
+              <Download className="h-3 w-3 mr-1" />PDF
+            </Button>
+            <Button variant="secondary" size="sm" onClick={exportAttendanceExcel}>
+              <Download className="h-3 w-3 mr-1" />Excel
+            </Button>
+            <Button variant="secondary" size="sm" onClick={shareAttendanceWhatsApp}>
+              <Share2 className="h-3 w-3 mr-1" />Share
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
+      {/* Advances Reports */}
       <Card>
         <CardHeader><CardTitle className="text-sm">Advances Report</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="secondary" size="sm" className="w-full" onClick={exportAdvancesPDF}>
-            <Download className="h-4 w-4 mr-2" />Download PDF
-          </Button>
-          <Button variant="secondary" size="sm" className="w-full" onClick={exportAdvancesExcel}>
-            <Download className="h-4 w-4 mr-2" />Download Excel
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="secondary" size="sm" onClick={exportAdvancesPDF}>
+              <Download className="h-3 w-3 mr-1" />PDF
+            </Button>
+            <Button variant="secondary" size="sm" onClick={exportAdvancesExcel}>
+              <Download className="h-3 w-3 mr-1" />Excel
+            </Button>
+            <Button variant="secondary" size="sm" onClick={shareAdvancesWhatsApp}>
+              <Share2 className="h-3 w-3 mr-1" />Share
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Full Backup */}
+      <Card className="bg-chart-1/10 border-chart-1/20">
+        <CardHeader><CardTitle className="text-sm flex items-center gap-2"><FolderArchive className="h-4 w-4" />Complete Backup</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">Download all MLT staff reports in a ZIP folder with PDF summaries</p>
+          <Button className="w-full" onClick={downloadMLTBackupZip}>
+            <Download className="h-4 w-4 mr-2" />Download MLT Backup ZIP
           </Button>
         </CardContent>
       </Card>

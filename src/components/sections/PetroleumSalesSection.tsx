@@ -17,6 +17,7 @@ import { format, getDaysInMonth, startOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
+import { formatFullCurrency, formatCompactCurrency } from '@/lib/formatUtils';
 
 interface PetroleumSale {
   id: string;
@@ -137,7 +138,7 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex justify-between items-center">
             <span>{title} - {months[selectedMonth - 1]} {selectedYear}</span>
-            <span className="text-primary font-bold">₹{totalForType.toLocaleString()}</span>
+            <span className="text-primary font-bold">{formatFullCurrency(totalForType)}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -157,7 +158,7 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
                   className={`p-1 rounded text-center ${isToday ? 'ring-2 ring-primary' : ''} ${amount > 0 ? type === 'upi' ? 'bg-primary/20' : type === 'cash' ? 'bg-green-500/20' : 'bg-secondary/30' : 'bg-muted/30'}`}
                 >
                   <div className="text-xs font-medium">{day}</div>
-                  {amount > 0 && <div className="text-[8px] font-bold">₹{amount >= 1000 ? `${(amount / 1000).toFixed(0)}k` : amount}</div>}
+                  {amount > 0 && <div className="text-[8px] font-bold">{formatCompactCurrency(amount)}</div>}
                 </div>
               );
             })}
@@ -174,12 +175,12 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
     doc.text(`Petroleum Sales - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 15);
     doc.setFontSize(10);
     doc.text(REPORT_FOOTER, 14, 22);
-    doc.text(`Total: ₹${totalAmount.toLocaleString()} (UPI: ₹${totalUPI.toLocaleString()}, Cash: ₹${totalCash.toLocaleString()})`, 14, 30);
+    doc.text(`Total: ${formatFullCurrency(totalAmount)} (UPI: ${formatFullCurrency(totalUPI)}, Cash: ${formatFullCurrency(totalCash)})`, 14, 30);
 
     const tableData = filteredSales.map(s => [
       format(new Date(s.date), 'dd/MM/yyyy'),
       s.sale_type.toUpperCase(),
-      `₹${Number(s.amount).toLocaleString()}`,
+      formatFullCurrency(Number(s.amount)),
       s.notes || '-',
     ]);
 
@@ -210,9 +211,9 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
   const shareToWhatsApp = () => {
     let message = `⛽ *Petroleum Sales - ${months[selectedMonth - 1]} ${selectedYear}*\n\n`;
     message += `*Summary*\n`;
-    message += `💳 UPI: ₹${totalUPI.toLocaleString()}\n`;
-    message += `💵 Cash: ₹${totalCash.toLocaleString()}\n`;
-    message += `📊 Total: ₹${totalAmount.toLocaleString()}\n\n`;
+    message += `💳 UPI: ${formatFullCurrency(totalUPI)}\n`;
+    message += `💵 Cash: ${formatFullCurrency(totalCash)}\n`;
+    message += `📊 Total: ${formatFullCurrency(totalAmount)}\n\n`;
     message += `_${REPORT_FOOTER}_`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
@@ -251,24 +252,27 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
         <Button variant={viewMode === 'calendar-cash' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('calendar-cash')}>Cash Calendar</Button>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - Full amounts */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         <Card className="bg-primary/10 border-primary/20">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">UPI</p>
-            <p className="text-lg font-bold text-primary">₹{totalUPI >= 1000 ? `${(totalUPI / 1000).toFixed(1)}k` : totalUPI}</p>
+            <p className="text-sm font-bold text-primary">{formatCompactCurrency(totalUPI)}</p>
+            <p className="text-[10px] text-muted-foreground">{formatFullCurrency(totalUPI)}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-500/10 border-green-500/20">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Cash</p>
-            <p className="text-lg font-bold text-green-600">₹{totalCash >= 1000 ? `${(totalCash / 1000).toFixed(1)}k` : totalCash}</p>
+            <p className="text-sm font-bold text-green-600">{formatCompactCurrency(totalCash)}</p>
+            <p className="text-[10px] text-muted-foreground">{formatFullCurrency(totalCash)}</p>
           </CardContent>
         </Card>
         <Card className="bg-secondary/20">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-lg font-bold">₹{totalAmount >= 1000 ? `${(totalAmount / 1000).toFixed(1)}k` : totalAmount}</p>
+            <p className="text-sm font-bold">{formatCompactCurrency(totalAmount)}</p>
+            <p className="text-[10px] text-muted-foreground">{formatFullCurrency(totalAmount)}</p>
           </CardContent>
         </Card>
       </div>
@@ -305,7 +309,7 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-96 overflow-y-auto">
             {filteredSales.map(sale => (
               <Card key={sale.id}>
                 <CardContent className="p-3 flex items-center gap-3">
@@ -318,7 +322,7 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">₹{Number(sale.amount).toLocaleString()}</p>
+                      <p className="font-medium">{formatFullCurrency(Number(sale.amount))}</p>
                       <span className={`text-xs px-2 py-0.5 rounded ${sale.sale_type === 'upi' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-600'}`}>
                         {sale.sale_type.toUpperCase()}
                       </span>
