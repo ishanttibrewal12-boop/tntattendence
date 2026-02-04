@@ -10,6 +10,7 @@ import { format, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
+import { formatCurrencyForPDF, formatFullCurrency } from '@/lib/formatUtils';
 interface Staff {
   id: string;
   name: string;
@@ -224,18 +225,18 @@ const SalaryTab = () => {
     doc.setFontSize(18);
     doc.text(`Salary Report - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 20);
     doc.setFontSize(12);
-    doc.text(`Total Payable: ₹${totalNetSalary.toLocaleString()}`, 14, 30);
-    doc.text(`Total Advances Deducted: ₹${totalAdvances.toLocaleString()}`, 14, 38);
+    doc.text(`Total Payable: ${formatCurrencyForPDF(totalNetSalary)}`, 14, 30);
+    doc.text(`Total Advances Deducted: ${formatCurrencyForPDF(totalAdvances)}`, 14, 38);
     doc.text(REPORT_FOOTER, 14, 46);
 
     const tableData = filteredSalaryData.map((s) => [
       s.name,
       s.category,
-      `₹${s.baseSalary.toLocaleString()}`,
+      formatCurrencyForPDF(s.baseSalary),
       `${s.totalShifts} shifts`,
-      `₹${s.earnedSalary.toLocaleString()}`,
-      `₹${s.totalAdvance.toLocaleString()}`,
-      `₹${s.netSalary.toLocaleString()}`,
+      formatCurrencyForPDF(s.earnedSalary),
+      formatCurrencyForPDF(s.totalAdvance),
+      formatCurrencyForPDF(s.netSalary),
       paidStaff.has(s.staffId) ? 'Paid' : 'Pending',
     ]);
 

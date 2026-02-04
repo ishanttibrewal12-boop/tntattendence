@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { format, addDays, subDays, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
 
 interface Staff {
   id: string;
@@ -189,7 +190,7 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     doc.text(`Attendance Report - ${dateStr}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}`, 14, 30);
-    doc.text('Tibrewal Staff Manager', 14, 38);
+    doc.text(REPORT_FOOTER, 14, 38);
 
     const filteredStaff = getFilteredStaff();
 
@@ -212,13 +213,8 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
       startY: 46,
     });
     
-    // Add bilingual notes at the end
     const finalY = (doc as any).lastAutoTable.finalY + 15;
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text('Note: If you have any queries, contact 6203229118', 14, finalY);
-    doc.text('नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें', 14, finalY + 6);
-    doc.text('Tibrewal Staff Manager', 14, finalY + 14);
+    addReportNotes(doc, finalY);
 
     doc.save(`attendance-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
     toast.success('PDF downloaded');

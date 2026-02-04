@@ -17,6 +17,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { cn } from '@/lib/utils';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
+import { formatCurrencyForPDF, formatFullCurrency } from '@/lib/formatUtils';
 
 interface Staff {
   id: string;
@@ -197,14 +198,14 @@ const AdvanceTab = () => {
     doc.text(`Advance Report - ${months[viewMonth - 1]} ${viewYear}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy')}`, 14, 30);
-    doc.text(`Total: ₹${totalAdvances.toLocaleString()}`, 14, 38);
+    doc.text(`Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, 38);
     doc.text(REPORT_FOOTER, 14, 46);
 
     const tableData = advances.map((adv) => [
       adv.staff?.name || 'Unknown',
       adv.staff?.category || '-',
       format(new Date(adv.date), 'dd MMM yyyy'),
-      `₹${Number(adv.amount).toLocaleString()}`,
+      formatCurrencyForPDF(Number(adv.amount)),
       adv.notes || '-',
     ]);
 

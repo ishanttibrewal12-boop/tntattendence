@@ -17,7 +17,7 @@ import { format, getDaysInMonth, startOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
-import { formatFullCurrency, formatCompactCurrency } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCompactCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
 
 interface PetroleumSale {
   id: string;
@@ -175,12 +175,12 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
     doc.text(`Petroleum Sales - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 15);
     doc.setFontSize(10);
     doc.text(REPORT_FOOTER, 14, 22);
-    doc.text(`Total: ${formatFullCurrency(totalAmount)} (UPI: ${formatFullCurrency(totalUPI)}, Cash: ${formatFullCurrency(totalCash)})`, 14, 30);
+    doc.text(`Total: ${formatCurrencyForPDF(totalAmount)} (UPI: ${formatCurrencyForPDF(totalUPI)}, Cash: ${formatCurrencyForPDF(totalCash)})`, 14, 30);
 
     const tableData = filteredSales.map(s => [
       format(new Date(s.date), 'dd/MM/yyyy'),
       s.sale_type.toUpperCase(),
-      formatFullCurrency(Number(s.amount)),
+      formatCurrencyForPDF(Number(s.amount)),
       s.notes || '-',
     ]);
 
