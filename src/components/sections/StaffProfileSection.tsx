@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
+import { formatCurrencyForPDF } from '@/lib/formatUtils';
 
 interface Staff {
   id: string;
@@ -234,7 +236,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     doc.setFontSize(12);
     doc.text(`Category: ${selectedStaff.category}`, 14, 30);
     doc.text(`Month: ${months[selectedMonth - 1]} ${selectedYear}`, 14, 38);
-    doc.text('Tibrewal Staff Manager', 14, 46);
+    doc.text(REPORT_FOOTER, 14, 46);
     
     if (selectedStaff.notes) {
       doc.text(`Notes: ${selectedStaff.notes}`, 14, 54);
@@ -248,7 +250,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
       ['1-Shift Days', stats.oneShiftDays.toString()],
       ['2-Shift Days', stats.twoShiftDays.toString()],
       ['Absent Days', stats.absentDays.toString()],
-      ['Total Advance Taken', `₹${stats.totalAdvance.toLocaleString()}`],
+      ['Total Advance Taken', formatCurrencyForPDF(stats.totalAdvance)],
     ];
 
     autoTable(doc, {
@@ -281,7 +283,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
       
       const advanceData = advances.map(a => [
         format(new Date(a.date), 'dd MMM yyyy'),
-        `₹${Number(a.amount).toLocaleString()}`,
+        formatCurrencyForPDF(Number(a.amount)),
         a.is_deducted ? 'Deducted' : 'Active',
         a.notes || '-',
       ]);
@@ -292,6 +294,9 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
         startY: (doc as any).lastAutoTable.finalY + 20,
       });
     }
+
+    const finalY = (doc as any).lastAutoTable?.finalY + 15 || 100;
+    addReportNotes(doc, finalY);
 
     return doc;
   };

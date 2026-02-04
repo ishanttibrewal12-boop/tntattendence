@@ -12,7 +12,7 @@ import { format, addDays, subDays } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { addReportNotes, REPORT_FOOTER, exportToExcel } from '@/lib/exportUtils';
-import { formatFullCurrency } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
 
 interface Staff {
   id: string;
@@ -152,7 +152,7 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
 
     if (exportFilter === 'all' || exportFilter === 'sales') {
       doc.setFontSize(12);
-      doc.text(`Summary: Shifts: ${stats.totalShifts + stats.mltShifts} | Advance: ${formatFullCurrency(stats.totalAdvance)} | Petroleum: ${formatFullCurrency(petroleumSales.upi + petroleumSales.cash)}`, 14, yPos);
+      doc.text(`Summary: Shifts: ${stats.totalShifts + stats.mltShifts} | Advance: ${formatCurrencyForPDF(stats.totalAdvance)} | Petroleum: ${formatCurrencyForPDF(petroleumSales.upi + petroleumSales.cash)}`, 14, yPos);
       yPos += 8;
     }
     
@@ -166,7 +166,7 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
       const mainData = filterData.staff.map(staff => {
         const status = getAttendanceStatus(staff.id);
         const adv = getAdvanceForStaff(staff.id);
-        return [staff.name, staff.category, status.text, adv ? formatFullCurrency(Number(adv.amount)) : '-'];
+        return [staff.name, staff.category, status.text, adv ? formatCurrencyForPDF(Number(adv.amount)) : '-'];
       });
 
       autoTable(doc, {
@@ -184,7 +184,7 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
       const mltData = filterData.mlt.map(staff => {
         const status = getAttendanceStatus(staff.id, true);
         const adv = getAdvanceForStaff(staff.id, true);
-        return [staff.name, staff.category, status.text, adv ? formatFullCurrency(Number(adv.amount)) : '-'];
+        return [staff.name, staff.category, status.text, adv ? formatCurrencyForPDF(Number(adv.amount)) : '-'];
       });
 
       autoTable(doc, {
@@ -202,9 +202,9 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
       autoTable(doc, {
         head: [['Type', 'Amount']],
         body: [
-          ['UPI', formatFullCurrency(petroleumSales.upi)],
-          ['Cash', formatFullCurrency(petroleumSales.cash)],
-          ['Total', formatFullCurrency(petroleumSales.upi + petroleumSales.cash)],
+          ['UPI', formatCurrencyForPDF(petroleumSales.upi)],
+          ['Cash', formatCurrencyForPDF(petroleumSales.cash)],
+          ['Total', formatCurrencyForPDF(petroleumSales.upi + petroleumSales.cash)],
         ],
         startY: yPos + 4,
         styles: { fontSize: 8 },

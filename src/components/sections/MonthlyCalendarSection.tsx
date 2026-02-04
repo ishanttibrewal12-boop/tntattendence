@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { format, getDaysInMonth, startOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
 
 interface Staff {
   id: string;
@@ -124,7 +125,7 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
     doc.setFontSize(16);
     doc.text(`Monthly Attendance - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 15);
     doc.setFontSize(10);
-    doc.text('Tibrewal Staff Manager', 14, 22);
+    doc.text(REPORT_FOOTER, 14, 22);
 
     const headers = ['Staff', ...monthDays.map(d => d.toString()), 'Shifts', 'Absent'];
     const tableData = filteredStaff.map((staff) => {
@@ -148,13 +149,8 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
       headStyles: { fillColor: [0, 120, 212] },
     });
     
-    // Add bilingual notes at the end
     const finalY = (doc as any).lastAutoTable.finalY + 15;
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text('Note: If you have any queries, contact 6203229118', 14, finalY);
-    doc.text('नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें', 14, finalY + 6);
-    doc.text('Tibrewal Staff Manager', 14, finalY + 14);
+    addReportNotes(doc, finalY);
 
     doc.save(`monthly-attendance-${selectedMonth}-${selectedYear}.pdf`);
     toast.success('PDF downloaded');

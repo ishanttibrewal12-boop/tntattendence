@@ -11,7 +11,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JSZip from 'jszip';
 import { addReportNotes, REPORT_FOOTER, exportToExcel } from '@/lib/exportUtils';
-import { formatFullCurrency } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
 
 interface Staff {
   id: string;
@@ -100,7 +100,7 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
     doc.setFontSize(10);
     doc.text(REPORT_FOOTER, 14, 22);
     doc.text(`${months[selectedMonth - 1]} ${selectedYear}`, 14, 28);
-    doc.text(`Category: ${staff.category} | Base Salary: ${formatFullCurrency(staff.base_salary)}`, 14, 34);
+    doc.text(`Category: ${staff.category} | Base Salary: ${formatCurrencyForPDF(staff.base_salary)}`, 14, 34);
 
     const staffAttendance = attendanceData.filter(a => a.staff_id === staff.id);
     const staffAdvances = advancesData.filter(a => a.staff_id === staff.id);
@@ -115,7 +115,7 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
     doc.setFontSize(12);
     doc.text('Summary:', 14, 44);
     doc.setFontSize(10);
-    doc.text(`Total Shifts: ${totalShifts} | Absent Days: ${absentDays} | Total Advance: ${formatFullCurrency(totalAdvance)}`, 14, 52);
+    doc.text(`Total Shifts: ${totalShifts} | Absent Days: ${absentDays} | Total Advance: ${formatCurrencyForPDF(totalAdvance)}`, 14, 52);
 
     doc.setFontSize(12);
     doc.text('Daily Attendance:', 14, 64);
@@ -145,7 +145,7 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
       
       const advData = staffAdvances.map(a => [
         format(new Date(a.date), 'dd/MM/yyyy'),
-        formatFullCurrency(Number(a.amount)),
+        formatCurrencyForPDF(Number(a.amount)),
         a.notes || '-',
       ]);
 
@@ -219,7 +219,7 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
     doc.text(REPORT_FOOTER, 14, 22);
 
     const totalAdvance = advancesData.reduce((sum, a) => sum + Number(a.amount), 0);
-    doc.text(`Total Advances: ${formatFullCurrency(totalAdvance)}`, 14, 30);
+    doc.text(`Total Advances: ${formatCurrencyForPDF(totalAdvance)}`, 14, 30);
 
     const advancesByStaff = staffData.map(staff => {
       const staffAdv = advancesData.filter(a => a.staff_id === staff.id);
@@ -227,7 +227,7 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
       return { name: staff.name, category: staff.category, total, count: staffAdv.length };
     }).filter(s => s.total > 0);
 
-    const tableData = advancesByStaff.map(s => [s.name, s.category, s.count.toString(), formatFullCurrency(s.total)]);
+    const tableData = advancesByStaff.map(s => [s.name, s.category, s.count.toString(), formatCurrencyForPDF(s.total)]);
 
     autoTable(doc, {
       head: [['Name', 'Category', 'Times', 'Total Amount']],

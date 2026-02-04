@@ -18,7 +18,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JSZip from 'jszip';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
-import { formatFullCurrency } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
 
 interface MLTStaff {
   id: string;
@@ -387,7 +387,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
     const staffAdvances = advances.map(adv => {
       const staff = staffList.find(s => s.id === adv.staff_id);
-      return [staff?.name || 'Unknown', staff?.category || '-', format(new Date(adv.date), 'dd/MM/yyyy'), formatFullCurrency(Number(adv.amount))];
+      return [staff?.name || 'Unknown', staff?.category || '-', format(new Date(adv.date), 'dd/MM/yyyy'), formatCurrencyForPDF(Number(adv.amount))];
     });
 
     autoTable(doc, {
@@ -438,6 +438,111 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  // Daily attendance exports
+  const exportDailyAttendancePDF = () => {
+    const doc = new jsPDF();
+    const dateStr = format(selectedDate, 'dd MMM yyyy, EEEE');
+    
+    doc.setFontSize(16);
+    doc.text(`MLT Daily Attendance - ${dateStr}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(REPORT_FOOTER, 14, 22);
+
+    const tableData = filteredStaff.map(staff => {
+      const status = getStaffAttendance(staff.id);
+      return [staff.name, staff.category, status ? statusConfig[status].fullLabel : 'Not Marked'];
+    });
+
+    autoTable(doc, {
+      head: [['Name', 'Category', 'Status']],
+      body: tableData,
+      startY: 28,
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    addReportNotes(doc, finalY);
+    doc.save(`mlt-daily-attendance-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
+    toast.success('PDF downloaded');
+  };
+
+  const shareDailyAttendanceWhatsApp = () => {
+    const dateStr = format(selectedDate, 'dd MMM yyyy, EEEE');
+    let message = `🚛 *MLT Attendance - ${dateStr}*\n\n`;
+    
+    const totalShifts = attendance.filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
+    const absentCount = attendance.filter(a => a.status === 'absent').length;
+    message += `*Summary:* ${totalShifts} shifts | ${absentCount} absent\n\n`;
+    
+    filteredStaff.forEach(staff => {
+      const status = getStaffAttendance(staff.id);
+      message += `${staff.name}: ${status ? statusConfig[status].fullLabel : '-'}\n`;
+    });
+    message += `\n_${REPORT_FOOTER}_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  // Salary exports
+  const exportSalaryPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text(`MLT Salary Report - ${months[reportMonth - 1]} ${reportYear}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(REPORT_FOOTER, 14, 22);
+
+    const tableData = staffList.map(staff => {
+      const data = salaryData?.[staff.id];
+      const totalShifts = data?.totalShifts || 0;
+      const totalAdvance = data?.totalAdvance || 0;
+      const perShiftRate = staff.base_salary / 26;
+      const earned = Math.round(totalShifts * perShiftRate);
+      const netPayable = earned - totalAdvance;
+      return [staff.name, staff.category, totalShifts.toString(), formatCurrencyForPDF(earned), formatCurrencyForPDF(totalAdvance), formatCurrencyForPDF(netPayable), data?.isPaid ? 'Paid' : 'Pending'];
+    });
+
+    autoTable(doc, {
+      head: [['Name', 'Category', 'Shifts', 'Earned', 'Advance', 'Net', 'Status']],
+      body: tableData,
+      startY: 28,
+      styles: { fontSize: 8 },
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    addReportNotes(doc, finalY);
+    doc.save(`mlt-salary-${reportMonth}-${reportYear}.pdf`);
+    toast.success('PDF downloaded');
+  };
+
+  const exportSalaryExcel = () => {
+    const headers = ['Name', 'Category', 'Shifts', 'Earned', 'Advance', 'Net', 'Status'];
+    const data = staffList.map(staff => {
+      const d = salaryData?.[staff.id];
+      const totalShifts = d?.totalShifts || 0;
+      const totalAdvance = d?.totalAdvance || 0;
+      const perShiftRate = staff.base_salary / 26;
+      const earned = Math.round(totalShifts * perShiftRate);
+      const netPayable = earned - totalAdvance;
+      return [staff.name, staff.category, totalShifts, earned, totalAdvance, netPayable, d?.isPaid ? 'Paid' : 'Pending'];
+    });
+    exportToExcel(data, headers, `mlt-salary-${reportMonth}-${reportYear}`, 'Salary', `MLT Salary - ${months[reportMonth - 1]} ${reportYear}`);
+    toast.success('Excel downloaded');
+  };
+
+  const shareSalaryWhatsApp = () => {
+    let message = `🚛 *MLT Salary - ${months[reportMonth - 1]} ${reportYear}*\n\n`;
+    staffList.forEach(staff => {
+      const data = salaryData?.[staff.id];
+      const totalShifts = data?.totalShifts || 0;
+      const totalAdvance = data?.totalAdvance || 0;
+      const perShiftRate = staff.base_salary / 26;
+      const earned = Math.round(totalShifts * perShiftRate);
+      const netPayable = earned - totalAdvance;
+      message += `${staff.name}: ${totalShifts} shifts | Net: ${formatFullCurrency(netPayable)} ${data?.isPaid ? '✅' : ''}\n`;
+    });
+    message += `\n_${REPORT_FOOTER}_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const downloadMLTBackupZip = async () => {
     try {
       toast.loading('Generating backup...');
@@ -463,7 +568,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           doc.setFontSize(10);
           doc.text(REPORT_FOOTER, 14, 22);
           doc.text(`${months[reportMonth - 1]} ${reportYear} | Category: ${staff.category}`, 14, 28);
-          doc.text(`Total Shifts: ${totalShifts} | Total Advance: ${formatFullCurrency(totalAdvance)}`, 14, 36);
+          doc.text(`Total Shifts: ${totalShifts} | Total Advance: ${formatCurrencyForPDF(totalAdvance)}`, 14, 36);
 
           const finalY = 50;
           addReportNotes(doc, finalY);
@@ -529,8 +634,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     doc.setFontSize(12);
     doc.text('Summary:', 14, 48);
     doc.text(`Total Shifts: ${totalShifts}`, 14, 56);
-    doc.text(`Total Advance: ${formatFullCurrency(totalAdvance)}`, 14, 64);
-    doc.text(`Base Salary: ${formatFullCurrency(selectedStaff.base_salary)}`, 14, 72);
+    doc.text(`Total Advance: ${formatCurrencyForPDF(totalAdvance)}`, 14, 64);
+    doc.text(`Base Salary: ${formatCurrencyForPDF(selectedStaff.base_salary)}`, 14, 72);
 
     if (selectedStaff.phone) doc.text(`Phone: ${selectedStaff.phone}`, 14, 82);
     if (selectedStaff.address) doc.text(`Address: ${selectedStaff.address}`, 14, 90);
@@ -670,6 +775,16 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           </CardContent>
         </Card>
 
+        {/* Export Buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" size="sm" onClick={exportDailyAttendancePDF}>
+            <Download className="h-3 w-3 mr-1" />PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={shareDailyAttendanceWhatsApp}>
+            <Share2 className="h-3 w-3 mr-1" />WhatsApp
+          </Button>
+        </div>
+
         {/* Summary */}
         <div className="grid grid-cols-3 gap-2">
           <Card className="bg-primary/10">
@@ -678,7 +793,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               <p className="text-xs text-muted-foreground">Marked</p>
             </CardContent>
           </Card>
-          <Card className="bg-green-500/10">
+          <Card className="bg-secondary/30">
             <CardContent className="p-2 text-center">
               <p className="text-lg font-bold">{totalShifts}</p>
               <p className="text-xs text-muted-foreground">Total Shifts</p>
@@ -702,21 +817,21 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </Select>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-secondary"></span> 1 Shift</span>
           <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-primary"></span> 2 Shifts</span>
           <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-destructive"></span> Absent</span>
         </div>
 
         <p className="text-xs text-muted-foreground">💡 Tap to cycle: 1 Shift → 2 Shifts → Absent → Clear</p>
 
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-96 overflow-y-auto">
           {filteredStaff.map(staff => {
             const status = getStaffAttendance(staff.id);
             return (
               <Card key={staff.id} className="cursor-pointer active:scale-[0.98]" onClick={() => handleQuickTap(staff.id)}>
                 <CardContent className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{staff.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{staff.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
                   </div>
                   {status ? (
@@ -754,13 +869,26 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </Select>
       </div>
 
+      {/* Export Buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        <Button variant="outline" size="sm" onClick={exportAdvancesPDF}>
+          <Download className="h-3 w-3 mr-1" />PDF
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportAdvancesExcel}>
+          <Download className="h-3 w-3 mr-1" />Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={shareAdvancesWhatsApp}>
+          <Share2 className="h-3 w-3 mr-1" />Share
+        </Button>
+      </div>
+
       {selectedAdvances.length > 0 && (
         <Button variant="destructive" size="sm" onClick={() => { setDeleteType('advances'); setShowDeleteConfirm(true); }}>
           <Trash2 className="h-4 w-4 mr-2" />Delete Selected ({selectedAdvances.length})
         </Button>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-96 overflow-y-auto">
         {advances.map(adv => {
           const staff = staffList.find(s => s.id === adv.staff_id);
           return (
@@ -773,11 +901,11 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                     else setSelectedAdvances(selectedAdvances.filter(id => id !== adv.id));
                   }}
                 />
-                <div className="flex-1">
-                  <p className="font-medium">{staff?.name || 'Unknown'}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{staff?.name || 'Unknown'}</p>
                   <p className="text-xs text-muted-foreground">{format(new Date(adv.date), 'dd MMM yyyy')}</p>
                 </div>
-                <p className="font-bold text-destructive">₹{Number(adv.amount).toLocaleString()}</p>
+                <p className="font-bold text-destructive">{formatFullCurrency(Number(adv.amount))}</p>
               </CardContent>
             </Card>
           );
@@ -804,7 +932,20 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </Select>
       </div>
 
-      <div className="space-y-2">
+      {/* Export Buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        <Button variant="outline" size="sm" onClick={exportSalaryPDF}>
+          <Download className="h-3 w-3 mr-1" />PDF
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportSalaryExcel}>
+          <Download className="h-3 w-3 mr-1" />Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={shareSalaryWhatsApp}>
+          <Share2 className="h-3 w-3 mr-1" />Share
+        </Button>
+      </div>
+
+      <div className="space-y-2 max-h-96 overflow-y-auto">
         {staffList.map(staff => {
           const data = salaryData?.[staff.id];
           const totalShifts = data?.totalShifts || 0;
@@ -817,8 +958,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
             <Card key={staff.id}>
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold">{staff.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate">{staff.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
                   </div>
                   <Button size="sm" variant={data?.isPaid ? 'default' : 'outline'} onClick={() => {
@@ -836,8 +977,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                     <p className="font-bold text-destructive">{formatFullCurrency(totalAdvance)}</p>
                     <p className="text-muted-foreground">Advance</p>
                   </div>
-                  <div className={`p-2 rounded ${netPayable >= 0 ? 'bg-green-500/10' : 'bg-destructive/10'}`}>
-                    <p className={`font-bold ${netPayable >= 0 ? 'text-green-600' : 'text-destructive'}`}>{formatFullCurrency(netPayable)}</p>
+                  <div className={`p-2 rounded ${netPayable >= 0 ? 'bg-secondary/30' : 'bg-destructive/10'}`}>
+                    <p className={`font-bold ${netPayable >= 0 ? 'text-foreground' : 'text-destructive'}`}>{formatFullCurrency(netPayable)}</p>
                     <p className="text-muted-foreground">Net</p>
                   </div>
                 </div>
