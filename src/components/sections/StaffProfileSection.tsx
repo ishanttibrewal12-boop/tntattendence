@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Download, Share2, Calendar, User, Edit2, Save, X, Wallet, Search, Camera, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Calendar, User, Edit2, Save, X, Wallet, Search, Camera, Trash2, FileSpreadsheet, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, getDaysInMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, getDaysInMonth, startOfYear, endOfYear } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
-import { formatCurrencyForPDF } from '@/lib/formatUtils';
+import { addReportNotes, REPORT_FOOTER, exportToExcel } from '@/lib/exportUtils';
+import { formatCurrencyForPDF, formatFullCurrency } from '@/lib/formatUtils';
 
 interface Staff {
   id: string;
@@ -96,7 +96,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
 
     const [attendanceRes, advancesRes] = await Promise.all([
       supabase.from('attendance').select('date, status, shift_count').eq('staff_id', selectedStaffId).gte('date', startDate).lte('date', endDate).order('date'),
-      supabase.from('advances').select('id, amount, date, notes, is_deducted').eq('staff_id', selectedStaffId).order('date', { ascending: false }),
+      supabase.from('advances').select('id, amount, date, notes, is_deducted').eq('staff_id', selectedStaffId).gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
     ]);
 
     if (attendanceRes.data) setAttendance(attendanceRes.data as AttendanceRecord[]);
@@ -310,6 +310,108 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     setConfirmShare(null);
   };
 
+  const exportToExcelFile = () => {
+    if (!selectedStaff || !stats) return;
+    
+    const headers = ['Date', 'Status', 'Shifts'];
+    const data = attendance.map((a) => [
+      format(new Date(a.date), 'dd MMM yyyy'),
+      a.status === 'present' ? 'Present' : 'Absent',
+      a.status === 'present' ? (a.shift_count || 1).toString() : '0',
+    ]);
+    
+    exportToExcel(data, headers, `${selectedStaff.name}-${months[selectedMonth - 1]}-${selectedYear}`, 'Attendance', `${selectedStaff.name} - ${months[selectedMonth - 1]} ${selectedYear}`);
+    toast.success('Excel downloaded');
+  };
+
+  const exportYearlyReport = async () => {
+    if (!selectedStaff) return;
+    
+    toast.info('Generating yearly report...');
+    
+    const yearStart = format(startOfYear(new Date(selectedYear, 0, 1)), 'yyyy-MM-dd');
+    const yearEnd = format(endOfYear(new Date(selectedYear, 0, 1)), 'yyyy-MM-dd');
+    
+    const [yearlyAttendance, yearlyAdvances] = await Promise.all([
+      supabase.from('attendance').select('date, status, shift_count').eq('staff_id', selectedStaff.id).gte('date', yearStart).lte('date', yearEnd).order('date'),
+      supabase.from('advances').select('id, amount, date, notes').eq('staff_id', selectedStaff.id).gte('date', yearStart).lte('date', yearEnd).order('date'),
+    ]);
+
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text(`Yearly Report - ${selectedStaff.name}`, 14, 20);
+    doc.setFontSize(12);
+    doc.text(`Year: ${selectedYear}`, 14, 28);
+    doc.text(`Category: ${selectedStaff.category}`, 14, 35);
+    doc.text(REPORT_FOOTER, 14, 42);
+
+    // Monthly breakdown for attendance
+    const monthlyData: { month: string; shifts: number; absent: number; advance: number }[] = [];
+    
+    for (let m = 0; m < 12; m++) {
+      const monthStart = format(startOfMonth(new Date(selectedYear, m)), 'yyyy-MM-dd');
+      const monthEnd = format(endOfMonth(new Date(selectedYear, m)), 'yyyy-MM-dd');
+      
+      const monthAtt = (yearlyAttendance.data || []).filter(a => a.date >= monthStart && a.date <= monthEnd);
+      const monthAdv = (yearlyAdvances.data || []).filter(a => a.date >= monthStart && a.date <= monthEnd);
+      
+      const totalShifts = monthAtt.filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
+      const absentDays = monthAtt.filter(a => a.status === 'absent').length;
+      const totalAdvance = monthAdv.reduce((sum, a) => sum + Number(a.amount), 0);
+      
+      monthlyData.push({ month: months[m], shifts: totalShifts, absent: absentDays, advance: totalAdvance });
+    }
+
+    const yearlyTotalShifts = monthlyData.reduce((sum, m) => sum + m.shifts, 0);
+    const yearlyTotalAdvance = monthlyData.reduce((sum, m) => sum + m.advance, 0);
+
+    const tableData = monthlyData.map(m => [m.month, m.shifts.toString(), m.absent.toString(), formatCurrencyForPDF(m.advance)]);
+
+    autoTable(doc, {
+      head: [['Month', 'Total Shifts', 'Absent Days', 'Advance Taken']],
+      body: tableData,
+      startY: 50,
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined!, 'bold');
+    doc.text(`Yearly Total Shifts: ${yearlyTotalShifts}`, 14, currentY);
+    doc.text(`Yearly Total Advance: ${formatCurrencyForPDF(yearlyTotalAdvance)}`, 14, currentY + 7);
+    doc.setFont(undefined!, 'normal');
+
+    addReportNotes(doc, currentY + 20);
+
+    doc.save(`${selectedStaff.name}-yearly-${selectedYear}.pdf`);
+    toast.success('Yearly report downloaded');
+  };
+
+  const shareYearlyWhatsApp = async () => {
+    if (!selectedStaff) return;
+    
+    const yearStart = format(startOfYear(new Date(selectedYear, 0, 1)), 'yyyy-MM-dd');
+    const yearEnd = format(endOfYear(new Date(selectedYear, 0, 1)), 'yyyy-MM-dd');
+    
+    const [yearlyAttendance, yearlyAdvances] = await Promise.all([
+      supabase.from('attendance').select('date, status, shift_count').eq('staff_id', selectedStaff.id).gte('date', yearStart).lte('date', yearEnd),
+      supabase.from('advances').select('amount, date').eq('staff_id', selectedStaff.id).gte('date', yearStart).lte('date', yearEnd),
+    ]);
+
+    const totalShifts = (yearlyAttendance.data || []).filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
+    const totalAdvance = (yearlyAdvances.data || []).reduce((sum, a) => sum + Number(a.amount), 0);
+
+    let message = `👤 *Yearly Report - ${selectedStaff.name}*\n`;
+    message += `📅 Year: ${selectedYear}\n`;
+    message += `🏢 Category: ${selectedStaff.category}\n\n`;
+    message += `📊 *Summary*\n`;
+    message += `• Total Shifts: ${totalShifts}\n`;
+    message += `• Total Advance: ${formatFullCurrency(totalAdvance)}\n\n`;
+    message += `_${REPORT_FOOTER}_`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const shareToWhatsApp = () => {
     if (!selectedStaff || !stats) return;
 
@@ -329,7 +431,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     message += `• Absent Days: ${stats.absentDays}\n\n`;
     
     message += `💰 *Advance Summary*\n`;
-    message += `• Total Advance Taken: ₹${stats.totalAdvance.toLocaleString()}\n\n`;
+    message += `• Total Advance Taken: ${formatFullCurrency(stats.totalAdvance)}\n\n`;
 
     message += `📅 *Daily Record*\n`;
     attendance.forEach(a => {
@@ -511,7 +613,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 </Card>
                 <Card>
                   <CardContent className="p-3 text-center">
-                    <p className="text-2xl font-bold text-green-600">{stats.oneShiftDays}</p>
+                    <p className="text-2xl font-bold text-secondary">{stats.oneShiftDays}</p>
                     <p className="text-xs text-muted-foreground">1-Shift Days</p>
                   </CardContent>
                 </Card>
@@ -669,17 +771,46 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 </Card>
               )}
 
-              {/* Export Actions */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="secondary" onClick={() => setConfirmShare('pdf')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-                <Button variant="secondary" onClick={() => setConfirmShare('whatsapp')}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </Button>
-              </div>
+              {/* Monthly Export Actions */}
+              <Card className="mb-4">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Monthly Export</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button variant="outline" size="sm" onClick={exportToPDF}>
+                      <Download className="h-3 w-3 mr-1" />PDF
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={exportToExcelFile}>
+                      <FileSpreadsheet className="h-3 w-3 mr-1" />Excel
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={shareToWhatsApp}>
+                      <Share2 className="h-3 w-3 mr-1" />Share
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Yearly Report Actions */}
+              <Card className="bg-chart-1/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Yearly Report ({selectedYear})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Export complete year data for {selectedStaff.name}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="secondary" size="sm" onClick={exportYearlyReport}>
+                      <Download className="h-3 w-3 mr-1" />PDF Report
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={shareYearlyWhatsApp}>
+                      <Share2 className="h-3 w-3 mr-1" />Share
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
         </>
