@@ -33,7 +33,7 @@ const Home = () => {
     { id: 'attendance' as SectionType, title: 'Attendance', icon: Calendar, description: 'Mark daily attendance', color: 'bg-primary' },
     { id: 'advance-salary' as SectionType, title: 'Advance & Salary', icon: Wallet, description: 'Manage payments', color: 'bg-secondary' },
     { id: 'petroleum-sales' as SectionType, title: 'Petroleum Sales', icon: Fuel, description: 'UPI & Cash sales', color: 'bg-accent-foreground' },
-    { id: 'mlt' as SectionType, title: 'MLT Section', icon: Truck, description: 'Driver & Khalasi', color: 'bg-chart-1' },
+    { id: 'mlt' as SectionType, title: 'MLT', icon: Truck, description: 'Driver & Khalasi', color: 'bg-chart-1' },
   ];
 
   const extraSections = [

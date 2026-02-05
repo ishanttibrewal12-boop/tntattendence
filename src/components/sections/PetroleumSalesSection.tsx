@@ -17,7 +17,7 @@ import { format, getDaysInMonth, startOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
-import { formatFullCurrency, formatCompactCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
 
 interface PetroleumSale {
   id: string;
@@ -155,10 +155,10 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
               return (
                 <div 
                   key={day} 
-                  className={`p-1 rounded text-center ${isToday ? 'ring-2 ring-primary' : ''} ${amount > 0 ? type === 'upi' ? 'bg-primary/20' : type === 'cash' ? 'bg-green-500/20' : 'bg-secondary/30' : 'bg-muted/30'}`}
+                  className={`p-1 rounded text-center ${isToday ? 'ring-2 ring-primary' : ''} ${amount > 0 ? type === 'upi' ? 'bg-primary/20' : type === 'cash' ? 'bg-secondary/20' : 'bg-accent/30' : 'bg-muted/30'}`}
                 >
                   <div className="text-xs font-medium">{day}</div>
-                  {amount > 0 && <div className="text-[8px] font-bold">{formatCompactCurrency(amount)}</div>}
+                  {amount > 0 && <div className="text-[8px] font-bold text-foreground">{formatFullCurrency(amount)}</div>}
                 </div>
               );
             })}
@@ -257,22 +257,19 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
         <Card className="bg-primary/10 border-primary/20">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">UPI</p>
-            <p className="text-sm font-bold text-primary">{formatCompactCurrency(totalUPI)}</p>
-            <p className="text-[10px] text-muted-foreground">{formatFullCurrency(totalUPI)}</p>
+            <p className="text-sm font-bold text-primary">{formatFullCurrency(totalUPI)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-green-500/10 border-green-500/20">
+        <Card className="bg-secondary/20 border-secondary/20">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Cash</p>
-            <p className="text-sm font-bold text-green-600">{formatCompactCurrency(totalCash)}</p>
-            <p className="text-[10px] text-muted-foreground">{formatFullCurrency(totalCash)}</p>
+            <p className="text-sm font-bold text-secondary-foreground">{formatFullCurrency(totalCash)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-secondary/20">
+        <Card className="bg-accent/20">
           <CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-sm font-bold">{formatCompactCurrency(totalAmount)}</p>
-            <p className="text-[10px] text-muted-foreground">{formatFullCurrency(totalAmount)}</p>
+            <p className="text-sm font-bold text-foreground">{formatFullCurrency(totalAmount)}</p>
           </CardContent>
         </Card>
       </div>

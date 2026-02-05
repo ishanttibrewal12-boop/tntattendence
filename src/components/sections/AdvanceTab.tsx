@@ -191,9 +191,11 @@ const AdvanceTab = () => {
 
   const monthDays = Array.from({ length: getDaysInMonth(new Date(viewYear, viewMonth - 1)) }, (_, i) => i + 1);
 
+  // Export PDF with individual staff pages
   const exportToPDF = () => {
     const doc = new jsPDF();
     
+    // Cover page with summary
     doc.setFontSize(18);
     doc.text(`Advance Report - ${months[viewMonth - 1]} ${viewYear}`, 14, 20);
     doc.setFontSize(12);
@@ -201,25 +203,92 @@ const AdvanceTab = () => {
     doc.text(`Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, 38);
     doc.text(REPORT_FOOTER, 14, 46);
 
-    const tableData = advances.map((adv) => [
-      adv.staff?.name || 'Unknown',
-      adv.staff?.category || '-',
-      format(new Date(adv.date), 'dd MMM yyyy'),
-      formatCurrencyForPDF(Number(adv.amount)),
-      adv.notes || '-',
+    // Summary table on first page
+    const summaryData = staffWithAdvances.map((staff) => [
+      staff.name,
+      staff.category,
+      formatCurrencyForPDF(getStaffTotalAdvance(staff.id)),
     ]);
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Date', 'Amount', 'Notes']],
-      body: tableData,
+      head: [['Staff Name', 'Category', 'Total Advance']],
+      body: summaryData,
       startY: 54,
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
-    addReportNotes(doc, finalY);
+    // Grand total row
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined!, 'bold');
+    doc.text(`Grand Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, currentY);
+    doc.setFont(undefined!, 'normal');
+
+    // Individual pages for each staff
+    staffWithAdvances.forEach((staff) => {
+      doc.addPage();
+      const staffAdvances = getStaffAdvances(staff.id);
+      const staffTotal = getStaffTotalAdvance(staff.id);
+      
+      doc.setFontSize(16);
+      doc.text(`${staff.name}`, 14, 20);
+      doc.setFontSize(11);
+      doc.text(`Category: ${staff.category}`, 14, 28);
+      doc.text(`Month: ${months[viewMonth - 1]} ${viewYear}`, 14, 35);
+      doc.text(`Total Advance: ${formatCurrencyForPDF(staffTotal)}`, 14, 42);
+      doc.text(REPORT_FOOTER, 14, 50);
+
+      const advanceData = staffAdvances.map((adv) => [
+        format(new Date(adv.date), 'dd MMM yyyy'),
+        formatCurrencyForPDF(Number(adv.amount)),
+        adv.notes || '-',
+      ]);
+
+      autoTable(doc, {
+        head: [['Date', 'Amount', 'Notes']],
+        body: advanceData,
+        startY: 58,
+      });
+
+      // Staff total at bottom
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(11);
+      doc.setFont(undefined!, 'bold');
+      doc.text(`Total: ${formatCurrencyForPDF(staffTotal)}`, 14, finalY);
+      doc.setFont(undefined!, 'normal');
+      
+      addReportNotes(doc, finalY + 15);
+    });
+
+    // Final summary page
+    doc.addPage();
+    doc.setFontSize(16);
+    doc.text(`Summary - All Staff Advances`, 14, 20);
+    doc.setFontSize(11);
+    doc.text(`${months[viewMonth - 1]} ${viewYear}`, 14, 28);
+    doc.text(REPORT_FOOTER, 14, 35);
+
+    const allSummary = staffWithAdvances.map((staff) => [
+      staff.name,
+      staff.category,
+      formatCurrencyForPDF(getStaffTotalAdvance(staff.id)),
+    ]);
+
+    autoTable(doc, {
+      head: [['Staff Name', 'Category', 'Total Advance']],
+      body: allSummary,
+      startY: 43,
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined!, 'bold');
+    doc.text(`Grand Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, currentY);
+    doc.setFont(undefined!, 'normal');
+    
+    addReportNotes(doc, currentY + 15);
 
     doc.save(`advances-${viewMonth}-${viewYear}.pdf`);
-    toast.success('PDF downloaded');
+    toast.success('PDF downloaded with individual staff pages');
   };
 
   const exportToExcelFile = () => {
