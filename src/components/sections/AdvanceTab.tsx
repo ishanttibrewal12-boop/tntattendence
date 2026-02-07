@@ -183,6 +183,22 @@ const AdvanceTab = () => {
 
   const totalAdvances = advances.reduce((sum, a) => sum + Number(a.amount), 0);
 
+  // Category-wise totals
+  const petroleumTotal = advances.filter(a => {
+    const staff = staffList.find(s => s.id === a.staff_id);
+    return staff?.category === 'petroleum';
+  }).reduce((sum, a) => sum + Number(a.amount), 0);
+
+  const crusherTotal = advances.filter(a => {
+    const staff = staffList.find(s => s.id === a.staff_id);
+    return staff?.category === 'crusher';
+  }).reduce((sum, a) => sum + Number(a.amount), 0);
+
+  const officeTotal = advances.filter(a => {
+    const staff = staffList.find(s => s.id === a.staff_id);
+    return staff?.category === 'office';
+  }).reduce((sum, a) => sum + Number(a.amount), 0);
+
   // Get advances for a specific day
   const getAdvancesForDay = (day: number) => {
     const dateStr = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -351,7 +367,29 @@ const AdvanceTab = () => {
         </Select>
       </div>
 
-      {/* Summary Card */}
+      {/* Category-wise Summary Cards */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <Card className="bg-chart-1 text-primary-foreground">
+          <CardContent className="p-2 text-center">
+            <p className="text-xs opacity-90">Petroleum</p>
+            <p className="text-sm font-bold">₹{petroleumTotal.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-chart-2 text-primary-foreground">
+          <CardContent className="p-2 text-center">
+            <p className="text-xs opacity-90">Crusher</p>
+            <p className="text-sm font-bold">₹{crusherTotal.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-chart-3 text-primary-foreground">
+          <CardContent className="p-2 text-center">
+            <p className="text-xs opacity-90">Office</p>
+            <p className="text-sm font-bold">₹{officeTotal.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Total Summary Card */}
       <Card className="mb-4 bg-primary text-primary-foreground">
         <CardContent className="p-4">
           <p className="text-sm opacity-90">Total Advances - {months[viewMonth - 1]}</p>
