@@ -60,6 +60,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [payrollStatus, setPayrollStatus] = useState<{ is_paid: boolean; paid_date: string | null } | null>(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -94,13 +95,19 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
     const startDate = format(startOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
 
-    const [attendanceRes, advancesRes] = await Promise.all([
+    const [attendanceRes, advancesRes, payrollRes] = await Promise.all([
       supabase.from('attendance').select('date, status, shift_count').eq('staff_id', selectedStaffId).gte('date', startDate).lte('date', endDate).order('date'),
       supabase.from('advances').select('id, amount, date, notes, is_deducted').eq('staff_id', selectedStaffId).gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
+      supabase.from('payroll').select('is_paid, paid_date').eq('staff_id', selectedStaffId).eq('month', selectedMonth).eq('year', selectedYear).single(),
     ]);
 
     if (attendanceRes.data) setAttendance(attendanceRes.data as AttendanceRecord[]);
     if (advancesRes.data) setAdvances(advancesRes.data as Advance[]);
+    if (payrollRes.data) {
+      setPayrollStatus(payrollRes.data);
+    } else {
+      setPayrollStatus(null);
+    }
     setIsLoading(false);
   };
 
@@ -625,7 +632,27 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 </Card>
               </div>
 
-              {/* Advance Summary */}
+              {/* Payment Status Card */}
+              <Card className={`mb-4 ${payrollStatus?.is_paid ? 'bg-green-500/10 border-green-500/30' : 'bg-destructive/10 border-destructive/30'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Salary Status - {months[selectedMonth - 1]}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {payrollStatus?.is_paid 
+                          ? `Paid on ${payrollStatus.paid_date ? format(new Date(payrollStatus.paid_date), 'dd MMM yyyy') : 'N/A'}`
+                          : 'Not Paid Yet'
+                        }
+                      </p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${payrollStatus?.is_paid ? 'bg-green-500 text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                      {payrollStatus?.is_paid ? '✓ Paid' : '✗ Unpaid'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Advance Summary with Deduction Status */}
               <Card className="mb-4 bg-muted/30">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -636,7 +663,15 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Total Advance Taken</span>
-                    <span className="font-bold text-foreground">₹{stats.totalAdvance.toLocaleString()}</span>
+                    <span className="font-bold text-foreground">{formatFullCurrency(stats.totalAdvance)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Deducted</span>
+                    <span className="font-medium text-green-600">{formatFullCurrency(advances.filter(a => a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Not Deducted</span>
+                    <span className="font-medium text-destructive">{formatFullCurrency(advances.filter(a => !a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0))}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -733,7 +768,7 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                 </Card>
               )}
 
-              {/* Advance History */}
+              {/* Advance History with Deduction Status */}
               {advances.length > 0 && (
                 <Card className="mb-4">
                   <CardHeader className="pb-2">
@@ -743,27 +778,29 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
                       {advances.map((advance) => (
-                        <div key={advance.id} className="flex justify-between items-center text-sm py-1 border-b border-border last:border-0">
-                          <div>
-                            <span>{format(new Date(advance.date), 'dd MMM yyyy')}</span>
-                            {advance.notes && <span className="text-xs text-muted-foreground ml-2">({advance.notes})</span>}
+                        <div key={advance.id} className={`flex justify-between items-center text-sm py-2 px-2 rounded-lg ${advance.is_deducted ? 'bg-green-500/10' : 'bg-muted/30'}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{formatFullCurrency(Number(advance.amount))}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${advance.is_deducted ? 'bg-green-500 text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                                {advance.is_deducted ? 'Deducted' : 'Pending'}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(advance.date), 'dd MMM yyyy')}
+                              {advance.notes && <span className="ml-1">• {advance.notes}</span>}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">₹{Number(advance.amount).toLocaleString()}</span>
-                            <span className={`text-xs ${advance.is_deducted ? 'text-green-600' : 'text-muted-foreground'}`}>
-                              {advance.is_deducted ? '✓' : '○'}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => setDeleteAdvance(advance)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setDeleteAdvance(advance)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                       ))}
                     </div>

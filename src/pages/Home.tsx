@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Truck, Fuel, FolderArchive, Droplets } from 'lucide-react';
+import { Users, Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Truck, Fuel, FolderArchive, Droplets, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import PinLock from '@/components/PinLock';
 import AttendanceSection from '@/components/sections/AttendanceSection';
@@ -17,9 +17,10 @@ import RemindersSection from '@/components/sections/RemindersSection';
 import MLTSection from '@/components/sections/MLTSection';
 import PetroleumSalesSection from '@/components/sections/PetroleumSalesSection';
 import BackupSection from '@/components/sections/BackupSection';
+import PaymentDeductionSection from '@/components/sections/PaymentDeductionSection';
 import companyLogo from '@/assets/company-logo.png';
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | null;
 
 const Home = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -32,6 +33,7 @@ const Home = () => {
   const mainSections = [
     { id: 'attendance' as SectionType, title: 'Attendance', icon: Calendar, description: 'Mark daily attendance', color: 'bg-primary' },
     { id: 'advance-salary' as SectionType, title: 'Advance & Salary', icon: Wallet, description: 'Manage payments', color: 'bg-secondary' },
+    { id: 'paid-deducted' as SectionType, title: 'Paid & Deducted', icon: CheckCircle, description: 'Track payment status', color: 'bg-chart-5' },
     { id: 'petroleum-sales' as SectionType, title: 'Petroleum Sales', icon: Fuel, description: 'UPI & Cash sales', color: 'bg-accent-foreground' },
     { id: 'mlt' as SectionType, title: 'MLT', icon: Truck, description: 'Driver & Khalasi', color: 'bg-chart-1' },
   ];
@@ -70,6 +72,7 @@ const Home = () => {
         {activeSection === 'mlt' && <MLTSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'petroleum-sales' && <PetroleumSalesSection onBack={() => setActiveSection(null)} />}
         {activeSection === 'backup' && <BackupSection onBack={() => setActiveSection(null)} />}
+        {activeSection === 'paid-deducted' && <PaymentDeductionSection onBack={() => setActiveSection(null)} />}
       </div>
     );
   }
