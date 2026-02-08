@@ -369,22 +369,22 @@ const AdvanceTab = () => {
 
       {/* Category-wise Summary Cards */}
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <Card className="bg-chart-1 text-primary-foreground">
+        <Card className="bg-blue-800 border-blue-700">
           <CardContent className="p-2 text-center">
-            <p className="text-xs opacity-90">Petroleum</p>
-            <p className="text-sm font-bold">₹{petroleumTotal.toLocaleString()}</p>
+            <p className="text-xs text-blue-200">Petroleum</p>
+            <p className="text-sm font-bold text-white">₹{petroleumTotal.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card className="bg-chart-2 text-primary-foreground">
+        <Card className="bg-blue-800 border-blue-700">
           <CardContent className="p-2 text-center">
-            <p className="text-xs opacity-90">Crusher</p>
-            <p className="text-sm font-bold">₹{crusherTotal.toLocaleString()}</p>
+            <p className="text-xs text-blue-200">Crusher</p>
+            <p className="text-sm font-bold text-white">₹{crusherTotal.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card className="bg-chart-3 text-primary-foreground">
+        <Card className="bg-blue-800 border-blue-700">
           <CardContent className="p-2 text-center">
-            <p className="text-xs opacity-90">Office</p>
-            <p className="text-sm font-bold">₹{officeTotal.toLocaleString()}</p>
+            <p className="text-xs text-blue-200">Office</p>
+            <p className="text-sm font-bold text-white">₹{officeTotal.toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>

@@ -113,6 +113,42 @@ export type Database = {
         }
         Relationships: []
       }
+      app_users: {
+        Row: {
+          category: string | null
+          created_at: string
+          full_name: string
+          id: string
+          is_active: boolean
+          password_hash: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          password_hash: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          password_hash?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -277,6 +313,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           photo_url: string | null
+          shift_rate: number | null
           updated_at: string
         }
         Insert: {
@@ -292,6 +329,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           photo_url?: string | null
+          shift_rate?: number | null
           updated_at?: string
         }
         Update: {
@@ -307,6 +345,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           photo_url?: string | null
+          shift_rate?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -472,6 +511,63 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_records: {
+        Row: {
+          created_at: string
+          gross_salary: number | null
+          id: string
+          is_paid: boolean | null
+          month: number
+          notes: string | null
+          paid_date: string | null
+          pending_amount: number | null
+          shift_rate: number | null
+          staff_id: string
+          staff_type: string
+          total_advances: number | null
+          total_paid: number | null
+          total_shifts: number | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          gross_salary?: number | null
+          id?: string
+          is_paid?: boolean | null
+          month: number
+          notes?: string | null
+          paid_date?: string | null
+          pending_amount?: number | null
+          shift_rate?: number | null
+          staff_id: string
+          staff_type: string
+          total_advances?: number | null
+          total_paid?: number | null
+          total_shifts?: number | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          gross_salary?: number | null
+          id?: string
+          is_paid?: boolean | null
+          month?: number
+          notes?: string | null
+          paid_date?: string | null
+          pending_amount?: number | null
+          shift_rate?: number | null
+          staff_id?: string
+          staff_type?: string
+          total_advances?: number | null
+          total_paid?: number | null
+          total_shifts?: number | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       staff: {
         Row: {
           address: string | null
@@ -486,6 +582,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           photo_url: string | null
+          shift_rate: number | null
           updated_at: string
         }
         Insert: {
@@ -501,6 +598,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           photo_url?: string | null
+          shift_rate?: number | null
           updated_at?: string
         }
         Update: {
@@ -516,7 +614,29 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           photo_url?: string | null
+          shift_rate?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -525,9 +645,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "manager" | "mlt_admin" | "petroleum_admin" | "crusher_admin"
       attendance_status:
         | "present"
         | "absent"
@@ -665,6 +796,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["manager", "mlt_admin", "petroleum_admin", "crusher_admin"],
       attendance_status: [
         "present",
         "absent",

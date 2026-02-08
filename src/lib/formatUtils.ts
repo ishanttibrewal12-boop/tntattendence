@@ -7,6 +7,9 @@ export const formatFullCurrency = (amount: number): string => {
   return `₹${amount.toLocaleString('en-IN')}`;
 };
 
+// Alias for backward compatibility
+export const formatCurrency = formatFullCurrency;
+
 // For PDF exports - uses Rs. to avoid encoding issues
 export const formatCurrencyForPDF = (amount: number): string => {
   return `Rs. ${amount.toLocaleString('en-IN')}`;
