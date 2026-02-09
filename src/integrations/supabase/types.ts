@@ -190,6 +190,86 @@ export type Database = {
           },
         ]
       }
+      credit_parties: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_party_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          litres: number | null
+          notes: string | null
+          party_id: string
+          transaction_type: string
+          tyre_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          litres?: number | null
+          notes?: string | null
+          party_id: string
+          transaction_type?: string
+          tyre_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          litres?: number | null
+          notes?: string | null
+          party_id?: string
+          transaction_type?: string
+          tyre_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_party_transactions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "credit_parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_photos: {
         Row: {
           created_at: string
@@ -615,6 +695,33 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           shift_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tyre_sales: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []
