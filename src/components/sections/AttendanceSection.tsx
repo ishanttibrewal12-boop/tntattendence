@@ -3,7 +3,6 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as Cal
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,6 +32,7 @@ interface AttendanceRecord {
 
 interface AttendanceSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 type AttendanceStatus = '1shift' | '2shift' | 'absent' | 'not_marked';
@@ -44,12 +44,11 @@ const statusConfig = {
   'not_marked': { label: '-', color: 'bg-muted', fullLabel: 'Not Marked' },
 };
 
-const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
+const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -57,7 +56,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
-  // Navigate to prev/next day (Sundays are now working days)
   const navigateDate = (direction: 'prev' | 'next') => {
     let newDate = direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
     setSelectedDate(newDate);
@@ -71,8 +69,13 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     setIsLoading(true);
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
+    let staffQuery = supabase.from('staff').select('id, name, category').eq('is_active', true).order('name');
+    if (category) {
+      staffQuery = staffQuery.eq('category', category);
+    }
+
     const [staffRes, attendanceRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
+      staffQuery,
       supabase.from('attendance').select('*').eq('date', dateStr),
     ]);
 
@@ -97,7 +100,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
     if (existing) {
       if (status === 'not_marked') {
-        // Delete the record
         await supabase.from('attendance').delete().eq('id', existing.id);
       } else {
         await supabase.from('attendance').update({ status: dbStatus, shift_count: shiftCount }).eq('id', existing.id);
@@ -113,29 +115,14 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
   const handleQuickTap = (staffId: string) => {
     const currentStatus = getStaffAttendance(staffId);
-    const staff = staffList.find(s => s.id === staffId);
-    
-    // Cycle through statuses based on category
-    if (staff?.category === 'petroleum') {
-      // For petroleum: not_marked -> 1shift -> 2shift -> absent -> not_marked
-      if (!currentStatus) {
-        updateAttendance(staffId, '1shift');
-      } else if (currentStatus === '1shift') {
-        updateAttendance(staffId, '2shift');
-      } else if (currentStatus === '2shift') {
-        updateAttendance(staffId, 'absent');
-      } else {
-        updateAttendance(staffId, 'not_marked');
-      }
+    if (!currentStatus) {
+      updateAttendance(staffId, '1shift');
+    } else if (currentStatus === '1shift') {
+      updateAttendance(staffId, '2shift');
+    } else if (currentStatus === '2shift') {
+      updateAttendance(staffId, 'absent');
     } else {
-      // For crusher/office: not_marked -> 1shift -> absent -> not_marked
-      if (!currentStatus) {
-        updateAttendance(staffId, '1shift');
-      } else if (currentStatus === '1shift') {
-        updateAttendance(staffId, 'absent');
-      } else {
-        updateAttendance(staffId, 'not_marked');
-      }
+      updateAttendance(staffId, 'not_marked');
     }
   };
 
@@ -143,8 +130,8 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const filteredStaff = getFilteredStaff();
 
-    // Delete all existing attendance for this date
-    await supabase.from('attendance').delete().eq('date', dateStr);
+    const staffIds = filteredStaff.map(s => s.id);
+    await supabase.from('attendance').delete().eq('date', dateStr).in('staff_id', staffIds);
     
     if (status !== 'not_marked') {
       const dbStatus: 'absent' | 'present' = status === 'absent' ? 'absent' : 'present';
@@ -176,20 +163,20 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
   const getFilteredStaff = () => {
     return staffList.filter((staff) => {
-      const matchesCategory = categoryFilter === 'all' || staff.category === categoryFilter;
       const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      return matchesSearch;
     });
   };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     const dateStr = format(selectedDate, 'dd MMM yyyy');
+    const categoryLabel = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'All Staff';
     
     doc.setFontSize(18);
     doc.text(`Attendance Report - ${dateStr}`, 14, 20);
     doc.setFontSize(12);
-    doc.text(`Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}`, 14, 30);
+    doc.text(`Department: ${categoryLabel}`, 14, 30);
     doc.text(REPORT_FOOTER, 14, 38);
 
     const filteredStaff = getFilteredStaff();
@@ -200,15 +187,11 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
       if (status) {
         statusText = statusConfig[status].fullLabel;
       }
-      return [
-        staff.name,
-        staff.category,
-        statusText,
-      ];
+      return [staff.name, statusText];
     });
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Status']],
+      head: [['Name', 'Status']],
       body: tableData,
       startY: 46,
     });
@@ -216,49 +199,16 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     addReportNotes(doc, finalY);
 
-    doc.save(`attendance-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
+    doc.save(`attendance-${category || 'all'}-${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
     toast.success('PDF downloaded');
-  };
-
-  const exportToExcel = () => {
-    const XLSX = require('xlsx');
-    const filteredStaff = getFilteredStaff();
-    const dateStr = format(selectedDate, 'dd MMM yyyy');
-    
-    const headers = ['Name', 'Category', 'Status'];
-    const data = filteredStaff.map((staff) => {
-      const status = getStaffAttendance(staff.id);
-      return [
-        staff.name,
-        staff.category,
-        status ? statusConfig[status].fullLabel : 'Not Marked',
-      ];
-    });
-    
-    const wb = XLSX.utils.book_new();
-    const wsData = [
-      [`Attendance Report - ${dateStr}`],
-      ['Tibrewal Staff Manager'],
-      [],
-      headers,
-      ...data,
-      [],
-      ['Note: If you have any queries, contact 6203229118'],
-      ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
-    ];
-    
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
-    XLSX.writeFile(wb, `attendance-${format(selectedDate, 'yyyy-MM-dd')}.xlsx`);
-    toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
     const dateStr = format(selectedDate, 'dd MMM yyyy');
     const filteredStaff = getFilteredStaff();
+    const categoryLabel = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'All';
 
-    let message = `📋 *Attendance Report - ${dateStr}*\n`;
-    message += `Category: ${categoryFilter === 'all' ? 'All Staff' : categoryFilter}\n\n`;
+    let message = `📋 *${categoryLabel} Attendance - ${dateStr}*\n\n`;
 
     const oneShift = filteredStaff.filter(s => getStaffAttendance(s.id) === '1shift').length;
     const twoShift = filteredStaff.filter(s => getStaffAttendance(s.id) === '2shift').length;
@@ -284,21 +234,20 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
   const filteredStaff = getFilteredStaff();
 
-  // Calendar view helpers
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const monthDays = Array.from({ length: getDaysInMonth(new Date(calendarYear, calendarMonth - 1)) }, (_, i) => i + 1);
 
+  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) + ' ' : '';
+
   return (
     <div className="p-4 max-w-md mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-foreground">Attendance</h1>
+        <h1 className="text-xl font-bold text-foreground">{categoryTitle}Attendance</h1>
       </div>
 
-      {/* View Toggle */}
       <div className="flex gap-2 mb-4">
         <Button 
           variant={viewMode === 'list' ? 'default' : 'outline'} 
@@ -320,7 +269,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
       {viewMode === 'list' && (
         <>
-          {/* Date Navigation with Calendar Picker */}
           <Card className="mb-4">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -354,7 +302,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             </CardContent>
           </Card>
 
-          {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -365,22 +312,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             />
           </div>
 
-          {/* Category Filter */}
-          <div className="mb-4">
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Staff</SelectItem>
-                <SelectItem value="petroleum">Petroleum</SelectItem>
-                <SelectItem value="crusher">Crusher</SelectItem>
-                <SelectItem value="office">Office</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Quick Actions */}
           <div className="grid grid-cols-4 gap-1 mb-4">
             <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
               All 1S
@@ -396,15 +327,10 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             </Button>
           </div>
 
-          {/* Export Actions */}
-          <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-6">
             <Button variant="secondary" size="sm" onClick={exportToPDF}>
               <Download className="h-4 w-4 mr-1" />
               PDF
-            </Button>
-            <Button variant="secondary" size="sm" onClick={exportToExcel}>
-              <Download className="h-4 w-4 mr-1" />
-              Excel
             </Button>
             <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
               <Share2 className="h-4 w-4 mr-1" />
@@ -412,7 +338,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             </Button>
           </div>
 
-          {/* Staff Summary */}
           <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
             <div className="text-sm">
               <span className="font-medium text-foreground">
@@ -427,7 +352,6 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             </div>
           </div>
 
-          {/* Legend */}
           <div className="flex flex-wrap gap-2 mb-4 text-xs">
             <span className="flex items-center gap-1">
               <span className="w-4 h-4 rounded bg-green-500"></span> 1 Shift
@@ -443,41 +367,37 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
             </span>
           </div>
 
-          <p className="text-xs text-muted-foreground mb-2">💡 Tap once to mark, tap again to cycle through statuses</p>
-
-          {/* Staff List */}
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : filteredStaff.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No staff found</div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {filteredStaff.map((staff) => {
                 const currentStatus = getStaffAttendance(staff.id);
                 return (
-                  <Card 
-                    key={staff.id} 
-                    className="cursor-pointer active:scale-[0.98] transition-transform"
+                  <div
+                    key={staff.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card cursor-pointer active:scale-[0.98] transition-transform"
                     onClick={() => handleQuickTap(staff.id)}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{staff.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {currentStatus ? (
-                            <span className={`px-3 py-1.5 rounded text-sm font-medium text-primary-foreground ${statusConfig[currentStatus].color}`}>
-                              {statusConfig[currentStatus].fullLabel}
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1.5 rounded text-sm font-medium border bg-muted text-muted-foreground">
-                              Not Marked
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <span className="text-sm font-medium text-foreground truncate flex-1">{staff.name}</span>
+                    <div className="flex gap-1">
+                      {(['1shift', '2shift', 'absent'] as AttendanceStatus[]).map((status) => (
+                        <button
+                          key={status}
+                          onClick={(e) => { e.stopPropagation(); updateAttendance(staff.id, currentStatus === status ? 'not_marked' : status); }}
+                          className={`w-8 h-8 rounded-md text-xs font-bold flex items-center justify-center transition-colors ${
+                            currentStatus === status
+                              ? `${statusConfig[status].color} text-primary-foreground`
+                              : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                          }`}
+                        >
+                          {statusConfig[status].label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -487,82 +407,34 @@ const AttendanceSection = ({ onBack }: AttendanceSectionProps) => {
 
       {viewMode === 'calendar' && (
         <>
-          {/* Month/Year Selection */}
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <Select value={calendarMonth.toString()} onValueChange={(v) => setCalendarMonth(parseInt(v))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((month, i) => (
-                  <SelectItem key={i} value={(i + 1).toString()}>{month}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={calendarYear.toString()} onValueChange={(v) => setCalendarYear(parseInt(v))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2024, 2025, 2026, 2027].map((year) => (
-                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select className="border border-border rounded-lg p-2 bg-card text-foreground text-sm" value={calendarMonth} onChange={(e) => setCalendarMonth(parseInt(e.target.value))}>
+              {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
+            <select className="border border-border rounded-lg p-2 bg-card text-foreground text-sm" value={calendarYear} onChange={(e) => setCalendarYear(parseInt(e.target.value))}>
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
           </div>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Calendar View - {months[calendarMonth - 1]} {calendarYear}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                  <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
-                ))}
-                {/* Empty cells for alignment */}
-                {Array.from({ length: new Date(calendarYear, calendarMonth - 1, 1).getDay() === 0 ? 6 : new Date(calendarYear, calendarMonth - 1, 1).getDay() - 1 }).map((_, i) => (
-                  <div key={`empty-${i}`} className="p-1"></div>
-                ))}
-                {monthDays.map(day => {
-                  const dateStr = `${calendarYear}-${String(calendarMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                  const isToday = format(new Date(), 'yyyy-MM-dd') === dateStr;
-                  return (
-                    <div 
-                      key={day} 
-                      className={`p-2 rounded text-center cursor-pointer hover:bg-muted/50 ${isToday ? 'ring-2 ring-primary' : ''}`}
-                      onClick={() => {
-                        setSelectedDate(new Date(calendarYear, calendarMonth - 1, day));
-                        setViewMode('list');
-                      }}
-                    >
-                      <div className="text-sm font-medium">{day}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground mt-4 text-center">Tap a date to view/edit attendance</p>
-            </CardContent>
-          </Card>
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            Use Monthly Report for calendar view
+          </div>
         </>
       )}
 
-      {/* Confirmation Dialog */}
       <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Action</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.status === 'not_marked'
-                ? `Are you sure you want to clear all attendance for ${categoryFilter === 'all' ? 'all staff' : categoryFilter + ' staff'}?`
-                : `Are you sure you want to mark all ${categoryFilter === 'all' ? 'staff' : categoryFilter + ' staff'} as ${confirmAction?.status ? statusConfig[confirmAction.status].fullLabel : ''}?`
-              }
+              {confirmAction?.type === 'markAll' && confirmAction.status
+                ? `Mark all ${filteredStaff.length} staff as ${statusConfig[confirmAction.status].fullLabel}?`
+                : 'Are you sure?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              if (confirmAction?.status) {
+              if (confirmAction?.type === 'markAll' && confirmAction.status) {
                 markAllAs(confirmAction.status);
               }
             }}>

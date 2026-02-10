@@ -42,7 +42,11 @@ interface SalaryCalculation {
   notes: string | null;
 }
 
-const SalaryTab = () => {
+interface SalaryTabProps {
+  category?: 'petroleum' | 'crusher' | 'office';
+}
+
+const SalaryTab = ({ category }: SalaryTabProps = {}) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [salaryData, setSalaryData] = useState<SalaryCalculation[]>([]);

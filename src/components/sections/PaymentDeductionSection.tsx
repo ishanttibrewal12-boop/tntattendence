@@ -39,6 +39,7 @@ interface Advance {
 
 interface PaymentDeductionSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {

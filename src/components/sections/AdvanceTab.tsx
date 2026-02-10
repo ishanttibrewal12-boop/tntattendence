@@ -35,7 +35,11 @@ interface Advance {
   staff?: Staff;
 }
 
-const AdvanceTab = () => {
+interface AdvanceTabProps {
+  category?: 'petroleum' | 'crusher' | 'office';
+}
+
+const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [isLoading, setIsLoading] = useState(true);

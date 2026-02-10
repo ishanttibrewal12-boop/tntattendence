@@ -43,6 +43,7 @@ interface Advance {
 
 interface BackupSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 const BackupSection = ({ onBack }: BackupSectionProps) => {

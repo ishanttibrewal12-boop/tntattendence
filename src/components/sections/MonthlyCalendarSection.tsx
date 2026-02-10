@@ -25,6 +25,7 @@ interface AttendanceRecord {
 
 interface MonthlyCalendarSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {

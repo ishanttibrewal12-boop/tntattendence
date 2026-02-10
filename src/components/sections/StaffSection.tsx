@@ -24,6 +24,7 @@ interface Staff {
 
 interface StaffSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 const StaffSection = ({ onBack }: StaffSectionProps) => {

@@ -1,16 +1,17 @@
-import { useState } from 'react';
 import { ArrowLeft, Wallet, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdvanceTab from './AdvanceTab';
 import SalaryTab from './SalaryTab';
 
 interface AdvanceSalarySectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const AdvanceSalarySection = ({ onBack }: AdvanceSalarySectionProps) => {
+const AdvanceSalarySection = ({ onBack, category }: AdvanceSalarySectionProps) => {
+  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) + ' ' : '';
+
   return (
     <div className="p-4 max-w-md mx-auto">
       {/* Header */}
@@ -18,7 +19,7 @@ const AdvanceSalarySection = ({ onBack }: AdvanceSalarySectionProps) => {
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-foreground">Advance & Salary</h1>
+        <h1 className="text-xl font-bold text-foreground">{categoryTitle}Advance & Salary</h1>
       </div>
 
       {/* Tabs */}
@@ -35,11 +36,11 @@ const AdvanceSalarySection = ({ onBack }: AdvanceSalarySectionProps) => {
         </TabsList>
 
         <TabsContent value="advance">
-          <AdvanceTab />
+          <AdvanceTab category={category} />
         </TabsContent>
 
         <TabsContent value="salary">
-          <SalaryTab />
+          <SalaryTab category={category} />
         </TabsContent>
       </Tabs>
     </div>
