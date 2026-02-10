@@ -88,7 +88,8 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     let query = supabase.from('credit_party_transactions').select('*').eq('party_id', partyId).order('date', { ascending: true });
     if (!viewAllTime) {
       const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-      const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-31`;
+      const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+      const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
       query = query.gte('date', startDate).lte('date', endDate);
     }
     const { data } = await query;
@@ -369,6 +370,47 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           })}
           {allTransactions.length === 0 && <p className="text-center text-muted-foreground py-8">No entries</p>}
         </div>
+
+        {/* Add/Edit Transaction Dialog (inside party detail view) */}
+        <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{editingTx ? 'Edit Entry' : txType === 'payment' ? 'Record Payment' : txType === 'debit' ? 'Record Debit' : 'Add Credit'}</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Type</Label>
+                <Select value={txType} onValueChange={(v) => setTxType(v as 'petroleum' | 'tyre' | 'payment' | 'debit')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="petroleum">⛽ Petroleum Credit</SelectItem>
+                    <SelectItem value="tyre">🛞 Tyre Credit</SelectItem>
+                    <SelectItem value="debit">📤 Debit</SelectItem>
+                    <SelectItem value="payment">💰 Payment Received</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Amount (₹) *</Label><Input type="number" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} placeholder="Amount" /></div>
+              {txType === 'petroleum' && <div><Label>Litres</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="Litres (optional)" /></div>}
+              {txType === 'tyre' && <div><Label>Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="Tyre name (optional)" /></div>}
+              <div>
+                <Label>Date</Label>
+                <Popover open={txCalendarOpen} onOpenChange={setTxCalendarOpen}>
+                  <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="h-4 w-4 mr-2" />{format(txDate, 'dd MMM yyyy')}</Button></PopoverTrigger>
+                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={txDate} onSelect={(d) => { if (d) setTxDate(d); setTxCalendarOpen(false); }} initialFocus /></PopoverContent>
+                </Popover>
+              </div>
+              <div><Label>Notes</Label><Textarea value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Notes" /></div>
+            </div>
+            <DialogFooter><Button onClick={editingTx ? updateTransaction : addTransaction}>{editingTx ? 'Update' : 'Add'}</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Transaction Confirmation */}
+        <AlertDialog open={!!showDeleteTx} onOpenChange={() => setShowDeleteTx(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Delete Entry?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this ledger entry.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={deleteTransaction}>Delete</AlertDialogAction></AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -416,38 +458,6 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Add/Edit Transaction Dialog */}
-      <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editingTx ? 'Edit Entry' : txType === 'payment' ? 'Record Payment' : 'Add Credit'}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Type</Label>
-              <Select value={txType} onValueChange={(v) => setTxType(v as 'petroleum' | 'tyre' | 'payment' | 'debit')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="petroleum">⛽ Petroleum Credit</SelectItem>
-                  <SelectItem value="tyre">🛞 Tyre Credit</SelectItem>
-                  <SelectItem value="debit">📤 Debit</SelectItem>
-                  <SelectItem value="payment">💰 Payment Received</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Amount (₹) *</Label><Input type="number" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} placeholder="Amount" /></div>
-            {txType === 'petroleum' && <div><Label>Litres</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="Litres (optional)" /></div>}
-            {txType === 'tyre' && <div><Label>Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="Tyre name (optional)" /></div>}
-            <div>
-              <Label>Date</Label>
-              <Popover open={txCalendarOpen} onOpenChange={setTxCalendarOpen}>
-                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="h-4 w-4 mr-2" />{format(txDate, 'dd MMM yyyy')}</Button></PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={txDate} onSelect={(d) => { if (d) setTxDate(d); setTxCalendarOpen(false); }} initialFocus /></PopoverContent>
-              </Popover>
-            </div>
-            <div><Label>Notes</Label><Textarea value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Notes" /></div>
-          </div>
-          <DialogFooter><Button onClick={editingTx ? updateTransaction : addTransaction}>{editingTx ? 'Update' : 'Add'}</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Party Confirmation */}
       <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
