@@ -2,12 +2,21 @@ import galleryTruck1 from '@/assets/gallery-truck-1.jpeg';
 import galleryTruck2 from '@/assets/gallery-truck-2.jpeg';
 import galleryPetroleum1 from '@/assets/gallery-petroleum-1.jpeg';
 import galleryPetroleum2 from '@/assets/gallery-petroleum-2.jpeg';
+import galleryPetroleum3 from '@/assets/gallery-petroleum-3.jpeg';
 import galleryCrusher1 from '@/assets/gallery-crusher-1.jpeg';
 import galleryCrusher2 from '@/assets/gallery-crusher-2.jpeg';
 import galleryCrusher3 from '@/assets/gallery-crusher-3.jpeg';
+import galleryCrusher4 from '@/assets/gallery-crusher-4.jpeg';
+import galleryCrusher5 from '@/assets/gallery-crusher-5.jpeg';
+import galleryCrusher6 from '@/assets/gallery-crusher-6.jpeg';
+import galleryCrusher7 from '@/assets/gallery-crusher-7.jpeg';
+import galleryCrusher8 from '@/assets/gallery-crusher-8.jpeg';
 import galleryAggregate1 from '@/assets/gallery-aggregate-1.jpeg';
 import galleryTyres1 from '@/assets/gallery-tyres-1.jpeg';
 import galleryTyres2 from '@/assets/gallery-tyres-2.jpeg';
+import galleryTyres3 from '@/assets/gallery-tyres-3.jpeg';
+import galleryTyres4 from '@/assets/gallery-tyres-4.jpeg';
+import galleryTyres5 from '@/assets/gallery-tyres-5.jpeg';
 
 const images = [
   { src: galleryTruck1, label: 'Transportation Fleet', category: 'Logistics' },
@@ -16,10 +25,19 @@ const images = [
   { src: galleryTyres1, label: 'Tyre Operations', category: 'Tyres' },
   { src: galleryAggregate1, label: 'Aggregate Production', category: 'Mining' },
   { src: galleryTruck2, label: 'Heavy Tipper Trucks', category: 'Logistics' },
+  { src: galleryCrusher4, label: 'Conveyor Operations', category: 'Crushing' },
+  { src: galleryPetroleum3, label: 'Bharat Petroleum Outlet', category: 'Petroleum' },
+  { src: galleryCrusher5, label: 'Mobile Crushing Unit', category: 'Crushing' },
+  { src: galleryTyres3, label: 'Tyre Warehouse', category: 'Tyres' },
+  { src: galleryCrusher7, label: 'Dust Processing', category: 'Crushing' },
+  { src: galleryTyres4, label: 'Premium Tyres', category: 'Tyres' },
   { src: galleryCrusher2, label: 'Mining Operations', category: 'Mining' },
   { src: galleryPetroleum2, label: 'Fuel Distribution', category: 'Petroleum' },
+  { src: galleryCrusher6, label: 'Aggregate Conveyor', category: 'Crushing' },
+  { src: galleryTyres5, label: 'Highway Tyres', category: 'Tyres' },
+  { src: galleryCrusher8, label: 'Rock Breaking', category: 'Crushing' },
   { src: galleryCrusher3, label: 'Crusher Operations', category: 'Crushing' },
-  { src: galleryTyres2, label: 'Tyre Warehouse', category: 'Tyres' },
+  { src: galleryTyres2, label: 'Tyre Showroom', category: 'Tyres' },
 ];
 
 const ImageGallery = () => {

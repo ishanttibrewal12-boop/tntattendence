@@ -99,7 +99,7 @@ const Home = () => {
     secondary.push(
       { id: 'staff', title: 'Staff Management', icon: UserPlus, description: 'Add or remove staff' },
       { id: 'staff-profile', title: 'Staff Profiles', icon: User, description: 'View & share profiles' },
-      { id: 'staff-details', title: 'Shift Rates', icon: UserCog, description: 'Configure shift rates' },
+      ...(isManager ? [{ id: 'staff-details' as SectionType, title: 'Shift Rates', icon: UserCog, description: 'Configure shift rates' }] : []),
     );
 
     if (isManager) {
