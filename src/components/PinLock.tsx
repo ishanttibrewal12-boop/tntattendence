@@ -90,6 +90,7 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* LCP hint: logo is rendered below */}
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto p-3 rounded-full bg-primary/10 w-fit mb-2">
