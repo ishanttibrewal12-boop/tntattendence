@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, MapPin } from 'lucide-react';
 
 const LeadershipSection = () => {
   return (
@@ -17,9 +17,6 @@ const LeadershipSection = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
           <a href="tel:6203229118" className="flex items-center gap-2 text-sm hover:underline" style={{ color: 'rgba(255,255,255,0.6)' }}>
             <Phone className="h-4 w-4" /> 6203229118
-          </a>
-          <a href="mailto:abhayjalan2682@gmail.com" className="flex items-center gap-2 text-sm hover:underline" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            <Mail className="h-4 w-4" /> abhayjalan2682@gmail.com
           </a>
           <span className="flex items-center gap-2 text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
             <MapPin className="h-4 w-4" /> Jharkhand, India
