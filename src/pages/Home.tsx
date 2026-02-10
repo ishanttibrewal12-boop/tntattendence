@@ -3,7 +3,7 @@ import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settin
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/company-logo-optimized.webp';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
@@ -247,7 +247,7 @@ const Home = () => {
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-6 pt-4">
-          <img src={companyLogo} alt="Tibrewal Staff Manager" className="h-20 w-20 mx-auto mb-3 object-contain" loading="lazy" />
+          <img src={companyLogo} alt="Tibrewal Staff Manager" className="h-20 w-20 mx-auto mb-3 object-contain" width={80} height={80} fetchPriority="high" />
           <h1 className="text-2xl font-bold text-foreground">Tibrewal Staff Manager</h1>
           <div className="flex items-center justify-center gap-2 mt-2">
             <span className="text-sm text-muted-foreground">Welcome, {user?.full_name}</span>

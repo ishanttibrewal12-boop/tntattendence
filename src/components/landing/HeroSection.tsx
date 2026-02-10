@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useToast } from '@/hooks/use-toast';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/company-logo-optimized.webp';
 import heroImg from '@/assets/gallery-petroleum-1.jpeg';
 
 interface Profile {
@@ -64,7 +64,7 @@ const HeroSection = () => {
 
         <div className="relative z-10 w-full max-w-5xl mx-auto px-4 py-16 text-center">
           {/* Logo & Title */}
-          <img src={companyLogo} alt="Tibrewal & Tibrewal" className="h-24 w-24 mx-auto mb-6 object-contain drop-shadow-2xl" />
+          <img src={companyLogo} alt="Tibrewal & Tibrewal" className="h-24 w-24 mx-auto mb-6 object-contain drop-shadow-2xl" width={96} height={96} fetchPriority="high" />
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3" style={{ color: 'white' }}>
             Tibrewal & Tibrewal Pvt. Ltd.
           </h1>
