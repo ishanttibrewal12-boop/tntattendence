@@ -61,7 +61,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [newPartyNotes, setNewPartyNotes] = useState('');
 
   // Transaction form
-  const [txType, setTxType] = useState<'petroleum' | 'tyre' | 'payment'>('petroleum');
+  const [txType, setTxType] = useState<'petroleum' | 'tyre' | 'payment' | 'debit'>('petroleum');
   const [txAmount, setTxAmount] = useState('');
   const [txLitres, setTxLitres] = useState('');
   const [txTyreName, setTxTyreName] = useState('');
@@ -126,7 +126,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       notes: txNotes || null,
     });
     if (error) { toast.error('Failed to add'); return; }
-    toast.success(txType === 'payment' ? 'Payment recorded' : 'Credit added');
+    toast.success(txType === 'payment' ? 'Payment recorded' : txType === 'debit' ? 'Debit recorded' : 'Credit added');
     setShowAddTransaction(false);
     resetTxForm();
     fetchTransactions(selectedParty.id);
@@ -159,12 +159,12 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   };
 
   const resetTxForm = () => {
-    setTxAmount(''); setTxLitres(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum');
+    setTxAmount(''); setTxLitres(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum' as any);
   };
 
   const openEditTx = (tx: Transaction) => {
     setEditingTx(tx);
-    setTxType(tx.transaction_type as 'petroleum' | 'tyre' | 'payment');
+    setTxType(tx.transaction_type as 'petroleum' | 'tyre' | 'payment' | 'debit');
     setTxAmount(tx.amount.toString());
     setTxLitres(tx.litres?.toString() || '');
     setTxTyreName(tx.tyre_name || '');
@@ -175,19 +175,22 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const filteredParties = parties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   // Ledger calculations
-  const credits = allTransactions.filter(t => t.transaction_type !== 'payment');
+  const credits = allTransactions.filter(t => t.transaction_type !== 'payment' && t.transaction_type !== 'debit');
   const payments = allTransactions.filter(t => t.transaction_type === 'payment');
+  const debits = allTransactions.filter(t => t.transaction_type === 'debit');
   const totalCredits = credits.reduce((s, t) => s + Number(t.amount), 0);
   const totalPayments = payments.reduce((s, t) => s + Number(t.amount), 0);
-  const pendingBalance = totalCredits - totalPayments;
+  const totalDebits = debits.reduce((s, t) => s + Number(t.amount), 0);
+  const pendingBalance = totalCredits - totalPayments - totalDebits;
   const petroTotal = allTransactions.filter(t => t.transaction_type === 'petroleum').reduce((s, t) => s + Number(t.amount), 0);
   const tyreTotal = allTransactions.filter(t => t.transaction_type === 'tyre').reduce((s, t) => s + Number(t.amount), 0);
+  const grandTotal = totalCredits + totalPayments + totalDebits;
 
   // Running balance calculation
   const getLedgerWithBalance = () => {
     let running = 0;
     return allTransactions.map(tx => {
-      if (tx.transaction_type === 'payment') {
+      if (tx.transaction_type === 'payment' || tx.transaction_type === 'debit') {
         running -= Number(tx.amount);
       } else {
         running += Number(tx.amount);
@@ -301,7 +304,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           <Card className="bg-primary/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">⛽ Petroleum</p><p className="text-sm font-bold text-primary">{formatFullCurrency(petroTotal)}</p></CardContent></Card>
           <Card className="bg-primary/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">🛞 Tyre</p><p className="text-sm font-bold text-primary">{formatFullCurrency(tyreTotal)}</p></CardContent></Card>
           <Card className="bg-destructive/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Credits</p><p className="text-sm font-bold text-destructive">{formatFullCurrency(totalCredits)}</p></CardContent></Card>
-          <Card className="bg-green-500/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Payments Received</p><p className="text-sm font-bold text-green-600">{formatFullCurrency(totalPayments)}</p></CardContent></Card>
+          <Card className="bg-green-500/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Payments</p><p className="text-sm font-bold text-green-600">{formatFullCurrency(totalPayments)}</p></CardContent></Card>
+          {totalDebits > 0 && <Card className="bg-orange-500/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">📤 Debits</p><p className="text-sm font-bold text-orange-600">{formatFullCurrency(totalDebits)}</p></CardContent></Card>}
+          <Card className="bg-muted"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Grand Total</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(grandTotal)}</p></CardContent></Card>
         </div>
         
         {/* Pending Balance */}
@@ -313,10 +318,12 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         </Card>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <Button size="sm" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}><Plus className="h-4 w-4 mr-1" />Add Credit</Button>
-          <Button size="sm" variant="secondary" onClick={() => { setTxType('payment'); setShowAddTransaction(true); }}>💰 Record Payment</Button>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <Button size="sm" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}><Plus className="h-4 w-4 mr-1" />Credit</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setTxType('debit' as any); setShowAddTransaction(true); }}>📤 Debit</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setTxType('payment'); setShowAddTransaction(true); }}>💰 Payment</Button>
         </div>
+        <Button size="sm" variant="outline" className="w-full mb-3" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>📋 Add Ledger Entry</Button>
         <div className="grid grid-cols-3 gap-2 mb-4">
           <Button variant="outline" size="sm" onClick={exportPartyPDF}><Download className="h-3 w-3 mr-1" />PDF</Button>
           <Button variant="outline" size="sm" onClick={exportPartyExcel}><FileSpreadsheet className="h-3 w-3 mr-1" />Excel</Button>
@@ -326,17 +333,21 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {/* Ledger */}
         <p className="text-xs font-semibold text-muted-foreground mb-2">LEDGER ({allTransactions.length} entries)</p>
         <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-          {ledger.map(tx => (
-            <Card key={tx.id} className={tx.transaction_type === 'payment' ? 'border-green-500/30' : ''}>
+          {ledger.map(tx => {
+            const isDeduction = tx.transaction_type === 'payment' || tx.transaction_type === 'debit';
+            const typeLabel = tx.transaction_type === 'payment' ? '💰 Payment' : tx.transaction_type === 'debit' ? '📤 Debit' : tx.transaction_type === 'petroleum' ? '⛽ Petroleum' : '🛞 Tyre';
+            const typeBg = tx.transaction_type === 'payment' ? 'bg-green-500/20 text-green-600' : tx.transaction_type === 'debit' ? 'bg-orange-500/20 text-orange-600' : tx.transaction_type === 'petroleum' ? 'bg-primary/20 text-primary' : 'bg-accent/30 text-accent-foreground';
+            return (
+            <Card key={tx.id} className={isDeduction ? 'border-green-500/30' : ''}>
               <CardContent className="p-2.5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${tx.transaction_type === 'payment' ? 'bg-green-500/20 text-green-600' : tx.transaction_type === 'petroleum' ? 'bg-primary/20 text-primary' : 'bg-accent/30 text-accent-foreground'}`}>
-                        {tx.transaction_type === 'payment' ? '💰 Payment' : tx.transaction_type === 'petroleum' ? '⛽ Petroleum' : '🛞 Tyre'}
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${typeBg}`}>
+                        {typeLabel}
                       </span>
-                      <span className={`font-bold text-sm ${tx.transaction_type === 'payment' ? 'text-green-600' : 'text-destructive'}`}>
-                        {tx.transaction_type === 'payment' ? '-' : '+'}₹{Number(tx.amount).toLocaleString()}
+                      <span className={`font-bold text-sm ${isDeduction ? 'text-green-600' : 'text-destructive'}`}>
+                        {isDeduction ? '-' : '+'}₹{Number(tx.amount).toLocaleString()}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -354,7 +365,8 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
           {allTransactions.length === 0 && <p className="text-center text-muted-foreground py-8">No entries</p>}
         </div>
       </div>
@@ -411,11 +423,12 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           <div className="space-y-4">
             <div>
               <Label>Type</Label>
-              <Select value={txType} onValueChange={(v) => setTxType(v as 'petroleum' | 'tyre' | 'payment')}>
+              <Select value={txType} onValueChange={(v) => setTxType(v as 'petroleum' | 'tyre' | 'payment' | 'debit')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="petroleum">⛽ Petroleum Credit</SelectItem>
                   <SelectItem value="tyre">🛞 Tyre Credit</SelectItem>
+                  <SelectItem value="debit">📤 Debit</SelectItem>
                   <SelectItem value="payment">💰 Payment Received</SelectItem>
                 </SelectContent>
               </Select>
