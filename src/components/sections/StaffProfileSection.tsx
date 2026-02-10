@@ -41,6 +41,7 @@ interface Advance {
 
 interface StaffProfileSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {

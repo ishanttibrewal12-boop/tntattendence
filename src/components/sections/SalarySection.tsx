@@ -14,6 +14,7 @@ import autoTable from 'jspdf-autotable';
 
 interface SalarySectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 interface StaffMember {

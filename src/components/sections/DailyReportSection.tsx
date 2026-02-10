@@ -40,6 +40,7 @@ interface Advance {
 
 interface DailyReportSectionProps {
   onBack: () => void;
+  category?: 'petroleum' | 'crusher' | 'office';
 }
 
 type ExportFilter = 'all' | 'petroleum' | 'crusher' | 'office' | 'mlt' | 'sales';
