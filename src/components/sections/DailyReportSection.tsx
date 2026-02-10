@@ -45,7 +45,7 @@ interface DailyReportSectionProps {
 
 type ExportFilter = 'all' | 'petroleum' | 'crusher' | 'office' | 'mlt' | 'sales';
 
-const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
+const DailyReportSection = ({ onBack, category }: DailyReportSectionProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [mltStaffList, setMltStaffList] = useState<MLTStaff[]>([]);
@@ -68,7 +68,9 @@ const DailyReportSection = ({ onBack }: DailyReportSectionProps) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
     const [staffRes, mltStaffRes, attendanceRes, mltAttendanceRes, advancesRes, mltAdvancesRes, salesRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
+      category 
+        ? supabase.from('staff').select('id, name, category').eq('is_active', true).eq('category', category).order('name')
+        : supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
       supabase.from('mlt_staff').select('id, name, category').eq('is_active', true).order('name'),
       supabase.from('attendance').select('staff_id, status, shift_count').eq('date', dateStr),
       supabase.from('mlt_attendance').select('staff_id, status, shift_count').eq('date', dateStr),

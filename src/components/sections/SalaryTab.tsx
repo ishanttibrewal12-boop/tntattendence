@@ -46,14 +46,13 @@ interface SalaryTabProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const SalaryTab = ({ category }: SalaryTabProps = {}) => {
+const SalaryTab = ({ category }: SalaryTabProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [salaryData, setSalaryData] = useState<SalaryCalculation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [paidStaff, setPaidStaff] = useState<Set<string>>(new Set());
   const [confirmPay, setConfirmPay] = useState<{ staffId: string; calc: SalaryCalculation } | null>(null);
   const [confirmUnpay, setConfirmUnpay] = useState<{ staffId: string; name: string } | null>(null);
@@ -65,7 +64,7 @@ const SalaryTab = ({ category }: SalaryTabProps = {}) => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, category]);
 
   const getWorkingDaysInMonth = (year: number, month: number) => {
     // All days including Sundays are working days
@@ -75,8 +74,11 @@ const SalaryTab = ({ category }: SalaryTabProps = {}) => {
   const fetchData = async () => {
     setIsLoading(true);
     
+    let staffQuery = supabase.from('staff').select('id, name, category, base_salary, notes').eq('is_active', true).order('name');
+    if (category) staffQuery = staffQuery.eq('category', category);
+
     const [staffRes, advancesRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category, base_salary, notes').eq('is_active', true).order('name'),
+      staffQuery,
       supabase.from('advances').select('id, staff_id, amount').eq('is_deducted', false),
     ]);
 
@@ -216,9 +218,7 @@ const SalaryTab = ({ category }: SalaryTabProps = {}) => {
     fetchData();
   };
 
-  const filteredSalaryData = categoryFilter === 'all' 
-    ? salaryData 
-    : salaryData.filter(s => s.category === categoryFilter);
+  const filteredSalaryData = salaryData;
 
   const totalNetSalary = filteredSalaryData.reduce((sum, s) => sum + Math.max(0, s.netSalary), 0);
   const totalAdvances = filteredSalaryData.reduce((sum, s) => sum + s.totalAdvance, 0);
@@ -349,20 +349,6 @@ const SalaryTab = ({ category }: SalaryTabProps = {}) => {
         </Button>
       </div>
 
-      {/* Category Filter */}
-      <div className="mb-4">
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Staff</SelectItem>
-            <SelectItem value="petroleum">Petroleum</SelectItem>
-            <SelectItem value="crusher">Crusher</SelectItem>
-            <SelectItem value="office">Office</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Salary List */}
       {isLoading ? (

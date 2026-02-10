@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,11 +26,10 @@ interface StaffSectionProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const StaffSection = ({ onBack }: StaffSectionProps) => {
+const StaffSection = ({ onBack, category }: StaffSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<Staff | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -41,22 +39,26 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [category, setCategory] = useState<'petroleum' | 'crusher' | 'office'>('petroleum');
   const [baseSalary, setBaseSalary] = useState('');
   const [notes, setNotes] = useState('');
 
+  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) + ' ' : '';
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [category]);
 
   const fetchData = async () => {
     setIsLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from('staff')
       .select('id, name, category, phone, base_salary, is_active, notes, address')
       .eq('is_active', true)
       .order('name');
+    
+    if (category) query = query.eq('category', category);
 
+    const { data } = await query;
     if (data) setStaffList(data as Staff[]);
     setIsLoading(false);
   };
@@ -65,7 +67,6 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setName('');
     setPhone('');
     setAddress('');
-    setCategory('petroleum');
     setBaseSalary('');
     setNotes('');
     setEditingStaff(null);
@@ -76,7 +77,6 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     setName(staff.name);
     setPhone(staff.phone || '');
     setAddress(staff.address || '');
-    setCategory(staff.category);
     setBaseSalary(staff.base_salary.toString());
     setNotes(staff.notes || '');
     setDialogOpen(true);
@@ -89,14 +89,12 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
     }
 
     if (editingStaff) {
-      // Update existing staff
       const { error } = await supabase
         .from('staff')
         .update({
           name: name.trim(),
           phone: phone.trim() || null,
           address: address.trim() || null,
-          category,
           base_salary: parseFloat(baseSalary) || 0,
           notes: notes.trim() || null,
         })
@@ -108,12 +106,11 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
       }
       toast.success('Staff updated');
     } else {
-      // Add new staff
       const { error } = await supabase.from('staff').insert({
         name: name.trim(),
         phone: phone.trim() || null,
         address: address.trim() || null,
-        category,
+        category: category || 'petroleum',
         base_salary: parseFloat(baseSalary) || 0,
         notes: notes.trim() || null,
       });
@@ -134,7 +131,6 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
   const handleDelete = async () => {
     if (!deleteDialog) return;
 
-    // Soft delete by setting is_active to false
     const { error } = await supabase
       .from('staff')
       .update({ is_active: false })
@@ -151,14 +147,8 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
   };
 
   const filteredStaff = staffList.filter((staff) => {
-    const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || staff.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    return staff.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  const petroleumCount = staffList.filter(s => s.category === 'petroleum').length;
-  const crusherCount = staffList.filter(s => s.category === 'crusher').length;
-  const officeCount = staffList.filter(s => s.category === 'office').length;
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -167,36 +157,16 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-foreground">Staff Management</h1>
+        <h1 className="text-xl font-bold text-foreground">{categoryTitle}Staff Management</h1>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        <Card>
-          <CardContent className="p-2 text-center">
-            <p className="text-xl font-bold text-foreground">{staffList.length}</p>
-            <p className="text-xs text-muted-foreground">Total</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 text-center">
-            <p className="text-xl font-bold text-primary">{petroleumCount}</p>
-            <p className="text-xs text-muted-foreground">Petroleum</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 text-center">
-            <p className="text-xl font-bold text-secondary">{crusherCount}</p>
-            <p className="text-xs text-muted-foreground">Crusher</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 text-center">
-            <p className="text-xl font-bold text-chart-3">{officeCount}</p>
-            <p className="text-xs text-muted-foreground">Office</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="mb-4">
+        <CardContent className="p-3 text-center">
+          <p className="text-2xl font-bold text-foreground">{staffList.length}</p>
+          <p className="text-xs text-muted-foreground">Total {categoryTitle}Staff</p>
+        </CardContent>
+      </Card>
 
       {/* Add Button */}
       <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -206,12 +176,12 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
         <DialogTrigger asChild>
           <Button className="w-full mb-4">
             <Plus className="h-4 w-4 mr-2" />
-            Add Staff
+            Add {categoryTitle}Staff
           </Button>
         </DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingStaff ? 'Edit Staff' : 'Add New Staff'}</DialogTitle>
+            <DialogTitle>{editingStaff ? 'Edit Staff' : `Add New ${categoryTitle}Staff`}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
@@ -240,19 +210,6 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
               />
             </div>
             <div>
-              <Label>Category *</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="petroleum">Petroleum</SelectItem>
-                  <SelectItem value="crusher">Crusher</SelectItem>
-                  <SelectItem value="office">Office</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label>Base Salary (₹)</Label>
               <Input
                 type="number"
@@ -277,8 +234,8 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Search and Filter */}
-      <div className="space-y-2 mb-4">
+      {/* Search */}
+      <div className="mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -288,17 +245,6 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="petroleum">Petroleum</SelectItem>
-            <SelectItem value="crusher">Crusher</SelectItem>
-            <SelectItem value="office">Office</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Staff List */}
@@ -315,8 +261,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{staff.name}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="capitalize">{staff.category}</span>
-                      {staff.phone && <span>• {staff.phone}</span>}
+                      {staff.phone && <span>{staff.phone}</span>}
                     </div>
                     <p className="text-xs text-muted-foreground">₹{staff.base_salary.toLocaleString()}/month</p>
                     {staff.notes && (
@@ -354,7 +299,7 @@ const StaffSection = ({ onBack }: StaffSectionProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Add Staff?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to add {name} as a {category} staff member?
+              Are you sure you want to add {name} as a {category || 'petroleum'} staff member?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -42,14 +42,13 @@ interface PaymentDeductionSectionProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
+const PaymentDeductionSection = ({ onBack, category }: PaymentDeductionSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'salary' | 'advance'>('salary');
   
@@ -77,8 +76,11 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
     const startDate = format(startOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
 
+    let staffQuery = supabase.from('staff').select('id, name, category').eq('is_active', true).order('name');
+    if (category) staffQuery = staffQuery.eq('category', category);
+
     const [staffRes, payrollRes, advancesRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
+      staffQuery,
       supabase.from('payroll').select('id, staff_id, month, year, is_paid, net_salary').eq('month', selectedMonth).eq('year', selectedYear),
       supabase.from('advances').select('id, staff_id, amount, date, is_deducted, notes').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
     ]);
@@ -165,11 +167,9 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
     setConfirmAction(null);
   };
 
-  // Filter staff by category and search
+  // Filter staff by search
   const filteredStaff = staffList.filter(staff => {
-    const matchesCategory = categoryFilter === 'all' || staff.category === categoryFilter;
-    const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return staff.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Get payment status for staff
@@ -192,34 +192,20 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
     return staffList.find(s => s.id === staffId)?.category || 'office';
   };
 
-  // Calculate summary stats by category
-  const getSalaryStats = (category: 'all' | 'petroleum' | 'crusher' | 'office') => {
-    const categoryStaff = category === 'all' ? staffList : staffList.filter(s => s.category === category);
-    const paid = categoryStaff.filter(s => getPaymentStatus(s.id)).length;
-    const unpaid = categoryStaff.length - paid;
-    return { total: categoryStaff.length, paid, unpaid };
-  };
+  // Calculate summary stats
+  const allSalaryStats = (() => {
+    const paid = staffList.filter(s => getPaymentStatus(s.id)).length;
+    const unpaid = staffList.length - paid;
+    return { total: staffList.length, paid, unpaid };
+  })();
 
-  const getAdvanceStats = (category: 'all' | 'petroleum' | 'crusher' | 'office') => {
-    const categoryStaff = category === 'all' ? staffList : staffList.filter(s => s.category === category);
-    const staffIds = new Set(categoryStaff.map(s => s.id));
-    const categoryAdvances = advances.filter(a => staffIds.has(a.staff_id));
-    const deducted = categoryAdvances.filter(a => a.is_deducted).length;
-    const notDeducted = categoryAdvances.filter(a => !a.is_deducted).length;
-    const deductedAmount = categoryAdvances.filter(a => a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0);
-    const notDeductedAmount = categoryAdvances.filter(a => !a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0);
-    return { total: categoryAdvances.length, deducted, notDeducted, deductedAmount, notDeductedAmount };
-  };
-
-  const allSalaryStats = getSalaryStats('all');
-  const petroleumSalaryStats = getSalaryStats('petroleum');
-  const crusherSalaryStats = getSalaryStats('crusher');
-  const officeSalaryStats = getSalaryStats('office');
-
-  const allAdvanceStats = getAdvanceStats('all');
-  const petroleumAdvanceStats = getAdvanceStats('petroleum');
-  const crusherAdvanceStats = getAdvanceStats('crusher');
-  const officeAdvanceStats = getAdvanceStats('office');
+  const allAdvanceStats = (() => {
+    const deducted = advances.filter(a => a.is_deducted).length;
+    const notDeducted = advances.filter(a => !a.is_deducted).length;
+    const deductedAmount = advances.filter(a => a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0);
+    const notDeductedAmount = advances.filter(a => !a.is_deducted).reduce((sum, a) => sum + Number(a.amount), 0);
+    return { total: advances.length, deducted, notDeducted, deductedAmount, notDeductedAmount };
+  })();
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -286,34 +272,9 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
             </Card>
           </div>
 
-          {/* Category-wise Salary Stats */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <Card>
-              <CardContent className="p-2 text-center">
-                <p className="text-xs text-muted-foreground">Petroleum</p>
-                <p className="text-sm font-medium text-green-600">{petroleumSalaryStats.paid} ✓</p>
-                <p className="text-xs text-destructive">{petroleumSalaryStats.unpaid} ✗</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2 text-center">
-                <p className="text-xs text-muted-foreground">Crusher</p>
-                <p className="text-sm font-medium text-green-600">{crusherSalaryStats.paid} ✓</p>
-                <p className="text-xs text-destructive">{crusherSalaryStats.unpaid} ✗</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2 text-center">
-                <p className="text-xs text-muted-foreground">Office</p>
-                <p className="text-sm font-medium text-green-600">{officeSalaryStats.paid} ✓</p>
-                <p className="text-xs text-destructive">{officeSalaryStats.unpaid} ✗</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search & Filter */}
-          <div className="flex gap-2 mb-4">
-            <div className="relative flex-1">
+          {/* Search */}
+          <div className="mb-4">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-10"
@@ -322,18 +283,6 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-              <SelectTrigger className="w-28">
-                <Filter className="h-4 w-4 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="petroleum">Petroleum</SelectItem>
-                <SelectItem value="crusher">Crusher</SelectItem>
-                <SelectItem value="office">Office</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Staff Salary List */}
@@ -403,34 +352,9 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
             </Card>
           </div>
 
-          {/* Category-wise Advance Stats */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <Card>
-              <CardContent className="p-2 text-center">
-                <p className="text-xs text-muted-foreground">Petroleum</p>
-                <p className="text-sm font-medium text-green-600">{petroleumAdvanceStats.deducted} ✓</p>
-                <p className="text-xs text-destructive">{petroleumAdvanceStats.notDeducted} ✗</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2 text-center">
-                <p className="text-xs text-muted-foreground">Crusher</p>
-                <p className="text-sm font-medium text-green-600">{crusherAdvanceStats.deducted} ✓</p>
-                <p className="text-xs text-destructive">{crusherAdvanceStats.notDeducted} ✗</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-2 text-center">
-                <p className="text-xs text-muted-foreground">Office</p>
-                <p className="text-sm font-medium text-green-600">{officeAdvanceStats.deducted} ✓</p>
-                <p className="text-xs text-destructive">{officeAdvanceStats.notDeducted} ✗</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search & Filter */}
-          <div className="flex gap-2 mb-4">
-            <div className="relative flex-1">
+          {/* Search */}
+          <div className="mb-4">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-10"
@@ -439,18 +363,6 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-              <SelectTrigger className="w-28">
-                <Filter className="h-4 w-4 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="petroleum">Petroleum</SelectItem>
-                <SelectItem value="crusher">Crusher</SelectItem>
-                <SelectItem value="office">Office</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Advances List */}
@@ -464,9 +376,8 @@ const PaymentDeductionSection = ({ onBack }: PaymentDeductionSectionProps) => {
                 .filter(adv => {
                   const staff = staffList.find(s => s.id === adv.staff_id);
                   if (!staff) return false;
-                  const matchesCategory = categoryFilter === 'all' || staff.category === categoryFilter;
                   const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-                  return matchesCategory && matchesSearch;
+                  return matchesSearch;
                 })
                 .map((advance) => {
                   const staffName = getStaffName(advance.staff_id);

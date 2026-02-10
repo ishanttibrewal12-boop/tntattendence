@@ -39,10 +39,9 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const SalarySection = ({ onBack }: SalarySectionProps) => {
+const SalarySection = ({ onBack, category }: SalarySectionProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [salaryData, setSalaryData] = useState<SalaryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,21 +51,28 @@ const SalarySection = ({ onBack }: SalarySectionProps) => {
     setIsLoading(true);
     try {
       // Fetch regular staff
-      const { data: staffData } = await supabase
+      let staffQuery = supabase
         .from('staff')
         .select('id, name, category, shift_rate')
         .eq('is_active', true);
+      if (category) staffQuery = staffQuery.eq('category', category);
+      const { data: staffData } = await staffQuery;
 
-      // Fetch MLT staff
-      const { data: mltData } = await supabase
-        .from('mlt_staff')
-        .select('id, name, category, shift_rate')
-        .eq('is_active', true);
-
-      const allStaff: StaffMember[] = [
+      // Only include MLT staff when no category filter (manager global view)
+      let allStaff: StaffMember[] = [
         ...(staffData || []).map(s => ({ ...s, type: 'staff' as const, shift_rate: Number(s.shift_rate) || 0 })),
-        ...(mltData || []).map(s => ({ ...s, type: 'mlt' as const, shift_rate: Number(s.shift_rate) || 0 })),
       ];
+
+      if (!category) {
+        const { data: mltData } = await supabase
+          .from('mlt_staff')
+          .select('id, name, category, shift_rate')
+          .eq('is_active', true);
+        allStaff = [
+          ...allStaff,
+          ...(mltData || []).map(s => ({ ...s, type: 'mlt' as const, shift_rate: Number(s.shift_rate) || 0 })),
+        ];
+      }
 
       // Get date range for the month
       const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
@@ -157,15 +163,9 @@ const SalarySection = ({ onBack }: SalarySectionProps) => {
 
   const filteredData = useMemo(() => {
     return salaryData.filter(item => {
-      const matchesCategory = selectedCategory === 'all' || 
-        item.staff.category === selectedCategory ||
-        (selectedCategory === 'mlt' && item.staff.type === 'mlt');
-      
-      const matchesSearch = item.staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesCategory && matchesSearch;
+      return item.staff.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
-  }, [salaryData, selectedCategory, searchQuery]);
+  }, [salaryData, searchQuery]);
 
   const totals = useMemo(() => {
     return filteredData.reduce((acc, item) => ({
@@ -279,29 +279,14 @@ const SalarySection = ({ onBack }: SalarySectionProps) => {
           </Select>
         </div>
 
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search staff..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-32">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="petroleum">Petroleum</SelectItem>
-              <SelectItem value="crusher">Crusher</SelectItem>
-              <SelectItem value="office">Office</SelectItem>
-              <SelectItem value="mlt">MLT</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search staff..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
         {/* Summary Cards */}

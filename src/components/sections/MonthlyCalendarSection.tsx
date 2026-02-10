@@ -28,13 +28,12 @@ interface MonthlyCalendarSectionProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
+const MonthlyCalendarSection = ({ onBack, category }: MonthlyCalendarSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -45,7 +44,7 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, category]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -54,8 +53,11 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
     const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth - 1));
     const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
+    let staffQuery = supabase.from('staff').select('id, name, category').eq('is_active', true).order('name');
+    if (category) staffQuery = staffQuery.eq('category', category);
+
     const [staffRes, attendanceRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
+      staffQuery,
       supabase.from('attendance').select('staff_id, date, status, shift_count').gte('date', startDate).lte('date', endDate),
     ]);
 
@@ -103,9 +105,7 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
 
   const monthDays = getMonthDays();
 
-  const filteredStaff = categoryFilter === 'all' 
-    ? staffList 
-    : staffList.filter(s => s.category === categoryFilter);
+  const filteredStaff = staffList;
 
   const getStaffSummary = (staffId: string, staff: Staff) => {
     const staffAttendance = attendance.filter(a => a.staff_id === staffId);
@@ -240,20 +240,6 @@ const MonthlyCalendarSection = ({ onBack }: MonthlyCalendarSectionProps) => {
         </Select>
       </div>
 
-      {/* Category Filter */}
-      <div className="mb-4">
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Staff</SelectItem>
-            <SelectItem value="petroleum">Petroleum</SelectItem>
-            <SelectItem value="crusher">Crusher</SelectItem>
-            <SelectItem value="office">Office</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Export Actions */}
       <div className="grid grid-cols-3 gap-2 mb-4">

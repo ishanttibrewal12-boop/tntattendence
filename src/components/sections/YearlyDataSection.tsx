@@ -47,9 +47,8 @@ const FULL_MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const YearlyDataSection = ({ onBack }: YearlyDataSectionProps) => {
+const YearlyDataSection = ({ onBack, category }: YearlyDataSectionProps) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStaff, setSelectedStaff] = useState<YearlyReport | null>(null);
   const [yearlyData, setYearlyData] = useState<YearlyReport[]>([]);
@@ -60,21 +59,28 @@ const YearlyDataSection = ({ onBack }: YearlyDataSectionProps) => {
     setIsLoading(true);
     try {
       // Fetch regular staff
-      const { data: staffData } = await supabase
+      let staffQuery = supabase
         .from('staff')
         .select('id, name, category')
         .eq('is_active', true);
+      if (category) staffQuery = staffQuery.eq('category', category);
+      const { data: staffData } = await staffQuery;
 
-      // Fetch MLT staff
-      const { data: mltData } = await supabase
-        .from('mlt_staff')
-        .select('id, name, category')
-        .eq('is_active', true);
-
-      const allStaff: StaffMember[] = [
+      let allStaff: StaffMember[] = [
         ...(staffData || []).map(s => ({ ...s, type: 'staff' as const })),
-        ...(mltData || []).map(s => ({ ...s, type: 'mlt' as const })),
       ];
+
+      // Only include MLT staff when no category filter
+      if (!category) {
+        const { data: mltData } = await supabase
+          .from('mlt_staff')
+          .select('id, name, category')
+          .eq('is_active', true);
+        allStaff = [
+          ...allStaff,
+          ...(mltData || []).map(s => ({ ...s, type: 'mlt' as const })),
+        ];
+      }
 
       const startDate = `${selectedYear}-01-01`;
       const endDate = `${selectedYear}-12-31`;
@@ -167,15 +173,9 @@ const YearlyDataSection = ({ onBack }: YearlyDataSectionProps) => {
 
   const filteredData = useMemo(() => {
     return yearlyData.filter(item => {
-      const matchesCategory = selectedCategory === 'all' || 
-        item.staff.category === selectedCategory ||
-        (selectedCategory === 'mlt' && item.staff.type === 'mlt');
-      
-      const matchesSearch = item.staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesCategory && matchesSearch;
+      return item.staff.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
-  }, [yearlyData, selectedCategory, searchQuery]);
+  }, [yearlyData, searchQuery]);
 
   const exportStaffPDF = (report: YearlyReport) => {
     const doc = new jsPDF();
@@ -335,20 +335,6 @@ const YearlyDataSection = ({ onBack }: YearlyDataSectionProps) => {
           </div>
         </div>
 
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger>
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="petroleum">Petroleum</SelectItem>
-            <SelectItem value="crusher">Crusher</SelectItem>
-            <SelectItem value="office">Office</SelectItem>
-            <SelectItem value="driver">Driver (MLT)</SelectItem>
-            <SelectItem value="khalasi">Khalasi (MLT)</SelectItem>
-          </SelectContent>
-        </Select>
 
         {/* Staff List */}
         <div className="space-y-2">
