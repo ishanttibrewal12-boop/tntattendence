@@ -28,6 +28,7 @@ interface MLTStaff {
   address: string | null;
   notes: string | null;
   base_salary: number;
+  shift_rate: number | null;
   is_active: boolean;
   photo_url: string | null;
   designation: string | null;
@@ -481,30 +482,86 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Salary exports
+  // Salary exports - using shift_rate
+  const getStaffSalaryCalc = (staff: MLTStaff) => {
+    const data = salaryData?.[staff.id];
+    const totalShifts = data?.totalShifts || 0;
+    const totalAdvance = data?.totalAdvance || 0;
+    const shiftRate = Number(staff.shift_rate || 0);
+    const shiftAmount = totalShifts * shiftRate;
+    const payable = shiftAmount - totalAdvance;
+    return { totalShifts, totalAdvance, shiftRate, shiftAmount, payable, isPaid: data?.isPaid || false };
+  };
+
+  const exportSingleStaffSalaryPDF = (staff: MLTStaff) => {
+    const calc = getStaffSalaryCalc(staff);
+    const staffAdvancesList = advances.filter(a => a.staff_id === staff.id);
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`Salary Report - ${staff.name}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`${months[reportMonth - 1]} ${reportYear} | ${staff.category}`, 14, 22);
+    doc.text(REPORT_FOOTER, 14, 28);
+
+    doc.setFontSize(12);
+    doc.text(`Shift Rate: Rs. ${calc.shiftRate}/shift`, 14, 40);
+    doc.text(`Total Shifts: ${calc.totalShifts}`, 14, 48);
+    doc.text(`Shift Amount: Rs. ${calc.shiftAmount.toLocaleString('en-IN')}`, 14, 56);
+    doc.text(`Total Advances: Rs. ${calc.totalAdvance.toLocaleString('en-IN')}`, 14, 64);
+    doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 72);
+
+    if (staffAdvancesList.length > 0) {
+      doc.text('Date-wise Advances:', 14, 86);
+      autoTable(doc, {
+        head: [['Date', 'Amount', 'Notes']],
+        body: staffAdvancesList.map(a => [format(new Date(a.date), 'dd/MM/yyyy'), formatCurrencyForPDF(Number(a.amount)), a.notes || '-']),
+        startY: 90,
+        styles: { fontSize: 8 },
+      });
+    }
+
+    const finalY = staffAdvancesList.length > 0 ? (doc as any).lastAutoTable.finalY + 15 : 86;
+    addReportNotes(doc, finalY);
+    doc.save(`salary-${staff.name}-${reportMonth}-${reportYear}.pdf`);
+    toast.success('PDF downloaded');
+  };
+
+  const shareSingleStaffSalaryWhatsApp = (staff: MLTStaff) => {
+    const calc = getStaffSalaryCalc(staff);
+    const staffAdvancesList = advances.filter(a => a.staff_id === staff.id);
+    let message = `💰 *Salary - ${staff.name}*\n`;
+    message += `📅 ${months[reportMonth - 1]} ${reportYear}\n\n`;
+    message += `Rate: ₹${calc.shiftRate}/shift\n`;
+    message += `${calc.totalShifts} shifts × ₹${calc.shiftRate} = ₹${calc.shiftAmount.toLocaleString()}\n`;
+    if (staffAdvancesList.length > 0) {
+      message += `\n📋 *Advances:*\n`;
+      staffAdvancesList.forEach(a => {
+        message += `  ${format(new Date(a.date), 'dd MMM')}: -₹${Number(a.amount).toLocaleString()}${a.notes ? ` (${a.notes})` : ''}\n`;
+      });
+      message += `Total Advances: -₹${calc.totalAdvance.toLocaleString()}\n`;
+    }
+    message += `\n*Payable: ₹${calc.payable.toLocaleString()}* ${calc.isPaid ? '✅' : '⏳'}\n`;
+    message += `\n_${REPORT_FOOTER}_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const exportSalaryPDF = () => {
     const doc = new jsPDF();
-    
     doc.setFontSize(16);
     doc.text(`MLT Salary Report - ${months[reportMonth - 1]} ${reportYear}`, 14, 15);
     doc.setFontSize(10);
     doc.text(REPORT_FOOTER, 14, 22);
 
     const tableData = staffList.map(staff => {
-      const data = salaryData?.[staff.id];
-      const totalShifts = data?.totalShifts || 0;
-      const totalAdvance = data?.totalAdvance || 0;
-      const perShiftRate = staff.base_salary / 26;
-      const earned = Math.round(totalShifts * perShiftRate);
-      const netPayable = earned - totalAdvance;
-      return [staff.name, staff.category, totalShifts.toString(), formatCurrencyForPDF(earned), formatCurrencyForPDF(totalAdvance), formatCurrencyForPDF(netPayable), data?.isPaid ? 'Paid' : 'Pending'];
+      const calc = getStaffSalaryCalc(staff);
+      return [staff.name, staff.category, `Rs. ${calc.shiftRate}/shift`, calc.totalShifts.toString(), formatCurrencyForPDF(calc.shiftAmount), formatCurrencyForPDF(calc.totalAdvance), formatCurrencyForPDF(calc.payable), calc.isPaid ? 'Paid' : 'Pending'];
     });
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Shifts', 'Earned', 'Advance', 'Net', 'Status']],
+      head: [['Name', 'Category', 'Rate', 'Shifts', 'Shift Amt', 'Advance', 'Payable', 'Status']],
       body: tableData,
       startY: 28,
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY + 15;
@@ -514,15 +571,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   };
 
   const exportSalaryExcel = () => {
-    const headers = ['Name', 'Category', 'Shifts', 'Earned', 'Advance', 'Net', 'Status'];
+    const headers = ['Name', 'Category', 'Shift Rate', 'Shifts', 'Shift Amount', 'Advance', 'Payable', 'Status'];
     const data = staffList.map(staff => {
-      const d = salaryData?.[staff.id];
-      const totalShifts = d?.totalShifts || 0;
-      const totalAdvance = d?.totalAdvance || 0;
-      const perShiftRate = staff.base_salary / 26;
-      const earned = Math.round(totalShifts * perShiftRate);
-      const netPayable = earned - totalAdvance;
-      return [staff.name, staff.category, totalShifts, earned, totalAdvance, netPayable, d?.isPaid ? 'Paid' : 'Pending'];
+      const calc = getStaffSalaryCalc(staff);
+      return [staff.name, staff.category, calc.shiftRate, calc.totalShifts, calc.shiftAmount, calc.totalAdvance, calc.payable, calc.isPaid ? 'Paid' : 'Pending'];
     });
     exportToExcel(data, headers, `mlt-salary-${reportMonth}-${reportYear}`, 'Salary', `MLT Salary - ${months[reportMonth - 1]} ${reportYear}`);
     toast.success('Excel downloaded');
@@ -531,15 +583,13 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const shareSalaryWhatsApp = () => {
     let message = `🚛 *MLT Salary - ${months[reportMonth - 1]} ${reportYear}*\n\n`;
     staffList.forEach(staff => {
-      const data = salaryData?.[staff.id];
-      const totalShifts = data?.totalShifts || 0;
-      const totalAdvance = data?.totalAdvance || 0;
-      const perShiftRate = staff.base_salary / 26;
-      const earned = Math.round(totalShifts * perShiftRate);
-      const netPayable = earned - totalAdvance;
-      message += `${staff.name}: ${totalShifts} shifts | Net: ${formatFullCurrency(netPayable)} ${data?.isPaid ? '✅' : ''}\n`;
+      const calc = getStaffSalaryCalc(staff);
+      message += `${calc.isPaid ? '✅' : '⏳'} *${staff.name}*\n`;
+      message += `   ${calc.totalShifts} shifts × ₹${calc.shiftRate} = ₹${calc.shiftAmount.toLocaleString()}\n`;
+      message += `   Advances: -₹${calc.totalAdvance.toLocaleString()}\n`;
+      message += `   *Payable: ₹${calc.payable.toLocaleString()}*\n\n`;
     });
-    message += `\n_${REPORT_FOOTER}_`;
+    message += `_${REPORT_FOOTER}_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -646,63 +696,77 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     toast.success('PDF downloaded');
   };
 
-  const renderHome = () => (
-    <div className="space-y-3">
-      {/* Header with Truck Icon */}
-      <Card className="bg-chart-1/10 border-chart-1/20 mb-4">
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-chart-1"><Truck className="h-8 w-8 text-primary-foreground" /></div>
-          <div>
-            <h2 className="text-lg font-bold">MLT Department</h2>
-            <p className="text-sm text-muted-foreground">Motor Lorry Transport</p>
-          </div>
-        </CardContent>
-      </Card>
+  const renderHome = () => {
+    const primaryItems = [
+      { view: 'attendance' as ViewType, title: 'Attendance', icon: Calendar, desc: 'Mark daily attendance' },
+      { view: 'advances' as ViewType, title: 'Advances', icon: Wallet, desc: 'Advance payments' },
+      { view: 'salary' as ViewType, title: 'Salary', icon: DollarSign, desc: 'Calculate salaries' },
+    ];
+    const secondaryItems = [
+      { view: 'staff' as ViewType, title: 'Staff Management', icon: User, desc: 'Add, view, delete staff' },
+      { view: 'staff-details' as ViewType, title: 'Staff Profiles', icon: UserCog, desc: 'View & edit with photos' },
+      { view: 'reports' as ViewType, title: 'Monthly Reports', icon: FileText, desc: 'Export & backup' },
+    ];
+    return (
+      <div className="space-y-4">
+        <Card className="border-primary/20">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-3 rounded-xl" style={{ background: '#1e3a8a' }}><Truck className="h-8 w-8" style={{ color: 'white' }} /></div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">MLT Department</h2>
+              <p className="text-sm text-muted-foreground">Motor Lorry Transport</p>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('staff')}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-primary"><User className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Staff Management</h3><p className="text-sm text-muted-foreground">Add, view, delete staff</p></div>
-        </CardContent>
-      </Card>
-      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('attendance')}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-secondary"><Calendar className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Attendance</h3><p className="text-sm text-muted-foreground">Mark daily attendance</p></div>
-        </CardContent>
-      </Card>
-      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('advances')}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-accent-foreground"><Wallet className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Advances</h3><p className="text-sm text-muted-foreground">Track advance payments</p></div>
-        </CardContent>
-      </Card>
-      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('salary')}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-green-600"><DollarSign className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Salary</h3><p className="text-sm text-muted-foreground">Calculate & mark paid</p></div>
-        </CardContent>
-      </Card>
-      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('staff-details')}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-chart-2"><UserCog className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Staff Details</h3><p className="text-sm text-muted-foreground">View & edit with photos</p></div>
-        </CardContent>
-      </Card>
-      <Card className="cursor-pointer hover:shadow-md" onClick={() => setView('reports')}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-chart-1"><FileText className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Monthly Reports</h3><p className="text-sm text-muted-foreground">Export & backup</p></div>
-        </CardContent>
-      </Card>
-      <Card className="cursor-pointer hover:shadow-md" onClick={downloadMLTBackupZip}>
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-chart-4"><FolderArchive className="h-6 w-6 text-primary-foreground" /></div>
-          <div><h3 className="font-semibold">Monthly Backup</h3><p className="text-sm text-muted-foreground">Download ZIP folder</p></div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        {/* Primary Actions - 2 column */}
+        <div className="grid grid-cols-2 gap-3">
+          {primaryItems.map(item => {
+            const Icon = item.icon;
+            return (
+              <Card key={item.view} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setView(item.view)}>
+                <CardContent className="p-4 flex flex-col items-center text-center gap-2" style={{ minHeight: '96px' }}>
+                  <div className="p-2.5 rounded-lg" style={{ background: '#1e3a8a' }}><Icon className="h-7 w-7" style={{ color: 'white' }} /></div>
+                  <p className="text-lg font-bold text-foreground leading-tight">{item.title}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Secondary Actions - single column */}
+        <div className="space-y-2">
+          {secondaryItems.map(item => {
+            const Icon = item.icon;
+            return (
+              <Card key={item.view} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setView(item.view)}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}><Icon className="h-5 w-5" style={{ color: 'white' }} /></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+          <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={downloadMLTBackupZip}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}><FolderArchive className="h-5 w-5" style={{ color: 'white' }} /></div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">Monthly Backup</p>
+                  <p className="text-xs text-muted-foreground">Download ZIP folder</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  };
 
   const renderStaffManagement = () => (
     <div className="space-y-4">
@@ -932,55 +996,93 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </Select>
       </div>
 
+      {/* Summary */}
+      {(() => {
+        const totalPayable = staffList.reduce((sum, s) => sum + getStaffSalaryCalc(s).payable, 0);
+        const totalAdv = staffList.reduce((sum, s) => sum + getStaffSalaryCalc(s).totalAdvance, 0);
+        return (
+          <div className="grid grid-cols-2 gap-2">
+            <Card className="bg-primary text-primary-foreground">
+              <CardContent className="p-3">
+                <p className="text-xs opacity-90">Total Payable</p>
+                <p className="text-lg font-bold">{formatFullCurrency(totalPayable)}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-secondary text-secondary-foreground">
+              <CardContent className="p-3">
+                <p className="text-xs opacity-90">Total Advances</p>
+                <p className="text-lg font-bold">{formatFullCurrency(totalAdv)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
+
       {/* Export Buttons */}
       <div className="grid grid-cols-3 gap-2">
-        <Button variant="outline" size="sm" onClick={exportSalaryPDF}>
-          <Download className="h-3 w-3 mr-1" />PDF
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportSalaryExcel}>
-          <Download className="h-3 w-3 mr-1" />Excel
-        </Button>
-        <Button variant="outline" size="sm" onClick={shareSalaryWhatsApp}>
-          <Share2 className="h-3 w-3 mr-1" />Share
-        </Button>
+        <Button variant="outline" size="sm" onClick={exportSalaryPDF}><Download className="h-3 w-3 mr-1" />PDF</Button>
+        <Button variant="outline" size="sm" onClick={exportSalaryExcel}><Download className="h-3 w-3 mr-1" />Excel</Button>
+        <Button variant="outline" size="sm" onClick={shareSalaryWhatsApp}><Share2 className="h-3 w-3 mr-1" />Share</Button>
       </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div className="space-y-2 max-h-[60vh] overflow-y-auto">
         {staffList.map(staff => {
-          const data = salaryData?.[staff.id];
-          const totalShifts = data?.totalShifts || 0;
-          const totalAdvance = data?.totalAdvance || 0;
-          const perShiftRate = staff.base_salary / 26;
-          const earned = Math.round(totalShifts * perShiftRate);
-          const netPayable = earned - totalAdvance;
+          const calc = getStaffSalaryCalc(staff);
+          const staffAdvancesList = advances.filter(a => a.staff_id === staff.id);
 
           return (
-            <Card key={staff.id}>
-              <CardContent className="p-4">
+            <Card key={staff.id} className={calc.isPaid ? 'opacity-60' : ''}>
+              <CardContent className="p-3">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{staff.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+                  <div>
+                    <p className="font-medium">{staff.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{staff.category} • Rate: {formatFullCurrency(calc.shiftRate)}/shift</p>
                   </div>
-                  <Button size="sm" variant={data?.isPaid ? 'default' : 'outline'} onClick={() => {
-                    setSalaryData(prev => prev ? {...prev, [staff.id]: {...prev[staff.id], isPaid: !prev[staff.id]?.isPaid}} : prev);
-                  }}>
-                    {data?.isPaid ? <><Check className="h-3 w-3 mr-1" />Paid</> : 'Mark Paid'}
-                  </Button>
+                  <div className="text-right">
+                    <p className="font-bold">{formatFullCurrency(calc.payable)}</p>
+                    {calc.isPaid && <span className="text-xs text-green-600">Paid ✓</span>}
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="bg-muted/50 p-2 rounded">
-                    <p className="font-bold">{totalShifts}</p>
-                    <p className="text-muted-foreground">Shifts</p>
+
+                {/* Simple Math */}
+                <div className="bg-muted/40 rounded p-2 text-xs space-y-1 font-mono mb-2">
+                  <div className="flex justify-between">
+                    <span>{calc.totalShifts} shifts × ₹{calc.shiftRate.toLocaleString()}</span>
+                    <span>= ₹{calc.shiftAmount.toLocaleString()}</span>
                   </div>
-                  <div className="bg-destructive/10 p-2 rounded">
-                    <p className="font-bold text-destructive">{formatFullCurrency(totalAdvance)}</p>
-                    <p className="text-muted-foreground">Advance</p>
+                  {calc.totalAdvance > 0 && (
+                    <div className="flex justify-between text-destructive">
+                      <span>− Advances</span>
+                      <span>− ₹{calc.totalAdvance.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold border-t border-border pt-1">
+                    <span>Payable</span>
+                    <span>= ₹{calc.payable.toLocaleString()}</span>
                   </div>
-                  <div className={`p-2 rounded ${netPayable >= 0 ? 'bg-secondary/30' : 'bg-destructive/10'}`}>
-                    <p className={`font-bold ${netPayable >= 0 ? 'text-foreground' : 'text-destructive'}`}>{formatFullCurrency(netPayable)}</p>
-                    <p className="text-muted-foreground">Net</p>
+                </div>
+
+                {/* Date-wise advances */}
+                {staffAdvancesList.length > 0 && (
+                  <div className="text-xs space-y-0.5 mb-2">
+                    <p className="text-muted-foreground font-medium">Advances:</p>
+                    {staffAdvancesList.map(a => (
+                      <div key={a.id} className="flex justify-between pl-2">
+                        <span className="text-muted-foreground">{format(new Date(a.date), 'dd MMM')}</span>
+                        <span className="text-destructive">-₹{Number(a.amount).toLocaleString()}</span>
+                      </div>
+                    ))}
                   </div>
+                )}
+
+                {/* Per-staff export */}
+                <div className="grid grid-cols-2 gap-1">
+                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => exportSingleStaffSalaryPDF(staff)}>
+                    <Download className="h-3 w-3 mr-1" />PDF
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => shareSingleStaffSalaryWhatsApp(staff)}>
+                    <Share2 className="h-3 w-3 mr-1" />WhatsApp
+                  </Button>
                 </div>
               </CardContent>
             </Card>
