@@ -39,7 +39,7 @@ interface AdvanceTabProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
+const AdvanceTab = ({ category }: AdvanceTabProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +48,6 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'petroleum' | 'crusher' | 'office'>('all');
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Advance | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -69,7 +68,7 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
 
   useEffect(() => {
     fetchData();
-  }, [viewMonth, viewYear]);
+  }, [viewMonth, viewYear, category]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -77,18 +76,26 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
     const startDate = format(startOfMonth(new Date(viewYear, viewMonth - 1)), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(new Date(viewYear, viewMonth - 1)), 'yyyy-MM-dd');
 
+    let staffQuery = supabase.from('staff').select('id, name, category').eq('is_active', true).order('name');
+    if (category) staffQuery = staffQuery.eq('category', category);
+
     const [staffRes, advancesRes] = await Promise.all([
-      supabase.from('staff').select('id, name, category').eq('is_active', true).order('name'),
+      staffQuery,
       supabase.from('advances').select('*').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
     ]);
 
-    if (staffRes.data) setStaffList(staffRes.data as Staff[]);
+    const staffData = staffRes.data as Staff[] || [];
+    setStaffList(staffData);
+    
     if (advancesRes.data) {
-      const advancesWithStaff = advancesRes.data.map((adv) => ({
-        ...adv,
-        staff: staffRes.data?.find((s) => s.id === adv.staff_id),
-      }));
-      setAdvances(advancesWithStaff as Advance[]);
+      const staffIds = new Set(staffData.map(s => s.id));
+      const filteredAdvances = advancesRes.data
+        .filter(adv => staffIds.has(adv.staff_id))
+        .map((adv) => ({
+          ...adv,
+          staff: staffData.find((s) => s.id === adv.staff_id),
+        }));
+      setAdvances(filteredAdvances as Advance[]);
     }
     setIsLoading(false);
   };
@@ -179,29 +186,9 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
     return advances.filter((a) => a.staff_id === staffId).reduce((sum, a) => sum + Number(a.amount), 0);
   };
 
-  const filteredStaff = categoryFilter === 'all' 
-    ? staffList 
-    : staffList.filter(s => s.category === categoryFilter);
-
-  const staffWithAdvances = filteredStaff.filter((s) => getStaffTotalAdvance(s.id) > 0);
+  const staffWithAdvances = staffList.filter((s) => getStaffTotalAdvance(s.id) > 0);
 
   const totalAdvances = advances.reduce((sum, a) => sum + Number(a.amount), 0);
-
-  // Category-wise totals
-  const petroleumTotal = advances.filter(a => {
-    const staff = staffList.find(s => s.id === a.staff_id);
-    return staff?.category === 'petroleum';
-  }).reduce((sum, a) => sum + Number(a.amount), 0);
-
-  const crusherTotal = advances.filter(a => {
-    const staff = staffList.find(s => s.id === a.staff_id);
-    return staff?.category === 'crusher';
-  }).reduce((sum, a) => sum + Number(a.amount), 0);
-
-  const officeTotal = advances.filter(a => {
-    const staff = staffList.find(s => s.id === a.staff_id);
-    return staff?.category === 'office';
-  }).reduce((sum, a) => sum + Number(a.amount), 0);
 
   // Get advances for a specific day
   const getAdvancesForDay = (day: number) => {
@@ -211,39 +198,36 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
 
   const monthDays = Array.from({ length: getDaysInMonth(new Date(viewYear, viewMonth - 1)) }, (_, i) => i + 1);
 
+  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) + ' ' : '';
+
   // Export PDF with individual staff pages
   const exportToPDF = () => {
     const doc = new jsPDF();
     
-    // Cover page with summary
     doc.setFontSize(18);
-    doc.text(`Advance Report - ${months[viewMonth - 1]} ${viewYear}`, 14, 20);
+    doc.text(`${categoryTitle}Advance Report - ${months[viewMonth - 1]} ${viewYear}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy')}`, 14, 30);
     doc.text(`Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, 38);
     doc.text(REPORT_FOOTER, 14, 46);
 
-    // Summary table on first page
     const summaryData = staffWithAdvances.map((staff) => [
       staff.name,
-      staff.category,
       formatCurrencyForPDF(getStaffTotalAdvance(staff.id)),
     ]);
 
     autoTable(doc, {
-      head: [['Staff Name', 'Category', 'Total Advance']],
+      head: [['Staff Name', 'Total Advance']],
       body: summaryData,
       startY: 54,
     });
 
-    // Grand total row
     let currentY = (doc as any).lastAutoTable.finalY + 10;
     doc.setFontSize(12);
     doc.setFont(undefined!, 'bold');
     doc.text(`Grand Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, currentY);
     doc.setFont(undefined!, 'normal');
 
-    // Individual pages for each staff
     staffWithAdvances.forEach((staff) => {
       doc.addPage();
       const staffAdvances = getStaffAdvances(staff.id);
@@ -252,10 +236,9 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
       doc.setFontSize(16);
       doc.text(`${staff.name}`, 14, 20);
       doc.setFontSize(11);
-      doc.text(`Category: ${staff.category}`, 14, 28);
-      doc.text(`Month: ${months[viewMonth - 1]} ${viewYear}`, 14, 35);
-      doc.text(`Total Advance: ${formatCurrencyForPDF(staffTotal)}`, 14, 42);
-      doc.text(REPORT_FOOTER, 14, 50);
+      doc.text(`Month: ${months[viewMonth - 1]} ${viewYear}`, 14, 28);
+      doc.text(`Total Advance: ${formatCurrencyForPDF(staffTotal)}`, 14, 35);
+      doc.text(REPORT_FOOTER, 14, 43);
 
       const advanceData = staffAdvances.map((adv) => [
         format(new Date(adv.date), 'dd MMM yyyy'),
@@ -266,10 +249,9 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
       autoTable(doc, {
         head: [['Date', 'Amount', 'Notes']],
         body: advanceData,
-        startY: 58,
+        startY: 50,
       });
 
-      // Staff total at bottom
       const finalY = (doc as any).lastAutoTable.finalY + 10;
       doc.setFontSize(11);
       doc.setFont(undefined!, 'bold');
@@ -279,60 +261,31 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
       addReportNotes(doc, finalY + 15);
     });
 
-    // Final summary page
-    doc.addPage();
-    doc.setFontSize(16);
-    doc.text(`Summary - All Staff Advances`, 14, 20);
-    doc.setFontSize(11);
-    doc.text(`${months[viewMonth - 1]} ${viewYear}`, 14, 28);
-    doc.text(REPORT_FOOTER, 14, 35);
-
-    const allSummary = staffWithAdvances.map((staff) => [
-      staff.name,
-      staff.category,
-      formatCurrencyForPDF(getStaffTotalAdvance(staff.id)),
-    ]);
-
-    autoTable(doc, {
-      head: [['Staff Name', 'Category', 'Total Advance']],
-      body: allSummary,
-      startY: 43,
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(12);
-    doc.setFont(undefined!, 'bold');
-    doc.text(`Grand Total: ${formatCurrencyForPDF(totalAdvances)}`, 14, currentY);
-    doc.setFont(undefined!, 'normal');
-    
-    addReportNotes(doc, currentY + 15);
-
-    doc.save(`advances-${viewMonth}-${viewYear}.pdf`);
-    toast.success('PDF downloaded with individual staff pages');
+    doc.save(`${categoryTitle.trim().toLowerCase() || 'all'}-advances-${viewMonth}-${viewYear}.pdf`);
+    toast.success('PDF downloaded');
   };
 
   const exportToExcelFile = () => {
-    const headers = ['Name', 'Category', 'Date', 'Amount', 'Notes'];
+    const headers = ['Name', 'Date', 'Amount', 'Notes'];
     const data = advances.map((adv) => [
       adv.staff?.name || 'Unknown',
-      adv.staff?.category || '-',
       format(new Date(adv.date), 'dd MMM yyyy'),
       `₹${Number(adv.amount).toLocaleString()}`,
       adv.notes || '-',
     ]);
     
-    exportToExcel(data, headers, `advances-${viewMonth}-${viewYear}`, 'Advances', `Advance Report - ${months[viewMonth - 1]} ${viewYear}`);
+    exportToExcel(data, headers, `${categoryTitle.trim().toLowerCase() || 'all'}-advances-${viewMonth}-${viewYear}`, 'Advances', `${categoryTitle}Advance Report - ${months[viewMonth - 1]} ${viewYear}`);
     toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
-    let message = `💰 *Advance Report - ${months[viewMonth - 1]} ${viewYear}*\n`;
+    let message = `💰 *${categoryTitle}Advance Report - ${months[viewMonth - 1]} ${viewYear}*\n`;
     message += `Total: ₹${totalAdvances.toLocaleString()}\n\n`;
 
     staffWithAdvances.forEach((staff) => {
       const total = getStaffTotalAdvance(staff.id);
       const staffAdvances = getStaffAdvances(staff.id);
-      message += `*${staff.name}* (${staff.category}): ₹${total.toLocaleString()}\n`;
+      message += `*${staff.name}*: ₹${total.toLocaleString()}\n`;
       staffAdvances.forEach(adv => {
         message += `  • ${format(new Date(adv.date), 'dd MMM')}: ₹${Number(adv.amount).toLocaleString()}\n`;
       });
@@ -371,28 +324,6 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
         </Select>
       </div>
 
-      {/* Category-wise Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        <Card className="bg-blue-800 border-blue-700">
-          <CardContent className="p-2 text-center">
-            <p className="text-xs text-blue-200">Petroleum</p>
-            <p className="text-sm font-bold text-white">₹{petroleumTotal.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-blue-800 border-blue-700">
-          <CardContent className="p-2 text-center">
-            <p className="text-xs text-blue-200">Crusher</p>
-            <p className="text-sm font-bold text-white">₹{crusherTotal.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-blue-800 border-blue-700">
-          <CardContent className="p-2 text-center">
-            <p className="text-xs text-blue-200">Office</p>
-            <p className="text-sm font-bold text-white">₹{officeTotal.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Total Summary Card */}
       <Card className="mb-4 bg-primary text-primary-foreground">
         <CardContent className="p-4">
@@ -424,7 +355,7 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
                   <SelectContent>
                     {staffList.map((staff) => (
                       <SelectItem key={staff.id} value={staff.id}>
-                        {staff.name} ({staff.category})
+                        {staff.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -502,8 +433,17 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
         <Button variant="secondary" size="sm" className="text-xs" onClick={exportToPDF}>
           <Download className="h-4 w-4" />
         </Button>
+      </div>
+
+      {/* Export row */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
         <Button variant="secondary" size="sm" className="text-xs" onClick={exportToExcelFile}>
-          <FileSpreadsheet className="h-4 w-4" />
+          <FileSpreadsheet className="h-4 w-4 mr-1" />
+          Excel
+        </Button>
+        <Button variant="secondary" size="sm" className="text-xs" onClick={shareToWhatsApp}>
+          <Share2 className="h-4 w-4 mr-1" />
+          WhatsApp
         </Button>
       </div>
 
@@ -518,21 +458,6 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
         </div>
       )}
 
-      {/* Category Filter */}
-      <div className="mb-4">
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as typeof categoryFilter)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Staff</SelectItem>
-            <SelectItem value="petroleum">Petroleum</SelectItem>
-            <SelectItem value="crusher">Crusher</SelectItem>
-            <SelectItem value="office">Office</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Calendar View */}
       {viewMode === 'calendar' && (
         <Card className="mb-4">
@@ -544,7 +469,6 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
                 <div key={i} className="p-1 font-medium text-muted-foreground">{d}</div>
               ))}
-              {/* Empty cells for alignment */}
               {Array.from({ length: new Date(viewYear, viewMonth - 1, 1).getDay() === 0 ? 6 : new Date(viewYear, viewMonth - 1, 1).getDay() - 1 }).map((_, i) => (
                 <div key={`empty-${i}`} className="p-1"></div>
               ))}
@@ -596,7 +520,6 @@ const AdvanceTab = ({ category }: AdvanceTabProps = {}) => {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium text-foreground">{staff.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
                     </div>
                     <p className="font-bold text-foreground">₹{total.toLocaleString()}</p>
                   </div>

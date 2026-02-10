@@ -44,7 +44,7 @@ interface StaffProfileSectionProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
+const StaffProfileSection = ({ onBack, category }: StaffProfileSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
@@ -79,7 +79,9 @@ const StaffProfileSection = ({ onBack }: StaffProfileSectionProps) => {
   }, [selectedStaffId, selectedMonth, selectedYear]);
 
   const fetchStaffList = async () => {
-    const { data } = await supabase.from('staff').select('id, name, category, phone, base_salary, notes, address, photo_url').eq('is_active', true).order('name');
+    let query = supabase.from('staff').select('id, name, category, phone, base_salary, notes, address, photo_url').eq('is_active', true).order('name');
+    if (category) query = query.eq('category', category);
+    const { data } = await query;
     if (data) setStaffList(data as Staff[]);
     setIsLoading(false);
   };
