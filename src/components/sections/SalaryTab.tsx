@@ -1,45 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Calculator, Download, Share2, Check, Undo2, FileSpreadsheet } from 'lucide-react';
+import { Download, Share2, Check, Undo2, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, getDaysInMonth, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
 import { formatCurrencyForPDF, formatFullCurrency } from '@/lib/formatUtils';
+
 interface Staff {
   id: string;
   name: string;
-  category: 'petroleum' | 'crusher' | 'office';
-  base_salary: number;
-  notes: string | null;
-}
-
-interface Advance {
-  id: string;
-  staff_id: string;
-  amount: number;
+  category: string;
+  shift_rate: number;
 }
 
 interface SalaryCalculation {
   staffId: string;
   name: string;
   category: string;
-  baseSalary: number;
-  workingDays: number;
+  shiftRate: number;
   totalShifts: number;
-  oneShiftDays: number;
-  twoShiftDays: number;
-  absentDays: number;
-  perShiftSalary: number;
-  earnedSalary: number;
-  totalAdvance: number;
-  netSalary: number;
-  notes: string | null;
+  shiftAmount: number;
+  totalAdvances: number;
+  payable: number;
+  isPaid: boolean;
+  carryForward: number;
 }
 
 interface SalaryTabProps {
@@ -47,15 +37,12 @@ interface SalaryTabProps {
 }
 
 const SalaryTab = ({ category }: SalaryTabProps) => {
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [advances, setAdvances] = useState<Advance[]>([]);
   const [salaryData, setSalaryData] = useState<SalaryCalculation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [paidStaff, setPaidStaff] = useState<Set<string>>(new Set());
-  const [confirmPay, setConfirmPay] = useState<{ staffId: string; calc: SalaryCalculation } | null>(null);
-  const [confirmUnpay, setConfirmUnpay] = useState<{ staffId: string; name: string } | null>(null);
+  const [confirmPay, setConfirmPay] = useState<SalaryCalculation | null>(null);
+  const [confirmUnpay, setConfirmUnpay] = useState<SalaryCalculation | null>(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -66,128 +53,98 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
     fetchData();
   }, [selectedMonth, selectedYear, category]);
 
-  const getWorkingDaysInMonth = (year: number, month: number) => {
-    // All days including Sundays are working days
-    return getDaysInMonth(new Date(year, month - 1));
-  };
-
   const fetchData = async () => {
     setIsLoading(true);
-    
-    let staffQuery = supabase.from('staff').select('id, name, category, base_salary, notes').eq('is_active', true).order('name');
+
+    let staffQuery = supabase.from('staff').select('id, name, category, shift_rate').eq('is_active', true).order('name');
     if (category) staffQuery = staffQuery.eq('category', category);
 
-    const [staffRes, advancesRes] = await Promise.all([
-      staffQuery,
-      supabase.from('advances').select('id, staff_id, amount').eq('is_deducted', false),
-    ]);
+    const { data: staffData } = await staffQuery;
+    if (!staffData) { setIsLoading(false); return; }
 
-    if (staffRes.data) setStaffList(staffRes.data as Staff[]);
-    if (advancesRes.data) setAdvances(advancesRes.data);
-
-    // Fetch attendance for the month
     const startDate = format(startOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
 
-    const { data: attendanceData } = await supabase
-      .from('attendance')
-      .select('staff_id, status, shift_count')
-      .gte('date', startDate)
-      .lte('date', endDate);
+    const [attendanceRes, advancesRes, payrollRes, prevPayrollRes] = await Promise.all([
+      supabase.from('attendance').select('staff_id, shift_count, status').gte('date', startDate).lte('date', endDate),
+      supabase.from('advances').select('staff_id, amount').gte('date', startDate).lte('date', endDate),
+      supabase.from('payroll').select('staff_id, is_paid').eq('month', selectedMonth).eq('year', selectedYear),
+      // Check previous month for carry-forward
+      supabase.from('salary_records').select('staff_id, pending_amount, is_paid').eq('month', selectedMonth === 1 ? 12 : selectedMonth - 1).eq('year', selectedMonth === 1 ? selectedYear - 1 : selectedYear),
+    ]);
 
-    // Check paid status from payroll
-    const { data: payrollData } = await supabase
-      .from('payroll')
-      .select('staff_id, is_paid')
-      .eq('month', selectedMonth)
-      .eq('year', selectedYear);
+    const calculations: SalaryCalculation[] = staffData.map((staff) => {
+      const shiftRate = Number(staff.shift_rate) || 0;
+      const staffAtt = (attendanceRes.data || []).filter(a => a.staff_id === staff.id && (a.status === 'present' || a.status === 'half_day'));
+      const totalShifts = staffAtt.reduce((sum, a) => sum + (a.shift_count || 1), 0);
+      const shiftAmount = totalShifts * shiftRate;
 
-    if (payrollData) {
-      setPaidStaff(new Set(payrollData.filter(p => p.is_paid).map(p => p.staff_id)));
-    }
+      const staffAdv = (advancesRes.data || []).filter(a => a.staff_id === staff.id);
+      const totalAdvances = staffAdv.reduce((sum, a) => sum + Number(a.amount), 0);
 
-    const workingDays = getWorkingDaysInMonth(selectedYear, selectedMonth);
+      const isPaid = (payrollRes.data || []).some(p => p.staff_id === staff.id && p.is_paid);
 
-    // Calculate salary for each staff based on shifts
-    if (staffRes.data) {
-      const calculations = staffRes.data.map((staff) => {
-        const staffAttendance = attendanceData?.filter(a => a.staff_id === staff.id) || [];
-        
-        const oneShiftDays = staffAttendance.filter(a => a.status === 'present' && (a.shift_count || 1) === 1).length;
-        const twoShiftDays = staffAttendance.filter(a => a.status === 'present' && a.shift_count === 2).length;
-        const absentDays = staffAttendance.filter(a => a.status === 'absent').length;
-        const totalShifts = oneShiftDays + (twoShiftDays * 2);
+      // Carry forward from previous month
+      const prevRecord = (prevPayrollRes.data || []).find(p => p.staff_id === staff.id);
+      const carryForward = (prevRecord && !prevRecord.is_paid) ? Number(prevRecord.pending_amount || 0) : 0;
 
-        // Per shift salary = base salary / (working days * 2 possible shifts per day)
-        // Or simpler: per shift = base / working days (assuming 1 shift per day baseline)
-        const perShiftSalary = workingDays > 0 ? Number(staff.base_salary) / workingDays : 0;
-        const earnedSalary = perShiftSalary * totalShifts;
+      const payable = shiftAmount - totalAdvances + carryForward;
 
-        const staffAdvances = advancesRes.data?.filter(a => a.staff_id === staff.id) || [];
-        const totalAdvance = staffAdvances.reduce((sum, a) => sum + Number(a.amount), 0);
+      return {
+        staffId: staff.id,
+        name: staff.name,
+        category: staff.category,
+        shiftRate,
+        totalShifts,
+        shiftAmount,
+        totalAdvances,
+        payable,
+        isPaid,
+        carryForward,
+      };
+    });
 
-        const netSalary = earnedSalary - totalAdvance;
-
-        return {
-          staffId: staff.id,
-          name: staff.name,
-          category: staff.category,
-          baseSalary: Number(staff.base_salary),
-          workingDays,
-          totalShifts,
-          oneShiftDays,
-          twoShiftDays,
-          absentDays,
-          perShiftSalary: Math.round(perShiftSalary),
-          earnedSalary: Math.round(earnedSalary),
-          totalAdvance,
-          netSalary: Math.round(netSalary),
-          notes: staff.notes,
-        };
-      });
-
-      setSalaryData(calculations as SalaryCalculation[]);
-    }
-
+    setSalaryData(calculations);
     setIsLoading(false);
   };
 
   const markAsPaid = async () => {
     if (!confirmPay) return;
-    const { staffId, calc } = confirmPay;
+    const calc = confirmPay;
 
-    // First deduct advances
-    await supabase
-      .from('advances')
-      .update({ is_deducted: true })
-      .eq('staff_id', staffId)
-      .eq('is_deducted', false);
+    await supabase.from('advances').update({ is_deducted: true }).eq('staff_id', calc.staffId).eq('is_deducted', false);
 
-    // Upsert payroll record
-    const { error } = await supabase
-      .from('payroll')
-      .upsert({
-        staff_id: staffId,
-        month: selectedMonth,
-        year: selectedYear,
-        base_salary: calc.baseSalary,
-        working_days: calc.workingDays,
-        present_days: calc.totalShifts,
-        half_days: 0,
-        absent_days: calc.absentDays,
-        deductions: calc.totalAdvance,
-        net_salary: calc.netSalary,
-        is_paid: true,
-        paid_date: format(new Date(), 'yyyy-MM-dd'),
-      }, {
-        onConflict: 'staff_id,month,year'
-      });
+    const { error } = await supabase.from('payroll').upsert({
+      staff_id: calc.staffId,
+      month: selectedMonth,
+      year: selectedYear,
+      base_salary: calc.shiftRate,
+      working_days: 0,
+      present_days: calc.totalShifts,
+      half_days: 0,
+      absent_days: 0,
+      deductions: calc.totalAdvances,
+      net_salary: calc.payable,
+      is_paid: true,
+      paid_date: format(new Date(), 'yyyy-MM-dd'),
+    }, { onConflict: 'staff_id,month,year' });
 
-    if (error) {
-      toast.error('Failed to mark as paid');
-      return;
-    }
+    // Also save to salary_records for carry-forward tracking
+    await supabase.from('salary_records').upsert({
+      staff_id: calc.staffId,
+      staff_type: 'staff',
+      month: selectedMonth,
+      year: selectedYear,
+      shift_rate: calc.shiftRate,
+      total_shifts: calc.totalShifts,
+      gross_salary: calc.shiftAmount,
+      total_advances: calc.totalAdvances,
+      pending_amount: calc.payable,
+      is_paid: true,
+      paid_date: new Date().toISOString(),
+    }, { onConflict: 'staff_id,month,year' });
 
+    if (error) { toast.error('Failed to mark as paid'); return; }
     toast.success('Marked as paid');
     setConfirmPay(null);
     fetchData();
@@ -195,100 +152,71 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
 
   const markAsUnpaid = async () => {
     if (!confirmUnpay) return;
-    const { staffId } = confirmUnpay;
-
-    // Update payroll record to unpaid
-    const { error } = await supabase
-      .from('payroll')
-      .update({ is_paid: false, paid_date: null })
-      .eq('staff_id', staffId)
-      .eq('month', selectedMonth)
-      .eq('year', selectedYear);
-
-    if (error) {
-      toast.error('Failed to mark as unpaid');
-      return;
-    }
-
-    // Revert advances to not deducted (optional - uncomment if needed)
-    // await supabase.from('advances').update({ is_deducted: false }).eq('staff_id', staffId);
-
+    await supabase.from('payroll').update({ is_paid: false, paid_date: null }).eq('staff_id', confirmUnpay.staffId).eq('month', selectedMonth).eq('year', selectedYear);
+    await supabase.from('salary_records').update({ is_paid: false, paid_date: null }).eq('staff_id', confirmUnpay.staffId).eq('month', selectedMonth).eq('year', selectedYear);
     toast.success('Marked as unpaid');
     setConfirmUnpay(null);
     fetchData();
   };
 
-  const filteredSalaryData = salaryData;
-
-  const totalNetSalary = filteredSalaryData.reduce((sum, s) => sum + Math.max(0, s.netSalary), 0);
-  const totalAdvances = filteredSalaryData.reduce((sum, s) => sum + s.totalAdvance, 0);
+  const totalPayable = salaryData.reduce((sum, s) => sum + Math.max(0, s.payable), 0);
+  const totalAdvances = salaryData.reduce((sum, s) => sum + s.totalAdvances, 0);
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    
     doc.setFontSize(18);
     doc.text(`Salary Report - ${months[selectedMonth - 1]} ${selectedYear}`, 14, 20);
     doc.setFontSize(12);
-    doc.text(`Total Payable: ${formatCurrencyForPDF(totalNetSalary)}`, 14, 30);
-    doc.text(`Total Advances Deducted: ${formatCurrencyForPDF(totalAdvances)}`, 14, 38);
-    doc.text(REPORT_FOOTER, 14, 46);
+    doc.text(`Total Payable: ${formatCurrencyForPDF(totalPayable)}`, 14, 30);
+    doc.text(REPORT_FOOTER, 14, 38);
 
-    const tableData = filteredSalaryData.map((s) => [
+    const tableData = salaryData.map((s) => [
       s.name,
-      s.category,
-      formatCurrencyForPDF(s.baseSalary),
-      `${s.totalShifts} shifts`,
-      formatCurrencyForPDF(s.earnedSalary),
-      formatCurrencyForPDF(s.totalAdvance),
-      formatCurrencyForPDF(s.netSalary),
-      paidStaff.has(s.staffId) ? 'Paid' : 'Pending',
+      formatCurrencyForPDF(s.shiftRate) + '/shift',
+      s.totalShifts.toString(),
+      formatCurrencyForPDF(s.shiftAmount),
+      formatCurrencyForPDF(s.totalAdvances),
+      s.carryForward > 0 ? formatCurrencyForPDF(s.carryForward) : '-',
+      formatCurrencyForPDF(s.payable),
+      s.isPaid ? 'Paid' : 'Pending',
     ]);
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Base', 'Shifts', 'Earned', 'Advance', 'Net', 'Status']],
+      head: [['Name', 'Rate', 'Shifts', 'Shift Amt', 'Advances', 'Carry Fwd', 'Payable', 'Status']],
       body: tableData,
-      startY: 54,
-      styles: { fontSize: 8 },
+      startY: 44,
+      styles: { fontSize: 7 },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     addReportNotes(doc, finalY);
-
     doc.save(`salary-${selectedMonth}-${selectedYear}.pdf`);
     toast.success('PDF downloaded');
   };
 
   const exportToExcelFile = () => {
-    const headers = ['Name', 'Category', 'Base Salary', 'Shifts', 'Earned', 'Advance', 'Net Salary', 'Status'];
-    const data = filteredSalaryData.map((s) => [
-      s.name,
-      s.category,
-      `₹${s.baseSalary.toLocaleString()}`,
-      s.totalShifts,
-      `₹${s.earnedSalary.toLocaleString()}`,
-      `₹${s.totalAdvance.toLocaleString()}`,
-      `₹${s.netSalary.toLocaleString()}`,
-      paidStaff.has(s.staffId) ? 'Paid' : 'Pending',
+    const headers = ['Name', 'Shift Rate', 'Shifts', 'Shift Amount', 'Advances', 'Carry Forward', 'Payable', 'Status'];
+    const data = salaryData.map((s) => [
+      s.name, `₹${s.shiftRate}`, s.totalShifts, `₹${s.shiftAmount.toLocaleString()}`,
+      `₹${s.totalAdvances.toLocaleString()}`, s.carryForward > 0 ? `₹${s.carryForward.toLocaleString()}` : '-',
+      `₹${s.payable.toLocaleString()}`, s.isPaid ? 'Paid' : 'Pending',
     ]);
-    
-    exportToExcel(data, headers, `salary-${selectedMonth}-${selectedYear}`, 'Salary Report', `Salary Report - ${months[selectedMonth - 1]} ${selectedYear}`);
+    exportToExcel(data, headers, `salary-${selectedMonth}-${selectedYear}`, 'Salary Report', `Salary - ${months[selectedMonth - 1]} ${selectedYear}`);
     toast.success('Excel downloaded');
   };
 
   const shareToWhatsApp = () => {
-    let message = `💰 *Salary Report - ${months[selectedMonth - 1]} ${selectedYear}*\n\n`;
-    message += `Total Payable: ₹${totalNetSalary.toLocaleString()}\n`;
-    message += `Total Advances: ₹${totalAdvances.toLocaleString()}\n\n`;
-
-    filteredSalaryData.forEach((s) => {
-      const status = paidStaff.has(s.staffId) ? '✅' : '⏳';
-      message += `${status} ${s.name}: ₹${s.netSalary.toLocaleString()} (${s.totalShifts} shifts)\n`;
+    let message = `💰 *Salary - ${months[selectedMonth - 1]} ${selectedYear}*\n\n`;
+    salaryData.forEach((s) => {
+      const status = s.isPaid ? '✅' : '⏳';
+      message += `${status} *${s.name}*\n`;
+      message += `   ${s.totalShifts} shifts × ₹${s.shiftRate} = ₹${s.shiftAmount.toLocaleString()}\n`;
+      message += `   Advances: -₹${s.totalAdvances.toLocaleString()}\n`;
+      if (s.carryForward > 0) message += `   Carry Fwd: +₹${s.carryForward.toLocaleString()}\n`;
+      message += `   *Payable: ₹${s.payable.toLocaleString()}*\n\n`;
     });
-
-    message += `\n_Tibrewal Staff Manager_`;
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    message += `💰 *Total Payable: ₹${totalPayable.toLocaleString()}*\n_Tibrewal Staff Manager_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -296,9 +224,7 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
       {/* Month/Year Selection */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {months.map((month, i) => (
               <SelectItem key={i} value={(i + 1).toString()}>{month}</SelectItem>
@@ -306,9 +232,7 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
           </SelectContent>
         </Select>
         <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {[2024, 2025, 2026, 2027].map((year) => (
               <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
@@ -317,105 +241,88 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
         </Select>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <Card className="bg-primary text-primary-foreground">
           <CardContent className="p-3">
             <p className="text-xs opacity-90">Total Payable</p>
-            <p className="text-lg font-bold">₹{totalNetSalary.toLocaleString()}</p>
+            <p className="text-lg font-bold">{formatFullCurrency(totalPayable)}</p>
           </CardContent>
         </Card>
         <Card className="bg-secondary text-secondary-foreground">
           <CardContent className="p-3">
-            <p className="text-xs opacity-90">Advances Deducted</p>
-            <p className="text-lg font-bold">₹{totalAdvances.toLocaleString()}</p>
+            <p className="text-xs opacity-90">Total Advances</p>
+            <p className="text-lg font-bold">{formatFullCurrency(totalAdvances)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Actions */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <Button variant="secondary" size="sm" onClick={exportToPDF}>
-          <Download className="h-4 w-4 mr-1" />
-          PDF
-        </Button>
-        <Button variant="secondary" size="sm" onClick={exportToExcelFile}>
-          <FileSpreadsheet className="h-4 w-4 mr-1" />
-          Excel
-        </Button>
-        <Button variant="secondary" size="sm" onClick={shareToWhatsApp}>
-          <Share2 className="h-4 w-4 mr-1" />
-          Share
-        </Button>
+        <Button variant="secondary" size="sm" onClick={exportToPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
+        <Button variant="secondary" size="sm" onClick={exportToExcelFile}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+        <Button variant="secondary" size="sm" onClick={shareToWhatsApp}><Share2 className="h-4 w-4 mr-1" />Share</Button>
       </div>
-
 
       {/* Salary List */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : (
         <div className="space-y-2">
-          {filteredSalaryData.map((calc) => {
-            const isPaid = paidStaff.has(calc.staffId);
-            return (
-              <Card key={calc.staffId} className={isPaid ? 'opacity-60' : ''}>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-foreground">{calc.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{calc.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-foreground">₹{calc.netSalary.toLocaleString()}</p>
-                      {isPaid && <span className="text-xs text-green-600">Paid ✓</span>}
-                    </div>
+          {salaryData.map((calc) => (
+            <Card key={calc.staffId} className={calc.isPaid ? 'opacity-60' : ''}>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-medium text-foreground">{calc.name}</p>
+                    <p className="text-xs text-muted-foreground">Rate: {formatFullCurrency(calc.shiftRate)}/shift</p>
                   </div>
-
-                  {calc.notes && (
-                    <p className="text-xs text-muted-foreground mb-2 bg-muted/30 p-1 rounded">
-                      📝 {calc.notes}
-                    </p>
-                  )}
-
-                  <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                    <div className="flex justify-between">
-                      <span>Base: ₹{calc.baseSalary.toLocaleString()}</span>
-                      <span>Shifts: {calc.totalShifts}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>1-Shift: {calc.oneShiftDays} | 2-Shift: {calc.twoShiftDays}</span>
-                      <span>Absent: {calc.absentDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Earned: ₹{calc.earnedSalary.toLocaleString()}</span>
-                      <span>Advance: -₹{calc.totalAdvance.toLocaleString()}</span>
-                    </div>
+                  <div className="text-right">
+                    <p className="font-bold text-foreground">{formatFullCurrency(calc.payable)}</p>
+                    {calc.isPaid && <span className="text-xs text-green-600">Paid ✓</span>}
                   </div>
+                </div>
 
-                  {isPaid ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setConfirmUnpay({ staffId: calc.staffId, name: calc.name })}
-                    >
-                      <Undo2 className="h-4 w-4 mr-2" />
-                      Mark as Unpaid
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setConfirmPay({ staffId: calc.staffId, calc })}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      Mark as Paid
-                    </Button>
+                {/* Simple Math Display */}
+                <div className="bg-muted/40 rounded p-2 text-xs space-y-1 mb-2 font-mono">
+                  <div className="flex justify-between">
+                    <span>{calc.totalShifts} shifts × ₹{calc.shiftRate.toLocaleString()}</span>
+                    <span>= ₹{calc.shiftAmount.toLocaleString()}</span>
+                  </div>
+                  {calc.totalAdvances > 0 && (
+                    <div className="flex justify-between text-destructive">
+                      <span>− Advances</span>
+                      <span>− ₹{calc.totalAdvances.toLocaleString()}</span>
+                    </div>
                   )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                  {calc.carryForward > 0 && (
+                    <div className="flex justify-between text-orange-600">
+                      <span>+ Unpaid Carry Forward</span>
+                      <span>+ ₹{calc.carryForward.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold border-t border-border pt-1">
+                    <span>Payable</span>
+                    <span>= ₹{calc.payable.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {!calc.isPaid && calc.payable > 0 && (
+                  <p className="text-xs text-orange-600 mb-2">⚠ Unpaid – Will carry forward if not paid</p>
+                )}
+
+                {calc.isPaid ? (
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => setConfirmUnpay(calc)}>
+                    <Undo2 className="h-4 w-4 mr-2" />Mark as Unpaid
+                  </Button>
+                ) : (
+                  <Button size="sm" className="w-full" onClick={() => setConfirmPay(calc)}>
+                    <Check className="h-4 w-4 mr-2" />Mark as Paid
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -425,8 +332,8 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
             <AlertDialogDescription>
-              Mark {confirmPay?.calc.name}'s salary (₹{confirmPay?.calc.netSalary.toLocaleString()}) as paid? 
-              This will also deduct the advance of ₹{confirmPay?.calc.totalAdvance.toLocaleString()}.
+              Mark {confirmPay?.name}'s salary ({formatFullCurrency(confirmPay?.payable || 0)}) as paid?
+              Advances of {formatFullCurrency(confirmPay?.totalAdvances || 0)} will be deducted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -440,11 +347,8 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
       <AlertDialog open={!!confirmUnpay} onOpenChange={() => setConfirmUnpay(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revert Payment Status</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark {confirmUnpay?.name}'s salary as unpaid? 
-              This will reverse the payment status.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Revert Payment</AlertDialogTitle>
+            <AlertDialogDescription>Mark {confirmUnpay?.name}'s salary as unpaid?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
