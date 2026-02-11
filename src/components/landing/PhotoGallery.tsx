@@ -1,29 +1,52 @@
+import crusher1 from '@/assets/gallery-crusher-new-1.jpeg';
 import crusher2 from '@/assets/gallery-crusher-new-2.jpeg';
 import crusher3 from '@/assets/gallery-crusher-new-3.jpeg';
 import crusher4 from '@/assets/gallery-crusher-new-4.jpeg';
 import crusher5 from '@/assets/gallery-crusher-new-5.jpeg';
+import crusher6 from '@/assets/gallery-crusher-new-6.jpeg';
+import crusher7 from '@/assets/gallery-crusher-new-7.jpeg';
+import tyres1 from '@/assets/gallery-tyres-new-1.jpeg';
 import tyres2 from '@/assets/gallery-tyres-new-2.jpeg';
 import tyres3 from '@/assets/gallery-tyres-new-3.jpeg';
 import tyres4 from '@/assets/gallery-tyres-new-4.jpeg';
-import truck1 from '@/assets/gallery-truck-1.jpeg';
-import truck2 from '@/assets/gallery-truck-2.jpeg';
+import tyres5 from '@/assets/gallery-tyres-new-5.jpeg';
+import tyres6 from '@/assets/gallery-tyres-new-6.jpeg';
+import truck1 from '@/assets/gallery-truck-new-1.jpeg';
+import truck2 from '@/assets/gallery-truck-new-2.jpeg';
+import truck3 from '@/assets/gallery-truck-new-3.jpeg';
 import petroleum1 from '@/assets/gallery-petroleum-1.jpeg';
+import petroleum2 from '@/assets/gallery-petroleum-2.jpeg';
 import petroleum3 from '@/assets/gallery-petroleum-3.jpeg';
+import petroleum4 from '@/assets/gallery-petroleum-4.jpeg';
+import petroleum5 from '@/assets/gallery-petroleum-5.jpeg';
+import petroleum6 from '@/assets/gallery-petroleum-6.jpeg';
 import aggregate1 from '@/assets/gallery-aggregate-1.jpeg';
 
+// Arranged for visual balance: alternating categories, mixing vertical/horizontal
 const photos = [
-  { src: crusher2, alt: 'Stone crushing plant' },
-  { src: tyres2, alt: 'Tyre on highway' },
-  { src: crusher3, alt: 'Crusher operations' },
+  { src: crusher7, alt: 'Crusher plant in action' },
+  { src: tyres5, alt: 'Tyre closeup' },
+  { src: truck3, alt: 'Tipper truck night' },
+  { src: petroleum5, alt: 'Bharat Petroleum station' },
+  { src: crusher1, alt: 'Stone crushing operations' },
+  { src: tyres6, alt: 'Tyre warehouse aisle' },
+  { src: truck2, alt: 'Heavy tipper truck' },
+  { src: crusher6, alt: 'Crushing plant wide' },
+  { src: petroleum6, alt: 'Fuel station' },
+  { src: tyres1, alt: 'Tyre storage' },
+  { src: crusher2, alt: 'Crusher machinery' },
+  { src: petroleum4, alt: 'BP signboard' },
   { src: truck1, alt: 'Transportation fleet' },
-  { src: tyres3, alt: 'Tyre warehouse' },
+  { src: tyres2, alt: 'Commercial tyres' },
+  { src: crusher3, alt: 'Aggregate production' },
+  { src: petroleum1, alt: 'Petroleum services' },
+  { src: tyres3, alt: 'Tyre display' },
   { src: crusher4, alt: 'Crushing facility' },
-  { src: petroleum1, alt: 'Petroleum station' },
-  { src: tyres4, alt: 'Tyre storage' },
-  { src: crusher5, alt: 'Aggregate production' },
-  { src: truck2, alt: 'Heavy truck' },
-  { src: petroleum3, alt: 'Fuel services' },
-  { src: aggregate1, alt: 'Aggregates' },
+  { src: petroleum2, alt: 'Fuel pump' },
+  { src: crusher5, alt: 'Stone aggregate' },
+  { src: tyres4, alt: 'Tyre collection' },
+  { src: petroleum3, alt: 'Petrol station' },
+  { src: aggregate1, alt: 'Aggregates stockpile' },
 ];
 
 const PhotoGallery = () => {
