@@ -86,63 +86,22 @@ const TopHeader = ({ deptTitle, userName, onLogout }: { deptTitle?: string; user
   </div>
 );
 
-// Summary Strip
-const SummaryStrip = ({ stats }: { stats: { totalStaff: number; activeToday: number; pendingSalary: number; totalAdvances: number } }) => (
-  <div className="grid grid-cols-4 gap-2 px-4 py-3" style={{ background: '#1e293b' }}>
-    <div className="text-center">
-      <p className="text-lg font-bold" style={{ color: 'white' }}>{stats.totalStaff}</p>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Staff</p>
-    </div>
-    <div className="text-center">
-      <p className="text-lg font-bold" style={{ color: '#22c55e' }}>{stats.activeToday}</p>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Active</p>
-    </div>
-    <div className="text-center">
-      <p className="text-lg font-bold" style={{ color: '#f97316' }}>₹{stats.pendingSalary > 999 ? `${(stats.pendingSalary / 1000).toFixed(0)}K` : stats.pendingSalary}</p>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Salary</p>
-    </div>
-    <div className="text-center">
-      <p className="text-lg font-bold" style={{ color: '#ef4444' }}>₹{stats.totalAdvances > 999 ? `${(stats.totalAdvances / 1000).toFixed(0)}K` : stats.totalAdvances}</p>
-      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Advances</p>
-    </div>
-  </div>
-);
+
 
 const Home = () => {
   const [activeSection, setActiveSection] = useState<SectionType>(null);
   const [activeDepartment, setActiveDepartment] = useState<DepartmentType>(null);
   const { user, logout } = useAppAuth();
 
-  const [summaryStats, setSummaryStats] = useState({ totalStaff: 0, activeToday: 0, pendingSalary: 0, totalAdvances: 0 });
+  
 
   const isManager = user?.role === 'manager';
   const isMltAdmin = user?.role === 'mlt_admin';
   const isPetroleumAdmin = user?.role === 'petroleum_admin';
   const isCrusherAdmin = user?.role === 'crusher_admin';
 
-  // Fetch summary stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
-      
-      const [staffRes, attendanceRes, advancesRes, payrollRes] = await Promise.all([
-        supabase.from('staff').select('id').eq('is_active', true),
-        supabase.from('attendance').select('id').eq('date', today).eq('status', 'present'),
-        supabase.from('advances').select('amount').eq('is_deducted', false),
-        supabase.from('payroll').select('net_salary').eq('month', currentMonth).eq('year', currentYear).eq('is_paid', false),
-      ]);
-      
-      setSummaryStats({
-        totalStaff: staffRes.data?.length || 0,
-        activeToday: attendanceRes.data?.length || 0,
-        pendingSalary: (payrollRes.data || []).reduce((s, p) => s + Number(p.net_salary), 0),
-        totalAdvances: (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0),
-      });
-    };
-    fetchStats();
-  }, []);
+
+
 
   // Department sections
   const getDeptSections = (dept: 'petroleum' | 'crusher' | 'tyres-office'): NavItem[] => {
