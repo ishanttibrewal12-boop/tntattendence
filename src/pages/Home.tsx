@@ -1,9 +1,11 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
-import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight } from 'lucide-react';
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
+import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import companyLogo from '@/assets/company-logo.png';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
@@ -31,7 +33,6 @@ type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' |
 
 type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | null;
 
-// Map department to staff category for filtering
 type StaffCategory = 'petroleum' | 'crusher' | 'office';
 
 const getDeptCategory = (dept: DepartmentType): StaffCategory | undefined => {
@@ -39,6 +40,14 @@ const getDeptCategory = (dept: DepartmentType): StaffCategory | undefined => {
   if (dept === 'crusher') return 'crusher';
   if (dept === 'tyres-office') return 'office';
   return undefined;
+};
+
+const getDeptTitle = (dept: DepartmentType): string => {
+  if (dept === 'petroleum') return 'Petroleum';
+  if (dept === 'crusher') return 'Crusher';
+  if (dept === 'mlt') return 'MLT';
+  if (dept === 'tyres-office') return 'Tyres & Office';
+  return '';
 };
 
 interface NavItem {
@@ -50,8 +59,52 @@ interface NavItem {
 }
 
 const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-pulse text-primary text-sm">Loading...</div>
+  <div className="min-h-screen flex items-center justify-center" style={{ background: '#F4F6F8' }}>
+    <div className="animate-pulse text-sm" style={{ color: '#1e3a8a' }}>Loading...</div>
+  </div>
+);
+
+// Top Header Component
+const TopHeader = ({ deptTitle, userName, onLogout }: { deptTitle?: string; userName: string; onLogout: () => void }) => (
+  <div className="sticky top-0 z-50 px-4 py-3 flex items-center justify-between" style={{ background: '#0f172a' }}>
+    <div className="flex items-center gap-3 min-w-0">
+      <img src={companyLogo} alt="T&T" className="h-8 w-8 object-contain" loading="lazy" />
+      <div className="min-w-0">
+        <p className="text-sm font-bold truncate" style={{ color: 'white' }}>Tibrewal & Tibrewal</p>
+        {deptTitle && <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{deptTitle}</p>}
+      </div>
+    </div>
+    <div className="flex items-center gap-3">
+      <div className="text-right hidden sm:block">
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>{userName}</p>
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{format(new Date(), 'dd MMM yyyy')}</p>
+      </div>
+      <Button variant="ghost" size="icon" onClick={onLogout} className="hover:bg-white/10">
+        <LogOut className="h-4 w-4" style={{ color: 'rgba(255,255,255,0.7)' }} />
+      </Button>
+    </div>
+  </div>
+);
+
+// Summary Strip
+const SummaryStrip = ({ stats }: { stats: { totalStaff: number; activeToday: number; pendingSalary: number; totalAdvances: number } }) => (
+  <div className="grid grid-cols-4 gap-2 px-4 py-3" style={{ background: '#1e293b' }}>
+    <div className="text-center">
+      <p className="text-lg font-bold" style={{ color: 'white' }}>{stats.totalStaff}</p>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Staff</p>
+    </div>
+    <div className="text-center">
+      <p className="text-lg font-bold" style={{ color: '#22c55e' }}>{stats.activeToday}</p>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Active</p>
+    </div>
+    <div className="text-center">
+      <p className="text-lg font-bold" style={{ color: '#f97316' }}>₹{stats.pendingSalary > 999 ? `${(stats.pendingSalary / 1000).toFixed(0)}K` : stats.pendingSalary}</p>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Salary</p>
+    </div>
+    <div className="text-center">
+      <p className="text-lg font-bold" style={{ color: '#ef4444' }}>₹{stats.totalAdvances > 999 ? `${(stats.totalAdvances / 1000).toFixed(0)}K` : stats.totalAdvances}</p>
+      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Advances</p>
+    </div>
   </div>
 );
 
@@ -60,12 +113,38 @@ const Home = () => {
   const [activeDepartment, setActiveDepartment] = useState<DepartmentType>(null);
   const { user, logout } = useAppAuth();
 
+  const [summaryStats, setSummaryStats] = useState({ totalStaff: 0, activeToday: 0, pendingSalary: 0, totalAdvances: 0 });
+
   const isManager = user?.role === 'manager';
   const isMltAdmin = user?.role === 'mlt_admin';
   const isPetroleumAdmin = user?.role === 'petroleum_admin';
   const isCrusherAdmin = user?.role === 'crusher_admin';
 
-  // Department sections for Petroleum, Crusher, Office
+  // Fetch summary stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      const [staffRes, attendanceRes, advancesRes, payrollRes] = await Promise.all([
+        supabase.from('staff').select('id').eq('is_active', true),
+        supabase.from('attendance').select('id').eq('date', today).eq('status', 'present'),
+        supabase.from('advances').select('amount').eq('is_deducted', false),
+        supabase.from('payroll').select('net_salary').eq('month', currentMonth).eq('year', currentYear).eq('is_paid', false),
+      ]);
+      
+      setSummaryStats({
+        totalStaff: staffRes.data?.length || 0,
+        activeToday: attendanceRes.data?.length || 0,
+        pendingSalary: (payrollRes.data || []).reduce((s, p) => s + Number(p.net_salary), 0),
+        totalAdvances: (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0),
+      });
+    };
+    fetchStats();
+  }, []);
+
+  // Department sections
   const getDeptSections = (dept: 'petroleum' | 'crusher' | 'tyres-office'): NavItem[] => {
     const primary: NavItem[] = [
       { id: 'attendance', title: 'Attendance', icon: Calendar, description: 'Mark daily attendance', primary: true },
@@ -109,12 +188,10 @@ const Home = () => {
     return [...primary, ...secondary];
   };
 
-  // MLT sections
   const mltSections: NavItem[] = [
     { id: 'mlt', title: 'MLT Dashboard', icon: Truck, description: 'Driver & Khalasi management', primary: true },
   ];
 
-  // Departments visible based on role
   const departments = useMemo(() => {
     const depts: { id: DepartmentType; title: string; icon: typeof Fuel; description: string }[] = [];
     if (isManager || isPetroleumAdmin) depts.push({ id: 'petroleum', title: 'Petroleum', icon: Fuel, description: 'Fuel station operations' });
@@ -127,15 +204,15 @@ const Home = () => {
     return depts;
   }, [user]);
 
-  // Get department category for passing to sections
   const deptCategory = getDeptCategory(activeDepartment);
 
-  // Render active section with category context
+  // Render active section
   if (activeSection) {
     const onBack = () => setActiveSection(null);
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
+          <TopHeader deptTitle={getDeptTitle(activeDepartment)} userName={user?.full_name || ''} onLogout={logout} />
           {activeSection === 'attendance' && <AttendanceSection onBack={onBack} category={deptCategory} />}
           {activeSection === 'advance-salary' && <AdvanceSalarySection onBack={onBack} category={deptCategory} />}
           {activeSection === 'staff' && <StaffSection onBack={onBack} category={deptCategory} />}
@@ -164,18 +241,17 @@ const Home = () => {
   // Department detail view
   if (activeDepartment) {
     let sections: NavItem[] = [];
-    let deptTitle = '';
-    if (activeDepartment === 'petroleum') { sections = getDeptSections('petroleum'); deptTitle = 'Petroleum'; }
-    else if (activeDepartment === 'crusher') { sections = getDeptSections('crusher'); deptTitle = 'Crusher'; }
-    else if (activeDepartment === 'mlt') { sections = mltSections; deptTitle = 'MLT'; }
-    else if (activeDepartment === 'tyres-office') { sections = getDeptSections('tyres-office'); deptTitle = 'Tyres & Office'; }
+    let deptTitle = getDeptTitle(activeDepartment);
+    if (activeDepartment === 'petroleum') { sections = getDeptSections('petroleum'); }
+    else if (activeDepartment === 'crusher') { sections = getDeptSections('crusher'); }
+    else if (activeDepartment === 'mlt') { sections = mltSections; }
+    else if (activeDepartment === 'tyres-office') { sections = getDeptSections('tyres-office'); }
     else if (activeDepartment === 'credit-parties') {
       setActiveSection('credit-parties');
       setActiveDepartment(null);
       return null;
     }
 
-    // For non-manager petroleum/crusher admin, filter salary-only sections
     if (!isManager) {
       sections = sections.filter(s => !['salary', 'daily-report', 'yearly-data', 'backup', 'petroleum-sales', 'paid-deducted', 'tyre-sales'].includes(s.id || ''));
     }
@@ -184,94 +260,90 @@ const Home = () => {
     const secondarySections = sections.filter(s => !s.primary);
 
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => setActiveDepartment(null)}>
+      <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
+        <TopHeader deptTitle={deptTitle} userName={user?.full_name || ''} onLogout={logout} />
+        <div className="p-4 max-w-md mx-auto">
+          <div className="flex items-center gap-3 mb-5">
+            <Button variant="ghost" size="icon" onClick={() => setActiveDepartment(null)} className="hover:bg-muted">
               <ChevronRight className="h-5 w-5 rotate-180" />
             </Button>
             <h1 className="text-xl font-bold text-foreground">{deptTitle}</h1>
           </div>
 
-          {/* Primary Actions - 2 column grid */}
+          {/* ZONE 1 - Primary Actions */}
           {primarySections.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {primarySections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection(section.id)}>
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-2" style={{ minHeight: '96px' }}>
-                      <div className="p-2.5 rounded-lg" style={{ background: '#1e3a8a' }}>
-                        <Icon className="h-7 w-7" style={{ color: 'white' }} />
-                      </div>
-                      <p className="text-lg font-bold text-foreground leading-tight">{section.title}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            <>
+              <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Primary Actions</p>
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                {primarySections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(section.id)}>
+                      <CardContent className="p-4 flex flex-col items-center text-center gap-2" style={{ minHeight: '96px' }}>
+                        <div className="p-2.5 rounded-lg" style={{ background: '#0f172a' }}>
+                          <Icon className="h-7 w-7" style={{ color: 'white' }} />
+                        </div>
+                        <p className="text-lg font-bold text-foreground leading-tight">{section.title}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           )}
 
-          {/* Secondary Actions - single column */}
+          {/* ZONE 2 - Management */}
           {secondarySections.length > 0 && (
-            <div className="space-y-2">
-              {secondarySections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection(section.id)}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}>
-                          <Icon className="h-5 w-5" style={{ color: 'white' }} />
+            <>
+              <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Management</p>
+              <div className="space-y-2">
+                {secondarySections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(section.id)}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg" style={{ background: '#0f172a' }}>
+                            <Icon className="h-5 w-5" style={{ color: 'white' }} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-foreground">{section.title}</p>
+                            <p className="text-xs text-muted-foreground">{section.description}</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-foreground">{section.title}</p>
-                          <p className="text-xs text-muted-foreground">{section.description}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>
     );
   }
 
-  // Main dashboard - department cards
+  // Main dashboard
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6 pt-4">
-          <img src={companyLogo} alt="Tibrewal Staff Manager" className="h-20 w-20 mx-auto mb-3 object-contain" loading="lazy" />
-          <h1 className="text-2xl font-bold text-foreground">Tibrewal Staff Manager</h1>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="text-sm text-muted-foreground">Welcome, {user?.full_name}</span>
-            <Button variant="ghost" size="sm" onClick={logout} className="h-7 px-2">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary capitalize">
-            {user?.role.replace('_', ' ')}
-          </span>
-        </div>
-
+    <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
+      <TopHeader userName={user?.full_name || ''} onLogout={logout} />
+      <SummaryStrip stats={summaryStats} />
+      
+      <div className="p-4 max-w-md mx-auto">
         {/* Department Cards */}
+        <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Departments</p>
         <div className="space-y-3 mb-6">
           {departments.map((dept) => {
             const Icon = dept.icon;
             return (
-              <Card key={dept.id} className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98]" onClick={() => {
+              <Card key={dept.id} className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0" onClick={() => {
                 if (dept.id === 'credit-parties') setActiveSection('credit-parties');
                 else setActiveDepartment(dept.id);
               }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl" style={{ background: '#1e3a8a' }}>
+                    <div className="p-3 rounded-xl" style={{ background: '#0f172a' }}>
                       <Icon className="h-6 w-6" style={{ color: 'white' }} />
                     </div>
                     <div className="flex-1">
@@ -289,7 +361,7 @@ const Home = () => {
         {/* Manager-only tools */}
         {isManager && (
           <>
-            <p className="text-xs text-muted-foreground mb-2 px-1">More Tools</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Tools</p>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
                 { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator, desc: 'Quick calculations' },
@@ -299,10 +371,10 @@ const Home = () => {
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection(item.id)}>
+                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(item.id)}>
                     <CardContent className="p-3">
                       <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}>
+                        <div className="p-2 rounded-lg" style={{ background: '#0f172a' }}>
                           <Icon className="h-5 w-5" style={{ color: 'white' }} />
                         </div>
                         <div>
@@ -316,8 +388,7 @@ const Home = () => {
               })}
             </div>
 
-            {/* Settings */}
-            <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setActiveSection('settings')}>
+            <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('settings')}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-muted"><Settings className="h-5 w-5 text-muted-foreground" /></div>
