@@ -2,33 +2,50 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, lazy, Suspense } from "react";
 import { AppAuthProvider, useAppAuth } from "@/contexts/AppAuthContext";
-import ProfileSelection from "@/components/ProfileSelection";
-import Home from "./pages/Home";
-import NotFound from "./pages/NotFound";
+
+const LandingPage = lazy(() => import("./components/ProfileSelection"));
+const Home = lazy(() => import("./pages/Home"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center" style={{ background: '#0f172a' }}>
+    <div className="text-center">
+      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'transparent' }} />
+      <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Loading...</p>
+    </div>
+  </div>
+);
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAppAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
 
 const AppContent = () => {
   const { isAuthenticated, isLoading } = useAppAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-primary">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <ProfileSelection />;
-  }
-
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        {/* Landing page is ALWAYS the default route */}
+        <Route path="/" element={
+          isLoading ? <LoadingScreen /> :
+          isAuthenticated ? <Navigate to="/dashboard" replace /> :
+          <LandingPage />
+        } />
+        {/* Protected ERP routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute><Home /></ProtectedRoute>
+        } />
+        {/* Catch all — redirect to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
