@@ -72,7 +72,7 @@ const HeroSection = () => {
             Mining • Stone Crushing • Transportation • Petroleum • Tyres
           </p>
           <p className="text-sm mb-12" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Established 2018 • Jharkhand, India
+            Established 2021 • Jharkhand, India
           </p>
 
           {/* Profile Cards */}

@@ -15,7 +15,7 @@ const CompanySection = () => {
         <div className="text-center mb-14">
           <p className="text-sm font-semibold tracking-widest uppercase text-muted-foreground mb-2">About Us</p>
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground">
-            Powering Growth Since 2018
+            Powering Growth Since 2021
           </h2>
           <p className="mt-4 max-w-2xl mx-auto text-muted-foreground leading-relaxed">
             Tibrewal & Tibrewal Pvt. Ltd. is a prominent business group based in Jharkhand, 
