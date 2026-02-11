@@ -328,7 +328,7 @@ const Home = () => {
   return (
     <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
       <TopHeader userName={user?.full_name || ''} onLogout={logout} />
-      <SummaryStrip stats={summaryStats} />
+      
       
       <div className="p-4 max-w-md mx-auto">
         {/* Department Cards */}
