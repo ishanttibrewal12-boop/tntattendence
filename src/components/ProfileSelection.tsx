@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import HeroSection from '@/components/landing/HeroSection';
 import ImageGallery from '@/components/landing/ImageGallery';
 import CompanySection from '@/components/landing/CompanySection';
+import PhotoGallery from '@/components/landing/PhotoGallery';
 import LeadershipSection from '@/components/landing/LeadershipSection';
 import { profiles, type Profile } from '@/components/landing/HeroSection';
 
@@ -40,13 +41,10 @@ const ProfileSelection = () => {
 
   return (
     <div className="min-h-screen">
-      {/* 1. Hero */}
       <HeroSection />
-      {/* 2. Operations with images */}
       <ImageGallery />
-      {/* 3. About Us */}
       <CompanySection />
-      {/* 4. Profile Cards */}
+      {/* Profile Cards */}
       <section className="py-16 md:py-20" style={{ background: '#f4f6f8' }}>
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-10">
@@ -58,14 +56,11 @@ const ProfileSelection = () => {
             {profiles.map((profile) => {
               const Icon = profile.icon;
               return (
-                <div
-                  key={profile.id}
+                <div key={profile.id}
                   onClick={() => { setSelectedProfile(profile); setUsername(''); setPassword(''); }}
                   className="group cursor-pointer rounded-2xl p-5 md:p-6 text-center transition-all duration-200 hover:shadow-lg active:scale-95 border"
-                  style={{ background: 'white', borderColor: '#e2e8f0' }}
-                >
-                  <div className="w-14 h-14 md:w-16 md:h-16 mx-auto rounded-full flex items-center justify-center mb-3"
-                    style={{ background: '#f1f5f9' }}>
+                  style={{ background: 'white', borderColor: '#e2e8f0' }}>
+                  <div className="w-14 h-14 md:w-16 md:h-16 mx-auto rounded-full flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
                     <Icon className="h-7 w-7 md:h-8 md:w-8" style={{ color: '#0f172a' }} />
                   </div>
                   <h3 className="font-bold text-sm md:text-base" style={{ color: '#0f172a' }}>{profile.name}</h3>
@@ -76,10 +71,9 @@ const ProfileSelection = () => {
           </div>
         </div>
       </section>
-      {/* 5. Proprietor + Footer */}
+      <PhotoGallery />
       <LeadershipSection />
 
-      {/* Login Dialog */}
       <Dialog open={!!selectedProfile} onOpenChange={() => setSelectedProfile(null)}>
         <DialogContent className="sm:max-w-md border-0" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
           <DialogHeader>
@@ -103,27 +97,22 @@ const ProfileSelection = () => {
               <Label htmlFor="username" style={{ color: 'rgba(255,255,255,0.7)' }}>Username</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'rgba(255,255,255,0.4)' }} />
-                <Input id="username" type="text" placeholder="Enter username"
-                  value={username} onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10 border-white/20" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-                  autoComplete="username" />
+                <Input id="username" type="text" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)}
+                  className="pl-10 border-white/20" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }} autoComplete="username" />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" style={{ color: 'rgba(255,255,255,0.7)' }}>Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'rgba(255,255,255,0.4)' }} />
-                <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Enter password"
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 border-white/20" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
-                  autoComplete="current-password" />
+                <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 border-white/20" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }} autoComplete="current-password" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.4)' }}>
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full font-semibold" disabled={isLoading}
-              style={{ background: '#f97316', color: 'white' }}>
+            <Button type="submit" className="w-full font-semibold" disabled={isLoading} style={{ background: '#f97316', color: 'white' }}>
               {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>

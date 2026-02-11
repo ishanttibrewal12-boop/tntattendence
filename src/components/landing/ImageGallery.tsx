@@ -1,7 +1,7 @@
-import crusherImg from '@/assets/gallery-crusher-1.jpeg';
-import truckImg from '@/assets/gallery-truck-1.jpeg';
+import crusherImg from '@/assets/gallery-crusher-new-1.jpeg';
+import truckImg from '@/assets/gallery-truck-new-1.jpeg';
 import petroleumImg from '@/assets/gallery-petroleum-2.jpeg';
-import tyresImg from '@/assets/gallery-tyres-1.jpeg';
+import tyresImg from '@/assets/gallery-tyres-new-1.jpeg';
 
 const operations = [
   { img: crusherImg, title: 'Stone Crushing & Aggregates', desc: 'Large-scale stone crushing plants producing high-quality aggregates for construction and infrastructure projects across Jharkhand.' },
