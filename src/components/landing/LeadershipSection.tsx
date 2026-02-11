@@ -8,7 +8,13 @@ const LeadershipSection = () => {
         <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ color: 'white' }}>
           Trishav Kumar Tibrewal
         </h2>
-        <div className="w-12 h-0.5 mx-auto mb-8 rounded-full" style={{ background: '#f97316' }} />
+        <div className="w-12 h-0.5 mx-auto mb-6 rounded-full" style={{ background: '#f97316' }} />
+
+        <p className="max-w-2xl mx-auto text-sm md:text-base leading-relaxed mb-8" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          Visionary entrepreneur and founder of Tibrewal & Tibrewal Pvt. Ltd., leading the company's diversified operations 
+          across mining, stone crushing, transportation, petroleum distribution, and tyre trading in Jharkhand. 
+          Under his leadership, the group has grown into a trusted name in Eastern India's industrial sector.
+        </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-12">
           <a href="tel:9386469006" className="flex items-center gap-2 text-sm hover:underline" style={{ color: 'rgba(255,255,255,0.6)' }}>
