@@ -18,6 +18,7 @@ interface Staff {
   phone: string | null;
   address: string | null;
   base_salary: number;
+  shift_rate: number | null;
   notes: string | null;
   designation: string | null;
   photo_url: string | null;
@@ -45,6 +46,7 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
     address: '',
     category: 'petroleum' as 'petroleum' | 'crusher' | 'office',
     base_salary: '',
+    shift_rate: '',
     notes: '',
     designation: '',
   });
@@ -57,7 +59,7 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
     setIsLoading(true);
     let query = supabase
       .from('staff')
-      .select('id, name, category, phone, address, base_salary, notes, designation, photo_url')
+      .select('id, name, category, phone, address, base_salary, shift_rate, notes, designation, photo_url')
       .eq('is_active', true)
       .order('name');
     
@@ -136,6 +138,7 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
       address: staff.address || '',
       category: staff.category,
       base_salary: staff.base_salary.toString(),
+      shift_rate: staff.shift_rate?.toString() || '',
       notes: staff.notes || '',
       designation: staff.designation || '',
     });
@@ -153,6 +156,7 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
         address: editForm.address.trim() || null,
         category: editForm.category,
         base_salary: parseFloat(editForm.base_salary) || 0,
+        shift_rate: parseFloat(editForm.shift_rate) || 0,
         notes: editForm.notes.trim() || null,
         designation: editForm.designation.trim() || null,
       })
@@ -176,6 +180,7 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
       address: editForm.address.trim() || null,
       category: editForm.category,
       base_salary: parseFloat(editForm.base_salary) || 0,
+      shift_rate: parseFloat(editForm.shift_rate) || 0,
       notes: editForm.notes.trim() || null,
       designation: editForm.designation.trim() || null,
     });
@@ -339,6 +344,15 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
                     />
                   </div>
                   <div>
+                    <Label>Shift Rate (₹)</Label>
+                    <Input
+                      type="number"
+                      value={editForm.shift_rate}
+                      onChange={(e) => setEditForm({ ...editForm, shift_rate: e.target.value })}
+                      placeholder="Amount per shift in ₹"
+                    />
+                  </div>
+                  <div>
                     <Label>Notes</Label>
                     <Textarea
                       value={editForm.notes}
@@ -425,6 +439,12 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
                     <Wallet className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Base Salary:</span>
                     <span className="text-foreground font-medium">₹{selectedStaff.base_salary.toLocaleString()}/month</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm">
+                    <Wallet className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Shift Rate:</span>
+                    <span className="text-foreground font-medium">₹{(selectedStaff.shift_rate || 0).toLocaleString()}/shift</span>
                   </div>
 
                   {selectedStaff.notes && (
