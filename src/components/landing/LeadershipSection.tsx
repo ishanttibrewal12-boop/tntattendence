@@ -6,7 +6,7 @@ const LeadershipSection = () => {
       <div className="max-w-4xl mx-auto px-4 text-center">
         <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Proprietor</p>
         <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ color: 'white' }}>
-          Trishav Kumar Tibrewal
+          Trishav Tibrewal
         </h2>
         <div className="w-12 h-0.5 mx-auto mb-6 rounded-full" style={{ background: '#f97316' }} />
 
