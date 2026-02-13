@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import HeroSection from '@/components/landing/HeroSection';
@@ -11,10 +12,9 @@ import ImageGallery from '@/components/landing/ImageGallery';
 import CompanySection from '@/components/landing/CompanySection';
 import PhotoGallery from '@/components/landing/PhotoGallery';
 import LeadershipSection from '@/components/landing/LeadershipSection';
-import { profiles, type Profile } from '@/components/landing/HeroSection';
 
 const ProfileSelection = () => {
-  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,16 +24,16 @@ const ProfileSelection = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
+    if (!username.trim() || !password.trim()) {
       toast({ title: 'Error', description: 'Please enter username and password', variant: 'destructive' });
       return;
     }
     setIsLoading(true);
-    const result = await login(username, password);
+    const result = await login(username.trim(), password.trim());
     setIsLoading(false);
     if (result.success) {
-      toast({ title: 'Welcome!', description: `Logged in as ${selectedProfile?.name}` });
-      setSelectedProfile(null);
+      toast({ title: 'Welcome!', description: 'Login successful' });
+      setShowLogin(false);
     } else {
       toast({ title: 'Login Failed', description: result.error || 'Invalid credentials', variant: 'destructive' });
     }
@@ -41,54 +41,55 @@ const ProfileSelection = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Top-right 3-dot menu */}
+      <div className="fixed top-4 right-4 z-50">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full" style={{ background: 'rgba(0,0,0,0.3)', color: 'white' }}>
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[120px]">
+            <DropdownMenuItem onClick={() => { setShowLogin(true); setUsername(''); setPassword(''); }}>
+              <Lock className="h-4 w-4 mr-2" />
+              Login
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <HeroSection />
       <ImageGallery />
-      <CompanySection />
-      {/* Profile Cards */}
-      <section className="py-16 md:py-20" style={{ background: '#f4f6f8' }}>
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-10">
-            <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: '#94a3b8' }}>Administration</p>
-            <h2 className="text-2xl md:text-3xl font-extrabold" style={{ color: '#0f172a' }}>Select Profile to Login</h2>
-            <div className="w-16 h-1 mx-auto mt-4 rounded-full" style={{ background: '#f97316' }} />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {profiles.map((profile) => {
-              const Icon = profile.icon;
-              return (
-                <div key={profile.id}
-                  onClick={() => { setSelectedProfile(profile); setUsername(''); setPassword(''); }}
-                  className="group cursor-pointer rounded-2xl p-5 md:p-6 text-center transition-all duration-200 hover:shadow-lg active:scale-95 border"
-                  style={{ background: 'white', borderColor: '#e2e8f0' }}>
-                  <div className="w-14 h-14 md:w-16 md:h-16 mx-auto rounded-full flex items-center justify-center mb-3" style={{ background: '#f1f5f9' }}>
-                    <Icon className="h-7 w-7 md:h-8 md:w-8" style={{ color: '#0f172a' }} />
-                  </div>
-                  <h3 className="font-bold text-sm md:text-base" style={{ color: '#0f172a' }}>{profile.name}</h3>
-                  <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>{profile.role}</p>
-                </div>
-              );
-            })}
+      
+      {/* Company Strength Strip */}
+      <section className="py-10" style={{ background: '#0F2A44' }}>
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { value: 'Est. 2021', label: 'Established' },
+              { value: '50+', label: 'Heavy Trucks' },
+              { value: 'Jharkhand', label: 'Operations' },
+              { value: '4+', label: 'Industrial Verticals' },
+            ].map((stat, i) => (
+              <div key={i}>
+                <p className="text-2xl md:text-3xl font-extrabold" style={{ color: 'white' }}>{stat.value}</p>
+                <p className="text-xs mt-1 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
+
+      <CompanySection />
       <PhotoGallery />
       <LeadershipSection />
 
-      <Dialog open={!!selectedProfile} onOpenChange={() => setSelectedProfile(null)}>
-        <DialogContent className="sm:max-w-md border-0" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+      {/* Login Dialog */}
+      <Dialog open={showLogin} onOpenChange={setShowLogin}>
+        <DialogContent className="sm:max-w-md border-0" style={{ background: '#0F2A44' }}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3" style={{ color: 'white' }}>
-              {selectedProfile && (
-                <>
-                  <div className="p-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                    <selectedProfile.icon className="h-5 w-5" style={{ color: 'rgba(255,255,255,0.9)' }} />
-                  </div>
-                  <div>
-                    <span className="block">{selectedProfile.name}</span>
-                    <span className="text-xs font-normal" style={{ color: 'rgba(255,255,255,0.5)' }}>{selectedProfile.role}</span>
-                  </div>
-                </>
-              )}
+            <DialogTitle style={{ color: 'white' }} className="text-lg">
+              Management Login
             </DialogTitle>
           </DialogHeader>
           <div className="h-0.5 rounded-full my-2" style={{ background: 'linear-gradient(90deg, transparent, #f97316, transparent)' }} />

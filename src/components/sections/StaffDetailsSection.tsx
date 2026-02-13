@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppAuth } from '@/contexts/AppAuthContext';
 import { toast } from 'sonner';
 
 interface Staff {
@@ -30,6 +31,8 @@ interface StaffDetailsSectionProps {
 }
 
 const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => {
+  const { user } = useAppAuth();
+  const isManager = user?.role === 'manager';
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -267,12 +270,12 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               Staff Details
-              {!isEditing ? (
+              {!isEditing && isManager ? (
                 <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit2 className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-              ) : (
+              ) : isEditing ? (
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={() => setConfirmSave(true)}>
                     <Save className="h-4 w-4 mr-1" />
@@ -282,7 +285,7 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-              )}
+              ) : null}
             </DialogTitle>
           </DialogHeader>
 
