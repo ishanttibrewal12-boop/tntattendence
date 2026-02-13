@@ -65,8 +65,8 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
 
   const clearSession = useCallback(() => {
     setUser(null);
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(SESSION_TS_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_TS_KEY);
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
@@ -76,7 +76,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
   const resetInactivityTimer = useCallback(() => {
     if (!user) return;
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    localStorage.setItem(SESSION_TS_KEY, Date.now().toString());
+    sessionStorage.setItem(SESSION_TS_KEY, Date.now().toString());
     inactivityTimerRef.current = setTimeout(() => {
       clearSession();
     }, SESSION_TIMEOUT_MS);
@@ -99,8 +99,8 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
 
   // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem(SESSION_KEY);
-    const sessionTs = localStorage.getItem(SESSION_TS_KEY);
+    const storedUser = sessionStorage.getItem(SESSION_KEY);
+    const sessionTs = sessionStorage.getItem(SESSION_TS_KEY);
     if (storedUser && sessionTs) {
       const elapsed = Date.now() - parseInt(sessionTs, 10);
       if (elapsed < SESSION_TIMEOUT_MS) {
@@ -145,8 +145,8 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
       };
 
       setUser(appUser);
-      localStorage.setItem(SESSION_KEY, JSON.stringify(appUser));
-      localStorage.setItem(SESSION_TS_KEY, Date.now().toString());
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(appUser));
+      sessionStorage.setItem(SESSION_TS_KEY, Date.now().toString());
       return { success: true };
     } catch (err) {
       console.error('Login error:', err);
