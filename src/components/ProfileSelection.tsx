@@ -69,7 +69,7 @@ const ProfileSelection = () => {
               { value: 'Est. 2021', label: 'Established' },
               { value: '50+', label: 'Heavy Trucks' },
               { value: 'Jharkhand', label: 'Operations' },
-              { value: '4+', label: 'Industrial Verticals' },
+              { value: '200+', label: 'Employees' },
             ].map((stat, i) => (
               <div key={i}>
                 <p className="text-2xl md:text-3xl font-extrabold" style={{ color: 'white' }}>{stat.value}</p>
