@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AppRole = 'manager' | 'mlt_admin' | 'petroleum_admin' | 'crusher_admin';
@@ -23,6 +23,10 @@ interface AppAuthContextType {
 
 const AppAuthContext = createContext<AppAuthContextType | undefined>(undefined);
 
+const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const SESSION_KEY = 'tibrewal_app_user';
+const SESSION_TS_KEY = 'tibrewal_session_ts';
+
 export const useAppAuth = () => {
   const context = useContext(AppAuthContext);
   if (context === undefined) {
@@ -31,11 +35,10 @@ export const useAppAuth = () => {
   return context;
 };
 
-// Define section access for each role
 const ROLE_ACCESS: Record<AppRole, { sections: string[]; editSections: string[] }> = {
   manager: {
-    sections: ['*'], // All access
-    editSections: ['*'], // Can edit everything
+    sections: ['*'],
+    editSections: ['*'],
   },
   mlt_admin: {
     sections: ['mlt', 'mlt-attendance', 'mlt-advances', 'mlt-staff', 'mlt-profiles'],
@@ -58,16 +61,60 @@ interface AppAuthProviderProps {
 export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearSession = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_TS_KEY);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+  }, []);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (!user) return;
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    localStorage.setItem(SESSION_TS_KEY, Date.now().toString());
+    inactivityTimerRef.current = setTimeout(() => {
+      clearSession();
+    }, SESSION_TIMEOUT_MS);
+  }, [user, clearSession]);
+
+  // Set up activity listeners
   useEffect(() => {
-    // Check for existing session
-    const storedUser = localStorage.getItem('tibrewal_app_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem('tibrewal_app_user');
+    if (!user) return;
+
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    const handler = () => resetInactivityTimer();
+    events.forEach(e => window.addEventListener(e, handler, { passive: true }));
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, handler));
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [user, resetInactivityTimer]);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem(SESSION_KEY);
+    const sessionTs = localStorage.getItem(SESSION_TS_KEY);
+    if (storedUser && sessionTs) {
+      const elapsed = Date.now() - parseInt(sessionTs, 10);
+      if (elapsed < SESSION_TIMEOUT_MS) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          clearSession();
+        }
+      } else {
+        clearSession();
       }
+    } else if (storedUser) {
+      // Legacy session without timestamp — clear
+      clearSession();
     }
     setIsLoading(false);
   }, []);
@@ -85,7 +132,6 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
         return { success: false, error: 'Invalid username or password' };
       }
 
-      // Verify password (stored as plain text for simplicity - in production use hashing)
       if (data.password_hash !== password) {
         return { success: false, error: 'Invalid username or password' };
       }
@@ -99,7 +145,8 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
       };
 
       setUser(appUser);
-      localStorage.setItem('tibrewal_app_user', JSON.stringify(appUser));
+      localStorage.setItem(SESSION_KEY, JSON.stringify(appUser));
+      localStorage.setItem(SESSION_TS_KEY, Date.now().toString());
       return { success: true };
     } catch (err) {
       console.error('Login error:', err);
@@ -107,10 +154,9 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('tibrewal_app_user');
-  };
+  const logout = useCallback(() => {
+    clearSession();
+  }, [clearSession]);
 
   const hasAccess = (section: string): boolean => {
     if (!user) return false;

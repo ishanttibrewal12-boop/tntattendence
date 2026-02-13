@@ -32,17 +32,14 @@ const AppContent = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        {/* Landing page is ALWAYS the default route */}
         <Route path="/" element={
           isLoading ? <LoadingScreen /> :
           isAuthenticated ? <Navigate to="/dashboard" replace /> :
           <LandingPage />
         } />
-        {/* Protected ERP routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute><Home /></ProtectedRoute>
         } />
-        {/* Catch all — redirect to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
