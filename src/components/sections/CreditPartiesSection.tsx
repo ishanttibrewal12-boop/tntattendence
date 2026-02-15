@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +31,14 @@ interface CreditParty {
 interface Transaction {
   id: string;
   party_id: string;
-  transaction_type: string; // 'petroleum' | 'tyre' | 'payment' | 'debit'
+  transaction_type: string;
   amount: number;
   litres: number | null;
   tyre_name: string | null;
   date: string;
   notes: string | null;
+  fuel_type: string | null;
+  rate_per_litre: number | null;
 }
 
 interface CreditPartiesSectionProps {
@@ -62,12 +65,15 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   // Transaction form
   const [txType, setTxType] = useState<'petroleum' | 'tyre' | 'payment' | 'debit'>('petroleum');
+  const [txFuelType, setTxFuelType] = useState<'diesel' | 'petrol' | ''>('');
   const [txAmount, setTxAmount] = useState('');
   const [txLitres, setTxLitres] = useState('');
+  const [txRatePerLitre, setTxRatePerLitre] = useState('');
   const [txTyreName, setTxTyreName] = useState('');
   const [txDate, setTxDate] = useState(new Date());
   const [txNotes, setTxNotes] = useState('');
   const [txCalendarOpen, setTxCalendarOpen] = useState(false);
+  const [txManualAmount, setTxManualAmount] = useState(false);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -76,6 +82,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   useEffect(() => { fetchParties(); }, []);
   useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewAllTime]);
+
+  // Auto-calculate amount from litres × rate
+  useEffect(() => {
+    if (txType === 'petroleum' && !txManualAmount && txLitres && txRatePerLitre) {
+      const calc = parseFloat(txLitres) * parseFloat(txRatePerLitre);
+      if (!isNaN(calc)) setTxAmount(calc.toFixed(2));
+    }
+  }, [txLitres, txRatePerLitre, txType, txManualAmount]);
 
   const fetchParties = async () => {
     setIsLoading(true);
@@ -117,7 +131,10 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const addTransaction = async () => {
     if (!txAmount || !selectedParty) { toast.error('Amount required'); return; }
-    const { error } = await supabase.from('credit_party_transactions').insert({
+    if (txType === 'petroleum' && !txFuelType) { toast.error('Please select Diesel or Petrol'); return; }
+    if (txType === 'petroleum' && !txLitres) { toast.error('Litres is required for petroleum entries'); return; }
+    
+    const insertData: any = {
       party_id: selectedParty.id,
       transaction_type: txType,
       amount: parseFloat(txAmount),
@@ -125,7 +142,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       tyre_name: txType === 'tyre' && txTyreName ? txTyreName : null,
       date: format(txDate, 'yyyy-MM-dd'),
       notes: txNotes || null,
-    });
+      fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
+      rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
+    };
+
+    const { error } = await supabase.from('credit_party_transactions').insert(insertData);
     if (error) { toast.error('Failed to add'); return; }
     toast.success(txType === 'payment' ? 'Credit (Payment) recorded' : txType === 'debit' ? 'Manual debit recorded' : 'Debit added');
     setShowAddTransaction(false);
@@ -135,14 +156,21 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const updateTransaction = async () => {
     if (!editingTx || !txAmount) return;
-    const { error } = await supabase.from('credit_party_transactions').update({
+    if (txType === 'petroleum' && !txFuelType) { toast.error('Please select Diesel or Petrol'); return; }
+    if (txType === 'petroleum' && !txLitres) { toast.error('Litres is required for petroleum entries'); return; }
+
+    const updateData: any = {
       transaction_type: txType,
       amount: parseFloat(txAmount),
       litres: txType === 'petroleum' && txLitres ? parseFloat(txLitres) : null,
       tyre_name: txType === 'tyre' && txTyreName ? txTyreName : null,
       date: format(txDate, 'yyyy-MM-dd'),
       notes: txNotes || null,
-    }).eq('id', editingTx.id);
+      fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
+      rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
+    };
+
+    const { error } = await supabase.from('credit_party_transactions').update(updateData).eq('id', editingTx.id);
     if (error) { toast.error('Failed to update'); return; }
     toast.success('Updated');
     setEditingTx(null);
@@ -160,7 +188,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   };
 
   const resetTxForm = () => {
-    setTxAmount(''); setTxLitres(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum' as any);
+    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false);
   };
 
   const openEditTx = (tx: Transaction) => {
@@ -168,21 +196,17 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setTxType(tx.transaction_type as 'petroleum' | 'tyre' | 'payment' | 'debit');
     setTxAmount(tx.amount.toString());
     setTxLitres(tx.litres?.toString() || '');
+    setTxRatePerLitre(tx.rate_per_litre?.toString() || '');
     setTxTyreName(tx.tyre_name || '');
     setTxDate(new Date(tx.date));
     setTxNotes(tx.notes || '');
+    setTxFuelType((tx.fuel_type as 'diesel' | 'petrol') || '');
+    setTxManualAmount(true); // When editing, don't auto-calc
   };
 
   const filteredParties = parties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // NEW TERMINOLOGY:
-  // Debit = petroleum/tyre entries (what party owes us — pending amount)
-  // Credit = payment received
-  // "debit" transaction_type = manual debit entry
-  
-  // Debit entries: petroleum, tyre, debit (all add to pending)
   const debitEntries = allTransactions.filter(t => t.transaction_type !== 'payment');
-  // Credit entries: payment (reduces pending)
   const creditEntries = allTransactions.filter(t => t.transaction_type === 'payment');
   
   const totalDebits = debitEntries.reduce((s, t) => s + Number(t.amount), 0);
@@ -190,10 +214,20 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const pendingBalance = totalDebits - totalCredits;
   
   const petroTotal = allTransactions.filter(t => t.transaction_type === 'petroleum').reduce((s, t) => s + Number(t.amount), 0);
+  const dieselTotal = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'diesel').reduce((s, t) => s + Number(t.amount), 0);
+  const petrolTotal = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'petrol').reduce((s, t) => s + Number(t.amount), 0);
+  const dieselLitres = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'diesel').reduce((s, t) => s + Number(t.litres || 0), 0);
+  const petrolLitres = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'petrol').reduce((s, t) => s + Number(t.litres || 0), 0);
   const tyreTotal = allTransactions.filter(t => t.transaction_type === 'tyre').reduce((s, t) => s + Number(t.amount), 0);
   const grandTotal = totalDebits + totalCredits;
 
-  // Running balance calculation — debit adds, credit subtracts
+  const getFuelTypeLabel = (tx: Transaction) => {
+    if (tx.transaction_type !== 'petroleum') return null;
+    if (tx.fuel_type === 'diesel') return 'Diesel';
+    if (tx.fuel_type === 'petrol') return 'Petrol';
+    return 'Unspecified';
+  };
+
   const getLedgerWithBalance = () => {
     let running = 0;
     return allTransactions.map(tx => {
@@ -211,25 +245,35 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     const ledger = getLedgerWithBalance();
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`Ledger: ${selectedParty.name}`, 14, 15);
+    doc.text(`Petroleum Credit Ledger: ${selectedParty.name}`, 14, 15);
     doc.setFontSize(10);
     const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
     doc.text(period, 14, 22);
     doc.text(`Debit (Pending): ${formatCurrencyForPDF(totalDebits)} | Credit (Received): ${formatCurrencyForPDF(totalCredits)} | Balance: ${formatCurrencyForPDF(pendingBalance)}`, 14, 30);
-    doc.text(REPORT_FOOTER, 14, 36);
+    
+    // Fuel breakdown
+    let infoY = 36;
+    if (dieselTotal > 0 || petrolTotal > 0) {
+      doc.text(`Diesel: ${dieselLitres.toFixed(1)}L = ${formatCurrencyForPDF(dieselTotal)} | Petrol: ${petrolLitres.toFixed(1)}L = ${formatCurrencyForPDF(petrolTotal)}`, 14, infoY);
+      infoY += 6;
+    }
+    doc.text(REPORT_FOOTER, 14, infoY);
 
     autoTable(doc, {
-      head: [['Date', 'Type', 'Debit', 'Credit', 'Balance', 'Details']],
+      head: [['Date', 'Type', 'Fuel', 'Litres', 'Rate', 'Debit', 'Credit', 'Balance', 'Notes']],
       body: ledger.map(t => [
         format(new Date(t.date), 'dd/MM/yyyy'),
-        t.transaction_type === 'payment' ? 'Credit (Received)' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
+        t.transaction_type === 'payment' ? 'Credit' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
+        getFuelTypeLabel(t) || '-',
+        t.litres ? `${t.litres}` : '-',
+        t.rate_per_litre ? `${t.rate_per_litre}` : '-',
         t.transaction_type !== 'payment' ? formatCurrencyForPDF(Number(t.amount)) : '-',
         t.transaction_type === 'payment' ? formatCurrencyForPDF(Number(t.amount)) : '-',
         formatCurrencyForPDF(t.runningBalance),
-        [t.litres ? `${t.litres}L` : '', t.tyre_name || '', t.notes || ''].filter(Boolean).join(' | ') || '-',
+        t.notes || '-',
       ]),
-      startY: 42,
-      styles: { fontSize: 7 },
+      startY: infoY + 6,
+      styles: { fontSize: 6 },
     });
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     addReportNotes(doc, finalY);
@@ -243,14 +287,16 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     const data = ledger.map(t => [
       format(new Date(t.date), 'dd/MM/yyyy'),
       t.transaction_type === 'payment' ? 'Credit (Received)' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
+      getFuelTypeLabel(t) || '-',
+      t.litres || '',
+      t.rate_per_litre || '',
       t.transaction_type !== 'payment' ? Number(t.amount) : '',
       t.transaction_type === 'payment' ? Number(t.amount) : '',
       t.runningBalance,
-      t.litres || '',
       t.tyre_name || '',
       t.notes || '',
     ]);
-    exportToExcel(data, ['Date', 'Type', 'Debit', 'Credit', 'Balance', 'Litres', 'Tyre', 'Notes'], `ledger-${selectedParty.name}`, 'Ledger', `Ledger: ${selectedParty.name}`);
+    exportToExcel(data, ['Date', 'Type', 'Fuel Type', 'Litres', 'Rate/L', 'Debit', 'Credit', 'Balance', 'Tyre', 'Notes'], `ledger-${selectedParty.name}`, 'Ledger', `Petroleum Credit Ledger: ${selectedParty.name}`);
     toast.success('Excel downloaded');
   };
 
@@ -258,7 +304,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
     const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
-    let msg = `📋 *Ledger: ${selectedParty.name}*\n📅 ${period}\n\n`;
+    let msg = `📋 *Petroleum Credit Ledger: ${selectedParty.name}*\n📅 ${period}\n\n`;
+    if (dieselTotal > 0) msg += `⛽ Diesel: ${dieselLitres.toFixed(1)}L = ₹${dieselTotal.toLocaleString()}\n`;
+    if (petrolTotal > 0) msg += `⛽ Petrol: ${petrolLitres.toFixed(1)}L = ₹${petrolTotal.toLocaleString()}\n`;
     msg += `📊 Debit (Pending): ₹${totalDebits.toLocaleString()}\n`;
     msg += `💰 Credit (Received): ₹${totalCredits.toLocaleString()}\n`;
     msg += `⏳ *Balance (Pending): ₹${pendingBalance.toLocaleString()}*\n\n`;
@@ -266,7 +314,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     ledger.forEach(t => {
       const icon = t.transaction_type === 'payment' ? '💰' : t.transaction_type === 'petroleum' ? '⛽' : t.transaction_type === 'tyre' ? '🛞' : '📤';
       const sign = t.transaction_type === 'payment' ? '-' : '+';
+      const fuelLabel = getFuelTypeLabel(t);
       msg += `${format(new Date(t.date), 'dd MMM')}: ${icon} ${sign}₹${Number(t.amount).toLocaleString()} (Bal: ₹${t.runningBalance.toLocaleString()})`;
+      if (fuelLabel && fuelLabel !== 'Unspecified') msg += ` [${fuelLabel}]`;
       if (t.litres) msg += ` ${t.litres}L`;
       if (t.tyre_name) msg += ` ${t.tyre_name}`;
       msg += `\n`;
@@ -306,13 +356,18 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           </div>
         )}
 
-        {/* Summary Cards */}
+        {/* Fuel Type Summary Cards */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <Card className="border-blue-800/30 bg-blue-900/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">⛽ Diesel</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(dieselTotal)}</p><p className="text-xs text-muted-foreground">{dieselLitres.toFixed(1)} Litres</p></CardContent></Card>
+          <Card className="border-blue-400/30 bg-blue-400/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">⛽ Petrol</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(petrolTotal)}</p><p className="text-xs text-muted-foreground">{petrolLitres.toFixed(1)} Litres</p></CardContent></Card>
+        </div>
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <Card className="bg-primary/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">⛽ Petroleum</p><p className="text-sm font-bold text-primary">{formatFullCurrency(petroTotal)}</p></CardContent></Card>
           <Card className="bg-primary/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">🛞 Tyre</p><p className="text-sm font-bold text-primary">{formatFullCurrency(tyreTotal)}</p></CardContent></Card>
-          <Card className="bg-destructive/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Debit (Pending)</p><p className="text-sm font-bold text-destructive">{formatFullCurrency(totalDebits)}</p></CardContent></Card>
-          <Card className="bg-green-500/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Credit (Received)</p><p className="text-sm font-bold text-green-600">{formatFullCurrency(totalCredits)}</p></CardContent></Card>
           <Card className="bg-muted"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Grand Total</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(grandTotal)}</p></CardContent></Card>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <Card className="bg-destructive/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Debit</p><p className="text-sm font-bold text-destructive">{formatFullCurrency(totalDebits)}</p></CardContent></Card>
+          <Card className="bg-green-500/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Credit</p><p className="text-sm font-bold text-green-600">{formatFullCurrency(totalCredits)}</p></CardContent></Card>
         </div>
         
         {/* Pending Balance */}
@@ -325,8 +380,8 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
         {/* Actions */}
         <div className="grid grid-cols-3 gap-2 mb-3">
-          <Button size="sm" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>📤 Debit</Button>
-          <Button size="sm" variant="secondary" onClick={() => { setTxType('debit' as any); setShowAddTransaction(true); }}>📤 Manual Debit</Button>
+          <Button size="sm" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>⛽ Petroleum</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setTxType('debit'); setShowAddTransaction(true); }}>📤 Manual Debit</Button>
           <Button size="sm" variant="secondary" onClick={() => { setTxType('payment'); setShowAddTransaction(true); }}>💰 Credit</Button>
         </div>
         <Button size="sm" variant="outline" className="w-full mb-3" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>📋 Add Ledger Entry</Button>
@@ -343,15 +398,25 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             const isCredit = tx.transaction_type === 'payment';
             const typeLabel = tx.transaction_type === 'payment' ? '💰 Credit' : tx.transaction_type === 'debit' ? '📤 Debit' : tx.transaction_type === 'petroleum' ? '⛽ Petroleum' : '🛞 Tyre';
             const typeBg = tx.transaction_type === 'payment' ? 'bg-green-500/20 text-green-600' : tx.transaction_type === 'debit' ? 'bg-orange-500/20 text-orange-600' : tx.transaction_type === 'petroleum' ? 'bg-primary/20 text-primary' : 'bg-accent/30 text-accent-foreground';
+            const fuelLabel = getFuelTypeLabel(tx);
             return (
             <Card key={tx.id} className={isCredit ? 'border-green-500/30' : ''}>
               <CardContent className="p-2.5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-xs px-1.5 py-0.5 rounded ${typeBg}`}>
                         {typeLabel}
                       </span>
+                      {fuelLabel && (
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${
+                          tx.fuel_type === 'diesel' ? 'border-blue-800/50 bg-blue-900/20 text-blue-300' :
+                          tx.fuel_type === 'petrol' ? 'border-blue-400/50 bg-blue-400/20 text-blue-400' :
+                          'border-muted-foreground/30'
+                        }`}>
+                          {fuelLabel}
+                        </Badge>
+                      )}
                       <span className={`font-bold text-sm ${isCredit ? 'text-green-600' : 'text-destructive'}`}>
                         {isCredit ? '-' : '+'}₹{Number(tx.amount).toLocaleString()}
                       </span>
@@ -359,6 +424,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {format(new Date(tx.date), 'dd MMM yyyy')}
                       {tx.litres ? ` • ${tx.litres}L` : ''}
+                      {tx.rate_per_litre ? ` @ ₹${tx.rate_per_litre}/L` : ''}
                       {tx.tyre_name ? ` • ${tx.tyre_name}` : ''}
                       {tx.notes ? ` • ${tx.notes}` : ''}
                     </p>
@@ -383,7 +449,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             <div className="space-y-4">
               <div>
                 <Label>Type</Label>
-                <Select value={txType} onValueChange={(v) => setTxType(v as 'petroleum' | 'tyre' | 'payment' | 'debit')}>
+                <Select value={txType} onValueChange={(v) => { setTxType(v as 'petroleum' | 'tyre' | 'payment' | 'debit'); if (v !== 'petroleum') setTxFuelType(''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="petroleum">⛽ Petroleum (Debit)</SelectItem>
@@ -393,8 +459,33 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Amount (₹) *</Label><Input type="number" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} placeholder="Amount" /></div>
-              {txType === 'petroleum' && <div><Label>Litres</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="Litres (optional)" /></div>}
+
+              {/* Fuel Type - only for petroleum */}
+              {txType === 'petroleum' && (
+                <div>
+                  <Label>Fuel Type *</Label>
+                  <Select value={txFuelType} onValueChange={(v) => setTxFuelType(v as 'diesel' | 'petrol')}>
+                    <SelectTrigger><SelectValue placeholder="Select fuel type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="diesel">⛽ Diesel</SelectItem>
+                      <SelectItem value="petrol">⛽ Petrol</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {txType === 'petroleum' && (
+                <>
+                  <div><Label>Litres *</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="Enter litres" /></div>
+                  <div><Label>Rate per Litre (₹)</Label><Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Rate per litre (optional)" /></div>
+                </>
+              )}
+
+              <div>
+                <Label>Amount (₹) * {txType === 'petroleum' && txLitres && txRatePerLitre && !txManualAmount ? '(Auto-calculated)' : ''}</Label>
+                <Input type="number" value={txAmount} onChange={(e) => { setTxAmount(e.target.value); if (txType === 'petroleum') setTxManualAmount(true); }} placeholder="Amount" />
+              </div>
+
               {txType === 'tyre' && <div><Label>Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="Tyre name (optional)" /></div>}
               <div>
                 <Label>Date</Label>

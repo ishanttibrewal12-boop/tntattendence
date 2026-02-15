@@ -228,10 +228,12 @@ export type Database = {
           amount: number
           created_at: string
           date: string
+          fuel_type: string | null
           id: string
           litres: number | null
           notes: string | null
           party_id: string
+          rate_per_litre: number | null
           transaction_type: string
           tyre_name: string | null
           updated_at: string
@@ -240,10 +242,12 @@ export type Database = {
           amount?: number
           created_at?: string
           date?: string
+          fuel_type?: string | null
           id?: string
           litres?: number | null
           notes?: string | null
           party_id: string
+          rate_per_litre?: number | null
           transaction_type?: string
           tyre_name?: string | null
           updated_at?: string
@@ -252,10 +256,12 @@ export type Database = {
           amount?: number
           created_at?: string
           date?: string
+          fuel_type?: string | null
           id?: string
           litres?: number | null
           notes?: string | null
           party_id?: string
+          rate_per_litre?: number | null
           transaction_type?: string
           tyre_name?: string | null
           updated_at?: string
