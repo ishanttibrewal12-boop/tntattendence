@@ -28,10 +28,11 @@ const SalarySection = lazy(() => import('@/components/sections/SalarySection'));
 const YearlyDataSection = lazy(() => import('@/components/sections/YearlyDataSection'));
 const TyreSalesSection = lazy(() => import('@/components/sections/TyreSalesSection'));
 const CreditPartiesSection = lazy(() => import('@/components/sections/CreditPartiesSection'));
+const CrusherReportsSection = lazy(() => import('@/components/sections/CrusherReportsSection'));
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | null;
 
-type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | null;
+type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | 'crusher-reports' | null;
 
 type StaffCategory = 'petroleum' | 'crusher' | 'office';
 
@@ -160,6 +161,9 @@ const Home = () => {
       depts.push({ id: 'tyres-office', title: 'Tyres & Office', icon: CircleDot, description: 'Tyre sales & office staff' });
       depts.push({ id: 'credit-parties', title: 'Credit Parties', icon: CreditCard, description: 'Petroleum & Tyre credit' });
     }
+    if (isManager || isCrusherAdmin) {
+      depts.push({ id: 'crusher-reports' as DepartmentType, title: 'Crusher Reports', icon: FileText, description: 'Dispatch & Bolder reports' });
+    }
     return depts;
   }, [user]);
 
@@ -192,6 +196,7 @@ const Home = () => {
           {activeSection === 'yearly-data' && <YearlyDataSection onBack={onBack} category={deptCategory} />}
           {activeSection === 'tyre-sales' && <TyreSalesSection onBack={onBack} />}
           {activeSection === 'credit-parties' && <CreditPartiesSection onBack={onBack} />}
+          {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
         </div>
       </Suspense>
     );
@@ -298,6 +303,7 @@ const Home = () => {
             return (
               <Card key={dept.id} className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0" onClick={() => {
                 if (dept.id === 'credit-parties') setActiveSection('credit-parties');
+                else if (dept.id === 'crusher-reports') setActiveSection('crusher-reports');
                 else setActiveDepartment(dept.id);
               }}>
                 <CardContent className="p-4">
