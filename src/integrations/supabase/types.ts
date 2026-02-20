@@ -190,6 +190,42 @@ export type Database = {
           },
         ]
       }
+      bolder_reports: {
+        Row: {
+          challan_number: string
+          company_name: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          quality: string
+          truck_number: string
+          updated_at: string
+        }
+        Insert: {
+          challan_number: string
+          company_name: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          quality: string
+          truck_number: string
+          updated_at?: string
+        }
+        Update: {
+          challan_number?: string
+          company_name?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          quality?: string
+          truck_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credit_parties: {
         Row: {
           address: string | null
@@ -299,6 +335,48 @@ export type Database = {
           id?: string
           notes?: string | null
           photo_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dispatch_reports: {
+        Row: {
+          amount: number
+          challan_number: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          party_name: string
+          product_name: string
+          quantity: number
+          truck_number: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          challan_number: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          party_name: string
+          product_name: string
+          quantity?: number
+          truck_number: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          challan_number?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          party_name?: string
+          product_name?: string
+          quantity?: number
+          truck_number?: string
           updated_at?: string
         }
         Relationships: []
