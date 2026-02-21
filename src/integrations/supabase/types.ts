@@ -192,35 +192,38 @@ export type Database = {
       }
       bolder_reports: {
         Row: {
-          challan_number: string
+          challan_number: string | null
           company_name: string
           created_at: string
           date: string
           id: string
           notes: string | null
           quality: string
+          rst_number: string | null
           truck_number: string
           updated_at: string
         }
         Insert: {
-          challan_number: string
+          challan_number?: string | null
           company_name: string
           created_at?: string
           date?: string
           id?: string
           notes?: string | null
           quality: string
+          rst_number?: string | null
           truck_number: string
           updated_at?: string
         }
         Update: {
-          challan_number?: string
+          challan_number?: string | null
           company_name?: string
           created_at?: string
           date?: string
           id?: string
           notes?: string | null
           quality?: string
+          rst_number?: string | null
           truck_number?: string
           updated_at?: string
         }
@@ -342,7 +345,7 @@ export type Database = {
       dispatch_reports: {
         Row: {
           amount: number
-          challan_number: string
+          challan_number: string | null
           created_at: string
           date: string
           id: string
@@ -350,12 +353,13 @@ export type Database = {
           party_name: string
           product_name: string
           quantity: number
+          rst_number: string | null
           truck_number: string
           updated_at: string
         }
         Insert: {
           amount?: number
-          challan_number: string
+          challan_number?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -363,12 +367,13 @@ export type Database = {
           party_name: string
           product_name: string
           quantity?: number
+          rst_number?: string | null
           truck_number: string
           updated_at?: string
         }
         Update: {
           amount?: number
-          challan_number?: string
+          challan_number?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -376,6 +381,7 @@ export type Database = {
           party_name?: string
           product_name?: string
           quantity?: number
+          rst_number?: string | null
           truck_number?: string
           updated_at?: string
         }
