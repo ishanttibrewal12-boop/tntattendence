@@ -67,6 +67,17 @@ const MLTServicesSection = ({ onBack }: Props) => {
 
   useEffect(() => { fetchServices(); }, []);
 
+  // Realtime subscription for cross-user sync
+  useEffect(() => {
+    const channel = supabase
+      .channel('mlt-services-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mlt_services' }, () => {
+        fetchServices();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const fetchServices = async () => {
     setIsLoading(true);
     const { data, error } = await supabase.from('mlt_services').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });

@@ -60,6 +60,17 @@ const MLTFuelReportSection = ({ onBack }: Props) => {
 
   useEffect(() => { fetchRecords(); }, []);
 
+  // Realtime subscription for cross-user sync
+  useEffect(() => {
+    const channel = supabase
+      .channel('mlt-fuel-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mlt_fuel_reports' }, () => {
+        fetchRecords();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const fetchRecords = async () => {
     setIsLoading(true);
     const { data } = await supabase.from('mlt_fuel_reports').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });
