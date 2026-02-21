@@ -469,6 +469,81 @@ export type Database = {
           },
         ]
       }
+      mlt_fuel_reports: {
+        Row: {
+          amount: number | null
+          created_at: string
+          date: string
+          driver_name: string | null
+          fuel_litres: number
+          id: string
+          notes: string | null
+          truck_number: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          date?: string
+          driver_name?: string | null
+          fuel_litres?: number
+          id?: string
+          notes?: string | null
+          truck_number: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          date?: string
+          driver_name?: string | null
+          fuel_litres?: number
+          id?: string
+          notes?: string | null
+          truck_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mlt_services: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          driver_name: string | null
+          id: string
+          notes: string | null
+          service_place: string
+          truck_number: string
+          updated_at: string
+          work_description: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          driver_name?: string | null
+          id?: string
+          notes?: string | null
+          service_place: string
+          truck_number: string
+          updated_at?: string
+          work_description: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          driver_name?: string | null
+          id?: string
+          notes?: string | null
+          service_place?: string
+          truck_number?: string
+          updated_at?: string
+          work_description?: string
+        }
+        Relationships: []
+      }
       mlt_staff: {
         Row: {
           address: string | null

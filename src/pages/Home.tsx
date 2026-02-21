@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock } from 'lucide-react';
+import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
@@ -29,8 +29,10 @@ const YearlyDataSection = lazy(() => import('@/components/sections/YearlyDataSec
 const TyreSalesSection = lazy(() => import('@/components/sections/TyreSalesSection'));
 const CreditPartiesSection = lazy(() => import('@/components/sections/CreditPartiesSection'));
 const CrusherReportsSection = lazy(() => import('@/components/sections/CrusherReportsSection'));
+const MLTServicesSection = lazy(() => import('@/components/sections/MLTServicesSection'));
+const MLTFuelReportSection = lazy(() => import('@/components/sections/MLTFuelReportSection'));
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | null;
 
 type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | 'crusher-reports' | null;
 
@@ -150,13 +152,15 @@ const Home = () => {
 
   const mltSections: NavItem[] = [
     { id: 'mlt', title: 'MLT Dashboard', icon: Truck, description: 'Driver & Khalasi management', primary: true },
+    { id: 'mlt-services', title: 'MLT Services', icon: Wrench, description: 'Truck service records', primary: true },
+    { id: 'mlt-fuel-report', title: 'MLT Fuel Report', icon: Fuel, description: 'Truck fuel tracking' },
   ];
 
   const departments = useMemo(() => {
     const depts: { id: DepartmentType; title: string; icon: typeof Fuel; description: string }[] = [];
     if (isManager || isPetroleumAdmin) depts.push({ id: 'petroleum', title: 'Petroleum', icon: Fuel, description: 'Fuel station operations' });
     if (isManager || isCrusherAdmin) depts.push({ id: 'crusher', title: 'Crusher', icon: Calendar, description: 'Stone crushing operations' });
-    if (isManager || isMltAdmin) depts.push({ id: 'mlt', title: 'MLT', icon: Truck, description: 'Driver & Khalasi' });
+    if (isManager || isMltAdmin || isPetroleumAdmin) depts.push({ id: 'mlt', title: 'MLT', icon: Truck, description: 'Driver & Khalasi' });
     if (isManager) {
       depts.push({ id: 'tyres-office', title: 'Tyres & Office', icon: CircleDot, description: 'Tyre sales & office staff' });
       depts.push({ id: 'credit-parties', title: 'Credit Parties', icon: CreditCard, description: 'Petroleum & Tyre credit' });
@@ -197,6 +201,8 @@ const Home = () => {
           {activeSection === 'tyre-sales' && <TyreSalesSection onBack={onBack} />}
           {activeSection === 'credit-parties' && <CreditPartiesSection onBack={onBack} />}
           {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
+          {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
+          {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
         </div>
       </Suspense>
     );
@@ -208,7 +214,13 @@ const Home = () => {
     let deptTitle = getDeptTitle(activeDepartment);
     if (activeDepartment === 'petroleum') { sections = getDeptSections('petroleum'); }
     else if (activeDepartment === 'crusher') { sections = getDeptSections('crusher'); }
-    else if (activeDepartment === 'mlt') { sections = mltSections; }
+    else if (activeDepartment === 'mlt') {
+      sections = mltSections;
+      // Petroleum admin only sees fuel report; MLT admin sees services + dashboard + fuel
+      if (isPetroleumAdmin && !isManager) {
+        sections = sections.filter(s => s.id === 'mlt-fuel-report');
+      }
+    }
     else if (activeDepartment === 'tyres-office') { sections = getDeptSections('tyres-office'); }
     else if (activeDepartment === 'credit-parties') {
       setActiveSection('credit-parties');

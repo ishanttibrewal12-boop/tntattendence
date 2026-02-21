@@ -41,12 +41,12 @@ const ROLE_ACCESS: Record<AppRole, { sections: string[]; editSections: string[] 
     editSections: ['*'],
   },
   mlt_admin: {
-    sections: ['mlt', 'mlt-attendance', 'mlt-advances', 'mlt-staff', 'mlt-profiles'],
-    editSections: ['mlt', 'mlt-attendance', 'mlt-advances', 'mlt-staff', 'mlt-profiles'],
+    sections: ['mlt', 'mlt-attendance', 'mlt-advances', 'mlt-staff', 'mlt-profiles', 'mlt-services', 'mlt-fuel-report'],
+    editSections: ['mlt', 'mlt-attendance', 'mlt-advances', 'mlt-staff', 'mlt-profiles', 'mlt-services', 'mlt-fuel-report'],
   },
   petroleum_admin: {
-    sections: ['petroleum', 'petroleum-attendance', 'petroleum-advances', 'petroleum-staff', 'petroleum-profiles'],
-    editSections: ['petroleum', 'petroleum-attendance', 'petroleum-advances', 'petroleum-staff', 'petroleum-profiles'],
+    sections: ['petroleum', 'petroleum-attendance', 'petroleum-advances', 'petroleum-staff', 'petroleum-profiles', 'mlt-fuel-report'],
+    editSections: ['petroleum', 'petroleum-attendance', 'petroleum-advances', 'petroleum-staff', 'petroleum-profiles', 'mlt-fuel-report'],
   },
   crusher_admin: {
     sections: ['crusher', 'crusher-attendance', 'crusher-advances', 'crusher-staff', 'crusher-profiles'],
