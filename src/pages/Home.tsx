@@ -31,8 +31,9 @@ const CreditPartiesSection = lazy(() => import('@/components/sections/CreditPart
 const CrusherReportsSection = lazy(() => import('@/components/sections/CrusherReportsSection'));
 const MLTServicesSection = lazy(() => import('@/components/sections/MLTServicesSection'));
 const MLTFuelReportSection = lazy(() => import('@/components/sections/MLTFuelReportSection'));
+const UserManagementSection = lazy(() => import('@/components/sections/UserManagementSection'));
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | 'user-management' | null;
 
 type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | 'crusher-reports' | null;
 
@@ -203,6 +204,7 @@ const Home = () => {
           {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
           {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
           {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
+          {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
         </div>
       </Suspense>
     );
@@ -364,6 +366,19 @@ const Home = () => {
                 );
               })}
             </div>
+
+            <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('user-management')}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ background: '#0f172a' }}><Users className="h-5 w-5" style={{ color: 'white' }} /></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">User Management</p>
+                    <p className="text-xs text-muted-foreground">Add & manage user profiles</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
 
             <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('settings')}>
               <CardContent className="p-4">
