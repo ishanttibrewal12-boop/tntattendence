@@ -3,12 +3,21 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { AppAuthProvider, useAppAuth } from "@/contexts/AppAuthContext";
 
-const LandingPage = lazy(() => import("./components/ProfileSelection"));
-const Home = lazy(() => import("./pages/Home"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const LandingPage = lazy(() => import("./components/ProfileSelection").catch((err) => {
+  console.error("Failed to load ProfileSelection:", err);
+  return { default: () => <div className="min-h-screen flex items-center justify-center"><p>Failed to load. Please refresh.</p></div> };
+}));
+const Home = lazy(() => import("./pages/Home").catch((err) => {
+  console.error("Failed to load Home:", err);
+  return { default: () => <div className="min-h-screen flex items-center justify-center"><p>Failed to load. Please refresh.</p></div> };
+}));
+const NotFound = lazy(() => import("./pages/NotFound").catch((err) => {
+  console.error("Failed to load NotFound:", err);
+  return { default: () => <div className="min-h-screen flex items-center justify-center"><p>Page not found</p></div> };
+}));
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: '#0f172a' }}>
@@ -48,6 +57,15 @@ const AppContent = () => {
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
+
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled rejection:", event.reason);
+      event.preventDefault();
+    };
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => window.removeEventListener("unhandledrejection", handleRejection);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
