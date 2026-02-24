@@ -29,13 +29,19 @@ const ProfileSelection = () => {
       return;
     }
     setIsLoading(true);
-    const result = await login(username.trim(), password.trim());
-    setIsLoading(false);
-    if (result.success) {
-      toast({ title: 'Welcome!', description: 'Login successful' });
-      setShowLogin(false);
-    } else {
-      toast({ title: 'Login Failed', description: result.error || 'Invalid credentials', variant: 'destructive' });
+    try {
+      const result = await login(username.trim(), password.trim());
+      if (result.success) {
+        toast({ title: 'Welcome!', description: 'Login successful' });
+        setShowLogin(false);
+      } else {
+        toast({ title: 'Login Failed', description: result.error || 'Invalid credentials', variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({ title: 'Error', description: 'An unexpected error occurred', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
