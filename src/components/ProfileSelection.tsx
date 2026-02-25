@@ -9,8 +9,12 @@ import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import HeroSection from '@/components/landing/HeroSection';
 import ImageGallery from '@/components/landing/ImageGallery';
+import WhyChooseUs from '@/components/landing/WhyChooseUs';
+import StatsStrip from '@/components/landing/StatsStrip';
 import CompanySection from '@/components/landing/CompanySection';
+import Timeline from '@/components/landing/Timeline';
 import PhotoGallery from '@/components/landing/PhotoGallery';
+import CTABanner from '@/components/landing/CTABanner';
 import LeadershipSection from '@/components/landing/LeadershipSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 
@@ -67,28 +71,12 @@ const ProfileSelection = () => {
 
       <HeroSection />
       <ImageGallery />
-      
-      {/* Company Strength Strip */}
-      <section className="py-10" style={{ background: '#0F2A44' }}>
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { value: 'Est. 2021', label: 'Established' },
-              { value: '50+', label: 'Heavy Trucks' },
-              { value: 'Jharkhand', label: 'Operations' },
-              { value: '200+', label: 'Employees' },
-            ].map((stat, i) => (
-              <div key={i}>
-                <p className="text-2xl md:text-3xl font-extrabold" style={{ color: 'white' }}>{stat.value}</p>
-                <p className="text-xs mt-1 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      <WhyChooseUs />
+      <StatsStrip />
       <CompanySection />
+      <Timeline />
       <PhotoGallery />
+      <CTABanner />
       <LeadershipSection />
       <WhatsAppButton />
 
