@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { LandingThemeProvider, useLandingTheme } from '@/components/landing/LandingThemeContext';
+import ThemeToggle from '@/components/landing/ThemeToggle';
 import HeroSection from '@/components/landing/HeroSection';
 import ImageGallery from '@/components/landing/ImageGallery';
 import WhyChooseUs from '@/components/landing/WhyChooseUs';
@@ -18,7 +20,7 @@ import CTABanner from '@/components/landing/CTABanner';
 import LeadershipSection from '@/components/landing/LeadershipSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 
-const ProfileSelection = () => {
+const LandingContent = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +28,7 @@ const ProfileSelection = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAppAuth();
   const { toast } = useToast();
+  const { colors } = useLandingTheme();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +54,9 @@ const ProfileSelection = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ background: colors.pageBg }}>
+      <ThemeToggle />
+
       {/* Top-right 3-dot menu */}
       <div className="fixed top-4 right-4 z-50">
         <DropdownMenu>
@@ -84,9 +89,7 @@ const ProfileSelection = () => {
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
         <DialogContent className="sm:max-w-md border-0" style={{ background: '#0F2A44' }}>
           <DialogHeader>
-            <DialogTitle style={{ color: 'white' }} className="text-lg">
-              Management Login
-            </DialogTitle>
+            <DialogTitle style={{ color: 'white' }} className="text-lg">Management Login</DialogTitle>
           </DialogHeader>
           <div className="h-0.5 rounded-full my-2" style={{ background: 'linear-gradient(90deg, transparent, #f97316, transparent)' }} />
           <form onSubmit={handleLogin} className="space-y-4 mt-2">
@@ -118,5 +121,11 @@ const ProfileSelection = () => {
     </div>
   );
 };
+
+const ProfileSelection = () => (
+  <LandingThemeProvider>
+    <LandingContent />
+  </LandingThemeProvider>
+);
 
 export default ProfileSelection;

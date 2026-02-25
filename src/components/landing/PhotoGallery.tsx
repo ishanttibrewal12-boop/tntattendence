@@ -1,3 +1,4 @@
+import { useLandingTheme } from './LandingThemeContext';
 import ScrollReveal from './ScrollReveal';
 import crusher1 from '@/assets/gallery-crusher-new-1.jpeg';
 import crusher2 from '@/assets/gallery-crusher-new-2.jpeg';
@@ -23,7 +24,6 @@ import petroleum5 from '@/assets/gallery-petroleum-5.jpeg';
 import petroleum6 from '@/assets/gallery-petroleum-6.jpeg';
 import aggregate1 from '@/assets/gallery-aggregate-1.jpeg';
 
-// Arranged for visual balance: alternating categories, mixing vertical/horizontal
 const photos = [
   { src: crusher7, alt: 'Crusher plant in action' },
   { src: tyres5, alt: 'Tyre closeup' },
@@ -51,26 +51,19 @@ const photos = [
 ];
 
 const PhotoGallery = () => {
+  const { colors } = useLandingTheme();
   return (
-    <section className="py-16 md:py-24" style={{ background: 'white' }}>
+    <section className="py-16 md:py-24" style={{ background: colors.sectionBg }}>
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: '#94a3b8' }}>Gallery</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: '#0f172a' }}>
-            Our Work in Action
-          </h2>
+          <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: colors.label }}>Gallery</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: colors.heading }}>Our Work in Action</h2>
           <div className="w-16 h-1 mx-auto mt-4 rounded-full" style={{ background: '#f97316' }} />
         </div>
-
         <div className="columns-2 md:columns-3 gap-4 space-y-4">
           {photos.map((photo, i) => (
             <ScrollReveal key={i}>
-              <img
-                src={photo.src}
-                alt={photo.alt}
-                className="w-full rounded-lg break-inside-avoid"
-                loading="lazy"
-              />
+              <img src={photo.src} alt={photo.alt} className="w-full rounded-lg break-inside-avoid" loading="lazy" />
             </ScrollReveal>
           ))}
         </div>
