@@ -1,5 +1,5 @@
 import companyLogo from '@/assets/company-logo.png';
-import heroImg from '@/assets/gallery-crusher-new-7.jpeg';
+import heroImg from '@/assets/hero-mining-operations.jpg';
 
 const HeroSection = () => {
   return (
