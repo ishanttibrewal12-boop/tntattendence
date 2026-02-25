@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLandingTheme } from './LandingThemeContext';
 
 const AnimatedCounter = ({ end, suffix = '', label }: { end: number; suffix?: string; label: string }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -39,17 +40,20 @@ const AnimatedCounter = ({ end, suffix = '', label }: { end: number; suffix?: st
   );
 };
 
-const StatsStrip = () => (
-  <section className="py-14" style={{ background: 'linear-gradient(135deg, #0F2A44 0%, #1a3a5c 100%)' }}>
-    <div className="max-w-5xl mx-auto px-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-        <AnimatedCounter end={2021} suffix="" label="Established" />
-        <AnimatedCounter end={50} suffix="+" label="Heavy Trucks" />
-        <AnimatedCounter end={200} suffix="+" label="Employees" />
-        <AnimatedCounter end={4} suffix="" label="Business Verticals" />
+const StatsStrip = () => {
+  const { colors } = useLandingTheme();
+  return (
+    <section className="py-14" style={{ background: colors.darkBgGradient }}>
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <AnimatedCounter end={2021} suffix="" label="Established" />
+          <AnimatedCounter end={50} suffix="+" label="Heavy Trucks" />
+          <AnimatedCounter end={200} suffix="+" label="Employees" />
+          <AnimatedCounter end={4} suffix="" label="Business Verticals" />
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default StatsStrip;

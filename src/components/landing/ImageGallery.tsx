@@ -1,3 +1,4 @@
+import { useLandingTheme } from './LandingThemeContext';
 import ScrollReveal from './ScrollReveal';
 import crusherImg from '@/assets/gallery-crusher-new-7.jpeg';
 import truckImg from '@/assets/gallery-truck-new-3.jpeg';
@@ -12,25 +13,23 @@ const operations = [
 ];
 
 const ImageGallery = () => {
+  const { colors } = useLandingTheme();
   return (
-    <section className="py-16 md:py-24" style={{ background: '#f4f6f8' }}>
+    <section className="py-16 md:py-24" style={{ background: colors.sectionBg }}>
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: '#94a3b8' }}>What We Do</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: '#0f172a' }}>
-            Operations
-          </h2>
+          <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: colors.label }}>What We Do</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: colors.heading }}>Operations</h2>
           <div className="w-16 h-1 mx-auto mt-4 rounded-full" style={{ background: '#f97316' }} />
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {operations.map((op, i) => (
             <ScrollReveal key={i}>
-              <div className="rounded-xl overflow-hidden shadow-sm border" style={{ borderColor: '#e2e8f0', background: 'white' }}>
+              <div className="rounded-xl overflow-hidden shadow-sm border" style={{ borderColor: colors.cardBorder, background: colors.cardBg }}>
                 <img src={op.img} alt={op.title} className="w-full h-48 md:h-56 object-cover" loading="lazy" />
                 <div className="p-5">
-                  <h3 className="text-lg font-bold mb-1" style={{ color: '#0f172a' }}>{op.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#64748b' }}>{op.desc}</p>
+                  <h3 className="text-lg font-bold mb-1" style={{ color: colors.heading }}>{op.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: colors.textMuted }}>{op.desc}</p>
                 </div>
               </div>
             </ScrollReveal>
