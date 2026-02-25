@@ -1,3 +1,4 @@
+import ScrollReveal from './ScrollReveal';
 import crusher1 from '@/assets/gallery-crusher-new-1.jpeg';
 import crusher2 from '@/assets/gallery-crusher-new-2.jpeg';
 import crusher3 from '@/assets/gallery-crusher-new-3.jpeg';
@@ -63,13 +64,14 @@ const PhotoGallery = () => {
 
         <div className="columns-2 md:columns-3 gap-4 space-y-4">
           {photos.map((photo, i) => (
-            <img
-              key={i}
-              src={photo.src}
-              alt={photo.alt}
-              className="w-full rounded-lg break-inside-avoid"
-              loading="lazy"
-            />
+            <ScrollReveal key={i}>
+              <img
+                src={photo.src}
+                alt={photo.alt}
+                className="w-full rounded-lg break-inside-avoid"
+                loading="lazy"
+              />
+            </ScrollReveal>
           ))}
         </div>
       </div>

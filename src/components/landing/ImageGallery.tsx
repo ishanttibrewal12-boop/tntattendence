@@ -1,3 +1,4 @@
+import ScrollReveal from './ScrollReveal';
 import crusherImg from '@/assets/gallery-crusher-new-7.jpeg';
 import truckImg from '@/assets/gallery-truck-new-3.jpeg';
 import petroleumImg from '@/assets/gallery-petroleum-5.jpeg';
@@ -24,13 +25,15 @@ const ImageGallery = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {operations.map((op, i) => (
-            <div key={i} className="rounded-xl overflow-hidden shadow-sm border" style={{ borderColor: '#e2e8f0', background: 'white' }}>
-              <img src={op.img} alt={op.title} className="w-full h-48 md:h-56 object-cover" loading="lazy" />
-              <div className="p-5">
-                <h3 className="text-lg font-bold mb-1" style={{ color: '#0f172a' }}>{op.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#64748b' }}>{op.desc}</p>
+            <ScrollReveal key={i}>
+              <div className="rounded-xl overflow-hidden shadow-sm border" style={{ borderColor: '#e2e8f0', background: 'white' }}>
+                <img src={op.img} alt={op.title} className="w-full h-48 md:h-56 object-cover" loading="lazy" />
+                <div className="p-5">
+                  <h3 className="text-lg font-bold mb-1" style={{ color: '#0f172a' }}>{op.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: '#64748b' }}>{op.desc}</p>
+                </div>
               </div>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

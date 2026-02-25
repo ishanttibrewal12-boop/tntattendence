@@ -12,6 +12,7 @@ import ImageGallery from '@/components/landing/ImageGallery';
 import CompanySection from '@/components/landing/CompanySection';
 import PhotoGallery from '@/components/landing/PhotoGallery';
 import LeadershipSection from '@/components/landing/LeadershipSection';
+import WhatsAppButton from '@/components/landing/WhatsAppButton';
 
 const ProfileSelection = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -89,6 +90,7 @@ const ProfileSelection = () => {
       <CompanySection />
       <PhotoGallery />
       <LeadershipSection />
+      <WhatsAppButton />
 
       {/* Login Dialog */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
