@@ -17,6 +17,7 @@ import CompanySection from '@/components/landing/CompanySection';
 import Timeline from '@/components/landing/Timeline';
 import PhotoGallery from '@/components/landing/PhotoGallery';
 import CTABanner from '@/components/landing/CTABanner';
+import BoardOfGovernors from '@/components/landing/BoardOfGovernors';
 import LeadershipSection from '@/components/landing/LeadershipSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 
@@ -82,6 +83,7 @@ const LandingContent = () => {
       <Timeline />
       <PhotoGallery />
       <CTABanner />
+      <BoardOfGovernors />
       <LeadershipSection />
       <WhatsAppButton />
 
