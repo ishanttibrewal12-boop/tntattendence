@@ -4,8 +4,8 @@ import { Phone } from 'lucide-react';
 const CTABanner = () => (
   <section className="py-20 md:py-28 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>
     {/* Decorative shapes */}
-    <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-20" style={{ background: 'white' }} />
-    <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full opacity-10" style={{ background: 'white' }} />
+    <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-20 animate-[spin_25s_linear_infinite]" style={{ background: 'white' }} />
+    <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full opacity-10 animate-[spin_30s_linear_infinite_reverse]" style={{ background: 'white' }} />
 
     <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
       <ScrollReveal>

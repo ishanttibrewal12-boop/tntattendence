@@ -14,7 +14,7 @@ const features = [
 const WhyChooseUs = () => {
   const { colors } = useLandingTheme();
   return (
-    <section className="py-20 md:py-28" style={{ background: colors.sectionBg }}>
+    <section className="py-20 md:py-28" style={{ background: colors.sectionBg, transition: 'background 0.6s ease, color 0.6s ease' }}>
       <div className="max-w-6xl mx-auto px-4">
         <ScrollReveal>
           <div className="text-center mb-14">
