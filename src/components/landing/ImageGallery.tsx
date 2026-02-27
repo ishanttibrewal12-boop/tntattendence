@@ -15,17 +15,17 @@ const operations = [
 const ImageGallery = () => {
   const { colors } = useLandingTheme();
   return (
-    <section className="py-16 md:py-24" style={{ background: colors.sectionBg, transition: 'background 0.6s ease, color 0.6s ease' }}>
+    <section className="py-16 md:py-24" style={{ background: colors.sectionBg }}>
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: colors.label, transition: 'color 0.6s ease' }}>What We Do</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: colors.heading, transition: 'color 0.6s ease' }}>Operations</h2>
+          <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: colors.label }}>What We Do</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: colors.heading }}>Operations</h2>
           <div className="w-16 h-1 mx-auto mt-4 rounded-full" style={{ background: '#f97316' }} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {operations.map((op, i) => (
             <ScrollReveal key={i}>
-              <div className="rounded-xl overflow-hidden shadow-sm border group" style={{ borderColor: colors.cardBorder, background: colors.cardBg, transition: 'background 0.6s ease, border-color 0.6s ease' }}>
+              <div className="rounded-xl overflow-hidden shadow-sm border group" style={{ borderColor: colors.cardBorder, background: colors.cardBg }}>
                 <div className="relative overflow-hidden">
                   <img
                     src={op.img}
@@ -67,8 +67,8 @@ const ImageGallery = () => {
                   )}
                 </div>
                 <div className="p-5">
-                  <h3 className="text-lg font-bold mb-1" style={{ color: colors.heading, transition: 'color 0.6s ease' }}>{op.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: colors.textMuted, transition: 'color 0.6s ease' }}>{op.desc}</p>
+                  <h3 className="text-lg font-bold mb-1" style={{ color: colors.heading }}>{op.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: colors.textMuted }}>{op.desc}</p>
                 </div>
               </div>
             </ScrollReveal>
