@@ -55,7 +55,7 @@ const LandingContent = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: colors.pageBg }}>
+    <div className="min-h-screen" style={{ background: colors.pageBg, transition: 'background 0.6s cubic-bezier(0.4,0,0.2,1), color 0.6s cubic-bezier(0.4,0,0.2,1)' }}>
       <ThemeToggle />
 
       {/* Top-right 3-dot menu */}
