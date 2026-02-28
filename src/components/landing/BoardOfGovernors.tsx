@@ -14,7 +14,7 @@ interface Governor {
 
 const governors: Governor[] = [
   {
-    name: 'Abhay Tibrewal',
+    name: 'Sunil Tibrewal',
     designation: 'Director',
     description: 'Seasoned business leader with extensive experience in mining operations, strategic planning, and corporate governance. Instrumental in driving the company\'s growth across multiple verticals.',
     phone: '9386469006',
