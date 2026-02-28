@@ -190,6 +190,33 @@ export type Database = {
           },
         ]
       }
+      backup_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_path: string
+          file_size: number | null
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_path: string
+          file_size?: number | null
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       bolder_reports: {
         Row: {
           challan_number: string | null

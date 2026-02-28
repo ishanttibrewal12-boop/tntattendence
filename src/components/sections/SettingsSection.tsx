@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Lock, Database, Download, Upload, RefreshCw } from 'lucide-react';
+import AutoBackupSection from './AutoBackupSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -383,11 +384,14 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
         </CardContent>
       </Card>
 
+      {/* Auto Backup Section */}
+      <AutoBackupSection />
+
       {/* Info Card */}
       <Card className="mt-4 bg-muted/50">
         <CardContent className="p-4">
           <p className="text-xs text-muted-foreground text-center">
-            Backups include: Staff, Attendance, Advances, Payroll, MLT data, Petroleum Sales, Reminders, and App Settings.
+            Backups include: Staff, Attendance, Advances, Payroll, MLT data, Petroleum Sales, Credit Parties, Dispatch Reports, Reminders, and App Settings.
           </p>
         </CardContent>
       </Card>
