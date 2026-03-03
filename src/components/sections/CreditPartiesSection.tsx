@@ -77,7 +77,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [viewAllTime, setViewAllTime] = useState(false);
+  const [viewAllTime, setViewAllTime] = useState(true);
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   useEffect(() => { fetchParties(); }, []);
@@ -351,7 +351,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             </Select>
             <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{[2024, 2025, 2026].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+              <SelectContent>{[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         )}
