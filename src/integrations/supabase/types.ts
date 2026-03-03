@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: []
+      }
       admins: {
         Row: {
           created_at: string
@@ -260,6 +296,7 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          credit_limit: number | null
           id: string
           is_active: boolean
           name: string
@@ -270,6 +307,7 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          credit_limit?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -280,6 +318,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          credit_limit?: number | null
           id?: string
           is_active?: boolean
           name?: string
@@ -375,10 +414,13 @@ export type Database = {
           challan_number: string | null
           created_at: string
           date: string
+          diesel_cost: number | null
           id: string
+          labour_cost: number | null
           notes: string | null
           party_name: string
           product_name: string
+          production_cost: number | null
           quantity: number
           rst_number: string | null
           truck_number: string
@@ -389,10 +431,13 @@ export type Database = {
           challan_number?: string | null
           created_at?: string
           date?: string
+          diesel_cost?: number | null
           id?: string
+          labour_cost?: number | null
           notes?: string | null
           party_name: string
           product_name: string
+          production_cost?: number | null
           quantity?: number
           rst_number?: string | null
           truck_number: string
@@ -403,10 +448,13 @@ export type Database = {
           challan_number?: string | null
           created_at?: string
           date?: string
+          diesel_cost?: number | null
           id?: string
+          labour_cost?: number | null
           notes?: string | null
           party_name?: string
           product_name?: string
+          production_cost?: number | null
           quantity?: number
           rst_number?: string | null
           truck_number?: string
@@ -622,6 +670,50 @@ export type Database = {
         }
         Relationships: []
       }
+      party_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          party_id: string
+          payment_mode: string | null
+          payment_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          party_id: string
+          payment_mode?: string | null
+          payment_type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          party_id?: string
+          payment_mode?: string | null
+          payment_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_payments_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "credit_parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll: {
         Row: {
           absent_days: number
@@ -746,6 +838,45 @@ export type Database = {
           id?: string
           notes?: string | null
           sale_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      production_entries: {
+        Row: {
+          created_at: string
+          crusher_hours: number
+          date: string
+          downtime_hours: number | null
+          downtime_reason: string | null
+          id: string
+          notes: string | null
+          product_name: string
+          quantity_produced: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crusher_hours?: number
+          date?: string
+          downtime_hours?: number | null
+          downtime_reason?: string | null
+          id?: string
+          notes?: string | null
+          product_name: string
+          quantity_produced?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crusher_hours?: number
+          date?: string
+          downtime_hours?: number | null
+          downtime_reason?: string | null
+          id?: string
+          notes?: string | null
+          product_name?: string
+          quantity_produced?: number
           updated_at?: string
         }
         Relationships: []
@@ -891,6 +1022,72 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_inventory: {
+        Row: {
+          created_at: string
+          current_stock: number
+          id: string
+          low_stock_threshold: number | null
+          product_name: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          low_stock_threshold?: number | null
+          product_name: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          low_stock_threshold?: number | null
+          product_name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          movement_type: string
+          notes: string | null
+          product_name: string
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          product_name: string
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          product_name?: string
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: []
+      }
       tyre_sales: {
         Row: {
           amount: number
@@ -936,6 +1133,86 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_maintenance: {
+        Row: {
+          cost: number
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          maintenance_type: string
+          next_due_date: string | null
+          notes: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          maintenance_type: string
+          next_due_date?: string | null
+          notes?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          maintenance_type?: string
+          next_due_date?: string | null
+          notes?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          created_at: string
+          driver_name: string | null
+          fitness_expiry: string | null
+          id: string
+          insurance_expiry: string | null
+          is_active: boolean
+          notes: string | null
+          truck_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_name?: string | null
+          fitness_expiry?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          is_active?: boolean
+          notes?: string | null
+          truck_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_name?: string | null
+          fitness_expiry?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          is_active?: boolean
+          notes?: string | null
+          truck_number?: string
+          updated_at?: string
         }
         Relationships: []
       }
