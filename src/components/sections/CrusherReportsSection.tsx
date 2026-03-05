@@ -105,11 +105,32 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   }, [fetchDispatches, fetchBolders]);
 
   // Add Dispatch
-  const sendWhatsAppNotification = (entry: { party: string; truck: string; product: string; qty: string; amount: string; date: string; challan: string; rst: string }) => {
-    const msg = `🚛 *New Dispatch Entry*\n\n📅 Date: ${entry.date}\n👤 Party: ${entry.party}\n🚚 Truck: ${entry.truck}\n📦 Product: ${entry.product}\n⚖️ Qty: ${entry.qty}\n💰 Amount: ₹${parseFloat(entry.amount).toLocaleString('en-IN')}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
+  const sendWhatsAppNotification = (type: 'dispatch' | 'bolder', entry: Record<string, string>) => {
+    let msg = '';
+    if (type === 'dispatch') {
+      msg = `🚛 *New Dispatch Entry*\n\n📅 Date: ${entry.date}\n👤 Party: ${entry.party}\n🚚 Truck: ${entry.truck}\n📦 Product: ${entry.product}\n⚖️ Qty: ${entry.qty}\n💰 Amount: ₹${parseFloat(entry.amount).toLocaleString('en-IN')}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
+    } else {
+      msg = `🪨 *New Bolder Entry*\n\n📅 Date: ${entry.date}\n🏢 Company: ${entry.company}\n⭐ Quality: ${entry.quality}\n🚚 Truck: ${entry.truck}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
+    }
     const encoded = encodeURIComponent(msg);
-    // Open WhatsApp with pre-filled message (user picks contact)
+    // Open WhatsApp with pre-filled message
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    // Also try Twilio auto-send via edge function
+    sendTwilioWhatsApp(msg);
+  };
+
+  const sendTwilioWhatsApp = async (message: string) => {
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/send-whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${anonKey}` },
+        body: JSON.stringify({ message }),
+      });
+      if (res.ok) console.log('Twilio WhatsApp sent');
+      else console.log('Twilio not configured or failed, manual WhatsApp opened');
+    } catch { console.log('Twilio edge function not available'); }
   };
 
   const handleAddDispatch = async () => {
@@ -125,7 +146,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else {
       toast({ title: 'Success', description: 'Dispatch entry added! Opening WhatsApp...' });
-      sendWhatsAppNotification({
+      sendWhatsAppNotification('dispatch', {
         party: dpParty.trim(), truck: dpTruck.trim(), product: dpProduct.trim(),
         qty: dpQuantity, amount: dpAmount, date: dpDate,
         challan: dpChallan.trim(), rst: dpRst.trim(),
@@ -147,7 +168,11 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     });
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else {
-      toast({ title: 'Success', description: 'Bolder entry added' });
+      toast({ title: 'Success', description: 'Bolder entry added! Opening WhatsApp...' });
+      sendWhatsAppNotification('bolder', {
+        company: blCompany.trim(), quality: blQuality.trim(), truck: blTruck.trim(),
+        date: blDate, challan: blChallan.trim(), rst: blRst.trim(),
+      });
       setBlCompany(''); setBlQuality(''); setBlChallan(''); setBlRst(''); setBlTruck(''); setBlNotes('');
     }
   };
