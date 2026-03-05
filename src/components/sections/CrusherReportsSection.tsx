@@ -105,6 +105,13 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   }, [fetchDispatches, fetchBolders]);
 
   // Add Dispatch
+  const sendWhatsAppNotification = (entry: { party: string; truck: string; product: string; qty: string; amount: string; date: string; challan: string; rst: string }) => {
+    const msg = `🚛 *New Dispatch Entry*\n\n📅 Date: ${entry.date}\n👤 Party: ${entry.party}\n🚚 Truck: ${entry.truck}\n📦 Product: ${entry.product}\n⚖️ Qty: ${entry.qty}\n💰 Amount: ₹${parseFloat(entry.amount).toLocaleString('en-IN')}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
+    const encoded = encodeURIComponent(msg);
+    // Open WhatsApp with pre-filled message (user picks contact)
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
+
   const handleAddDispatch = async () => {
     if (!dpParty || !dpTruck || !dpAmount || !dpQuantity || !dpProduct) {
       toast({ title: 'Error', description: 'Party, Truck, Amount, Quantity & Product are required', variant: 'destructive' });
@@ -117,7 +124,12 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     });
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else {
-      toast({ title: 'Success', description: 'Dispatch entry added' });
+      toast({ title: 'Success', description: 'Dispatch entry added! Opening WhatsApp...' });
+      sendWhatsAppNotification({
+        party: dpParty.trim(), truck: dpTruck.trim(), product: dpProduct.trim(),
+        qty: dpQuantity, amount: dpAmount, date: dpDate,
+        challan: dpChallan.trim(), rst: dpRst.trim(),
+      });
       setDpParty(''); setDpTruck(''); setDpAmount(''); setDpQuantity(''); setDpProduct(''); setDpChallan(''); setDpRst(''); setDpNotes('');
     }
   };
