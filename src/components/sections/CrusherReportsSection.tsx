@@ -168,7 +168,11 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     });
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else {
-      toast({ title: 'Success', description: 'Bolder entry added' });
+      toast({ title: 'Success', description: 'Bolder entry added! Opening WhatsApp...' });
+      sendWhatsAppNotification('bolder', {
+        company: blCompany.trim(), quality: blQuality.trim(), truck: blTruck.trim(),
+        date: blDate, challan: blChallan.trim(), rst: blRst.trim(),
+      });
       setBlCompany(''); setBlQuality(''); setBlChallan(''); setBlRst(''); setBlTruck(''); setBlNotes('');
     }
   };
