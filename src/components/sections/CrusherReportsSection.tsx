@@ -146,7 +146,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else {
       toast({ title: 'Success', description: 'Dispatch entry added! Opening WhatsApp...' });
-      sendWhatsAppNotification({
+      sendWhatsAppNotification('dispatch', {
         party: dpParty.trim(), truck: dpTruck.trim(), product: dpProduct.trim(),
         qty: dpQuantity, amount: dpAmount, date: dpDate,
         challan: dpChallan.trim(), rst: dpRst.trim(),
