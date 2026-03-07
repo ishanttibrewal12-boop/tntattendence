@@ -197,7 +197,9 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <h1 className="text-xl font-bold text-foreground">⛽ Fuel Analysis</h1>
+        <h1 className="text-xl font-bold text-foreground flex-1">⛽ Fuel Analysis</h1>
+        <Button variant="outline" size="icon" onClick={handleExcelExport} title="Export Excel"><Download className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" onClick={handleWhatsAppShare} title="Share on WhatsApp"><Share2 className="h-4 w-4" /></Button>
       </div>
 
       {/* Filters */}
