@@ -441,17 +441,17 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                       <Fuel className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-foreground">{s.name}</span>
                     </div>
-                    {s.is_preset ? (
-                      <span className="text-xs text-muted-foreground">Preset</span>
-                    ) : (
+                    <div className="flex items-center gap-2">
+                      {s.is_preset && <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Preset</span>}
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={async () => {
+                        if (!confirm(`Delete section "${s.name}"? This won't delete existing fuel entries.`)) return;
                         await supabase.from('crusher_fuel_sections').delete().eq('id', s.id);
                         toast.success('Section removed');
                         fetchSections();
                       }}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>
