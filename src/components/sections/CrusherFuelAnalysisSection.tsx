@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Filter, Fuel, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Filter, Fuel, X, Download, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { toast } from 'sonner';
+import { exportToExcel } from '@/lib/exportUtils';
 
 interface Props {
   onBack: () => void;
@@ -145,12 +146,60 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
     };
   }).filter(d => d.litres > 0);
 
+  const monthLabel = `${months[selectedMonth - 1]} ${selectedYear}`;
+
+  const handleExcelExport = () => {
+    if (filtered.length === 0) { toast.error('No data to export'); return; }
+    const headers = ['Date', 'Section', 'Litres', 'Running Hours', 'Rate (Rs/L)', 'Total Cost (Rs)', 'Notes'];
+    const data = filtered.map(e => [
+      format(new Date(e.date), 'dd MMM yyyy'),
+      e.section,
+      Number(e.litres),
+      Number(e.running_hours),
+      Number(e.rate_per_litre),
+      Number(e.total_cost),
+      e.notes || '',
+    ]);
+    // Add summary row
+    data.push([]);
+    data.push(['SUMMARY', '', totalLitres, totalHours, '', totalCost, `Avg: ${avgConsumption} L/hr`]);
+    exportToExcel(data, headers, `Fuel_Analysis_${months[selectedMonth - 1]}_${selectedYear}`, 'Fuel Report', `Crusher Fuel Report - ${monthLabel}`);
+    toast.success('Excel exported');
+  };
+
+  const handleWhatsAppShare = () => {
+    if (filtered.length === 0) { toast.error('No data to share'); return; }
+    // Section-wise breakdown
+    const sectionBreakdown = Object.entries(sectionMap)
+      .map(([name, litres]) => {
+        const sectionEntries = entries.filter(e => e.section === name);
+        const cost = sectionEntries.reduce((s, e) => s + Number(e.total_cost), 0);
+        const hours = sectionEntries.reduce((s, e) => s + Number(e.running_hours), 0);
+        return `  • ${name}: ${litres}L | ${hours}hrs | Rs.${cost.toLocaleString()}`;
+      })
+      .join('\n');
+
+    const message = `⛽ *Crusher Fuel Report - ${monthLabel}*\n\n` +
+      `📊 *Summary*\n` +
+      `Total Fuel: ${totalLitres.toLocaleString()} L\n` +
+      `Total Cost: Rs.${totalCost.toLocaleString()}\n` +
+      `Running Hours: ${totalHours.toLocaleString()} hrs\n` +
+      `Avg Consumption: ${avgConsumption} L/hr\n\n` +
+      `📋 *Section-wise Breakdown*\n${sectionBreakdown}\n\n` +
+      `_Tibrewal Staff Manager_`;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="p-4 max-w-md mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <h1 className="text-xl font-bold text-foreground">⛽ Fuel Analysis</h1>
+        <h1 className="text-xl font-bold text-foreground flex-1">⛽ Fuel Analysis</h1>
+        <Button variant="outline" size="icon" onClick={handleExcelExport} title="Export Excel"><Download className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" onClick={handleWhatsAppShare} title="Share on WhatsApp"><Share2 className="h-4 w-4" /></Button>
       </div>
 
       {/* Filters */}
