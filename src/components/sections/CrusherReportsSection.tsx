@@ -50,6 +50,7 @@ type SubView = 'add' | 'daily' | 'monthly';
 
 const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   const { toast } = useToast();
+  const [whatsappNumbers, setWhatsappNumbers] = useState<string[]>(['+916203229118']);
   const [activePage, setActivePage] = useState<ActivePage>('landing');
   const [subView, setSubView] = useState<SubView>('add');
 
