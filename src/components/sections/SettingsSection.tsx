@@ -385,6 +385,9 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
         </CardContent>
       </Card>
 
+      {/* WhatsApp Settings */}
+      <WhatsAppSettingsSection />
+
       {/* Auto Backup Section */}
       <AutoBackupSection />
 
