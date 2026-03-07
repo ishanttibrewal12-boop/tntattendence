@@ -146,6 +146,52 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
     };
   }).filter(d => d.litres > 0);
 
+  const monthLabel = `${months[selectedMonth - 1]} ${selectedYear}`;
+
+  const handleExcelExport = () => {
+    if (filtered.length === 0) { toast.error('No data to export'); return; }
+    const headers = ['Date', 'Section', 'Litres', 'Running Hours', 'Rate (Rs/L)', 'Total Cost (Rs)', 'Notes'];
+    const data = filtered.map(e => [
+      format(new Date(e.date), 'dd MMM yyyy'),
+      e.section,
+      Number(e.litres),
+      Number(e.running_hours),
+      Number(e.rate_per_litre),
+      Number(e.total_cost),
+      e.notes || '',
+    ]);
+    // Add summary row
+    data.push([]);
+    data.push(['SUMMARY', '', totalLitres, totalHours, '', totalCost, `Avg: ${avgConsumption} L/hr`]);
+    exportToExcel(data, headers, `Fuel_Analysis_${months[selectedMonth - 1]}_${selectedYear}`, 'Fuel Report', `Crusher Fuel Report - ${monthLabel}`);
+    toast.success('Excel exported');
+  };
+
+  const handleWhatsAppShare = () => {
+    if (filtered.length === 0) { toast.error('No data to share'); return; }
+    // Section-wise breakdown
+    const sectionBreakdown = Object.entries(sectionMap)
+      .map(([name, litres]) => {
+        const sectionEntries = entries.filter(e => e.section === name);
+        const cost = sectionEntries.reduce((s, e) => s + Number(e.total_cost), 0);
+        const hours = sectionEntries.reduce((s, e) => s + Number(e.running_hours), 0);
+        return `  • ${name}: ${litres}L | ${hours}hrs | Rs.${cost.toLocaleString()}`;
+      })
+      .join('\n');
+
+    const message = `⛽ *Crusher Fuel Report - ${monthLabel}*\n\n` +
+      `📊 *Summary*\n` +
+      `Total Fuel: ${totalLitres.toLocaleString()} L\n` +
+      `Total Cost: Rs.${totalCost.toLocaleString()}\n` +
+      `Running Hours: ${totalHours.toLocaleString()} hrs\n` +
+      `Avg Consumption: ${avgConsumption} L/hr\n\n` +
+      `📋 *Section-wise Breakdown*\n${sectionBreakdown}\n\n` +
+      `_Tibrewal Staff Manager_`;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="p-4 max-w-md mx-auto">
       {/* Header */}
