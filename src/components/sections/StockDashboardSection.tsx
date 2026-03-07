@@ -207,13 +207,18 @@ const StockDashboardSection = ({ onBack }: StockDashboardProps) => {
       <div className="space-y-2">
         {movements.slice(0, 15).map(m => (
           <Card key={m.id}><CardContent className="p-3 flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-foreground">{m.product_name}</p>
               <p className="text-xs text-muted-foreground">{format(new Date(m.date), 'dd MMM yyyy')} • {m.movement_type}</p>
             </div>
-            <p className={`text-sm font-bold ${m.movement_type === 'production' || m.movement_type === 'purchase' ? 'text-green-600' : 'text-destructive'}`}>
-              {m.movement_type === 'production' || m.movement_type === 'purchase' ? '+' : '-'}{m.quantity} T
-            </p>
+            <div className="flex items-center gap-2">
+              <p className={`text-sm font-bold ${m.movement_type === 'production' || m.movement_type === 'purchase' ? 'text-green-600' : 'text-destructive'}`}>
+                {m.movement_type === 'production' || m.movement_type === 'purchase' ? '+' : '-'}{m.quantity} T
+              </p>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMovement(m)}>
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </Button>
+            </div>
           </CardContent></Card>
         ))}
       </div>
