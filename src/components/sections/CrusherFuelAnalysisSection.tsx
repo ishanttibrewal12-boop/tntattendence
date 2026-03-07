@@ -48,6 +48,8 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<FuelEntry | null>(null);
 
   // Form state
   const [formDate, setFormDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -56,6 +58,14 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   const [formHours, setFormHours] = useState('');
   const [formRate, setFormRate] = useState('');
   const [formNotes, setFormNotes] = useState('');
+
+  // Edit form state
+  const [editDate, setEditDate] = useState('');
+  const [editSection, setEditSection] = useState('');
+  const [editLitres, setEditLitres] = useState('');
+  const [editHours, setEditHours] = useState('');
+  const [editRate, setEditRate] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   useEffect(() => { fetchSections(); }, []);
   useEffect(() => { fetchEntries(); }, [selectedMonth, selectedYear]);
