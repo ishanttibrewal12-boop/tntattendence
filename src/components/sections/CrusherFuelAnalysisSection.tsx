@@ -111,6 +111,34 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
     fetchEntries();
   };
 
+  const openEdit = (entry: FuelEntry) => {
+    setEditingEntry(entry);
+    setEditDate(entry.date);
+    setEditSection(entry.section);
+    setEditLitres(String(entry.litres));
+    setEditHours(String(entry.running_hours));
+    setEditRate(String(entry.rate_per_litre));
+    setEditNotes(entry.notes || '');
+    setIsEditOpen(true);
+  };
+
+  const handleEditEntry = async () => {
+    if (!editingEntry || !editSection || !editLitres || !editRate) {
+      toast.error('Section, Litres, and Rate are required');
+      return;
+    }
+    const { error } = await supabase.from('crusher_fuel_entries').update({
+      date: editDate, section: editSection,
+      litres: parseFloat(editLitres), running_hours: parseFloat(editHours) || 0,
+      rate_per_litre: parseFloat(editRate), notes: editNotes || null,
+    }).eq('id', editingEntry.id);
+    if (error) { toast.error('Failed to update'); return; }
+    toast.success('Entry updated');
+    setIsEditOpen(false);
+    setEditingEntry(null);
+    fetchEntries();
+  };
+
   const handleAddSection = async () => {
     if (!newSectionName.trim()) return;
     const { error } = await supabase.from('crusher_fuel_sections').insert({ name: newSectionName.trim(), is_preset: false });
