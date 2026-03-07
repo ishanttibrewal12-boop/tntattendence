@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Lock, Database, Download, Upload, RefreshCw } from 'lucide-react';
 import AutoBackupSection from './AutoBackupSection';
+import WhatsAppSettingsSection from './WhatsAppSettingsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
