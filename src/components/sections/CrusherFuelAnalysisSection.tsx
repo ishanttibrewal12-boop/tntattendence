@@ -336,7 +336,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                     <TableHead className="text-xs text-right">Litres</TableHead>
                     <TableHead className="text-xs text-right">Hrs</TableHead>
                     <TableHead className="text-xs text-right">Cost</TableHead>
-                    <TableHead className="text-xs w-8"></TableHead>
+                    <TableHead className="text-xs w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -348,9 +348,14 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                       <TableCell className="text-xs py-2 text-right">{Number(entry.running_hours)}</TableCell>
                       <TableCell className="text-xs py-2 text-right font-medium">₹{Number(entry.total_cost).toLocaleString()}</TableCell>
                       <TableCell className="py-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(entry.id)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEdit(entry)}>
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(entry.id)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -358,6 +363,32 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
               </Table>
             </div>
           )}
+
+          {/* Edit Entry Dialog */}
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle>Edit Fuel Entry</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                <Select value={editSection} onValueChange={setEditSection}>
+                  <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
+                  <SelectContent>
+                    {sections.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input type="number" placeholder="Litres" value={editLitres} onChange={e => setEditLitres(e.target.value)} />
+                  <Input type="number" placeholder="Hours" value={editHours} onChange={e => setEditHours(e.target.value)} />
+                </div>
+                <Input type="number" placeholder="Rate ₹/litre" value={editRate} onChange={e => setEditRate(e.target.value)} />
+                {editLitres && editRate && (
+                  <p className="text-sm text-muted-foreground">Total: ₹{(parseFloat(editLitres) * parseFloat(editRate)).toLocaleString()}</p>
+                )}
+                <Input placeholder="Notes (optional)" value={editNotes} onChange={e => setEditNotes(e.target.value)} />
+                <Button className="w-full" onClick={handleEditEntry}>Update Entry</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* CHARTS TAB */}
