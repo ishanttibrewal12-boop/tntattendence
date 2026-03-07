@@ -381,6 +381,66 @@ export type Database = {
           },
         ]
       }
+      crusher_fuel_entries: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          litres: number
+          notes: string | null
+          rate_per_litre: number
+          running_hours: number
+          section: string
+          total_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          litres?: number
+          notes?: string | null
+          rate_per_litre?: number
+          running_hours?: number
+          section: string
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          litres?: number
+          notes?: string | null
+          rate_per_litre?: number
+          running_hours?: number
+          section?: string
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crusher_fuel_sections: {
+        Row: {
+          created_at: string
+          id: string
+          is_preset: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       daily_photos: {
         Row: {
           created_at: string
