@@ -40,6 +40,7 @@ const ProductionEntrySection = lazy(() => import('@/components/sections/Producti
 const ActivityLogSection = lazy(() => import('@/components/sections/ActivityLogSection'));
 const ProfitTrackerSection = lazy(() => import('@/components/sections/ProfitTrackerSection'));
 const InvoiceGeneratorSection = lazy(() => import('@/components/sections/InvoiceGeneratorSection'));
+const CrusherFuelAnalysisSection = lazy(() => import('@/components/sections/CrusherFuelAnalysisSection'));
 
 type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | 'user-management' | 'payment-tracking' | 'stock-dashboard' | 'analytics-dashboard' | 'vehicle-management' | 'production-entry' | 'activity-log' | 'profit-tracker' | 'invoice-generator' | null;
 
