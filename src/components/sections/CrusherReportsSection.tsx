@@ -100,6 +100,21 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   useEffect(() => {
     fetchDispatches();
     fetchBolders();
+    // Fetch WhatsApp numbers from settings
+    const fetchWANumbers = async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'whatsapp_numbers')
+          .single();
+        if (data?.setting_value) {
+          const parsed = JSON.parse(data.setting_value);
+          if (Array.isArray(parsed) && parsed.length > 0) setWhatsappNumbers(parsed);
+        }
+      } catch {}
+    };
+    fetchWANumbers();
     const ch1 = supabase.channel('dispatch_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_reports' }, () => fetchDispatches()).subscribe();
     const ch2 = supabase.channel('bolder_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'bolder_reports' }, () => fetchBolders()).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
