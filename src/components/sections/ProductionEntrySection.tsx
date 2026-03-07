@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Factory, Clock, AlertTriangle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Factory, Clock, AlertTriangle, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,8 +22,13 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any>(null);
   const [newEntry, setNewEntry] = useState({
     date: format(new Date(), 'yyyy-MM-dd'), crusher_hours: '', product_name: '20MM', quantity_produced: '', downtime_hours: '', downtime_reason: '', notes: ''
+  });
+  const [editForm, setEditForm] = useState({
+    date: '', crusher_hours: '', product_name: '', quantity_produced: '', downtime_hours: '', downtime_reason: '', notes: ''
   });
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -40,13 +45,10 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
   const handleAdd = async () => {
     if (!newEntry.quantity_produced || !newEntry.crusher_hours) { toast.error('Fill required fields'); return; }
     const { error } = await supabase.from('production_entries').insert({
-      date: newEntry.date,
-      crusher_hours: parseFloat(newEntry.crusher_hours),
-      product_name: newEntry.product_name,
-      quantity_produced: parseFloat(newEntry.quantity_produced),
+      date: newEntry.date, crusher_hours: parseFloat(newEntry.crusher_hours),
+      product_name: newEntry.product_name, quantity_produced: parseFloat(newEntry.quantity_produced),
       downtime_hours: parseFloat(newEntry.downtime_hours) || 0,
-      downtime_reason: newEntry.downtime_reason || null,
-      notes: newEntry.notes || null,
+      downtime_reason: newEntry.downtime_reason || null, notes: newEntry.notes || null,
     });
     if (error) { toast.error('Failed'); return; }
 
@@ -67,16 +69,51 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
 
   const handleDelete = async (entry: any) => {
     if (!confirm(`Delete ${entry.product_name} entry for ${format(new Date(entry.date), 'dd MMM')}?`)) return;
-    // Reverse stock update
     const stockRes = await supabase.from('stock_inventory').select('id, current_stock').eq('product_name', entry.product_name).single();
     if (stockRes.data) {
       await supabase.from('stock_inventory').update({ current_stock: Math.max(0, Number(stockRes.data.current_stock) - Number(entry.quantity_produced)) }).eq('id', stockRes.data.id);
     }
-    // Delete related stock movement
     await supabase.from('stock_movements').delete().eq('product_name', entry.product_name).eq('date', entry.date).eq('movement_type', 'production').eq('quantity', entry.quantity_produced);
-    // Delete entry
     await supabase.from('production_entries').delete().eq('id', entry.id);
     toast.success('Entry deleted & stock reversed');
+    fetchData();
+  };
+
+  const openEdit = (entry: any) => {
+    setEditingEntry(entry);
+    setEditForm({
+      date: entry.date, crusher_hours: String(entry.crusher_hours), product_name: entry.product_name,
+      quantity_produced: String(entry.quantity_produced), downtime_hours: String(entry.downtime_hours || ''),
+      downtime_reason: entry.downtime_reason || '', notes: entry.notes || '',
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingEntry) return;
+    const oldQty = Number(editingEntry.quantity_produced);
+    const newQty = parseFloat(editForm.quantity_produced);
+    const qtyDiff = newQty - oldQty;
+
+    const { error } = await supabase.from('production_entries').update({
+      date: editForm.date, crusher_hours: parseFloat(editForm.crusher_hours),
+      product_name: editForm.product_name, quantity_produced: newQty,
+      downtime_hours: parseFloat(editForm.downtime_hours) || 0,
+      downtime_reason: editForm.downtime_reason || null, notes: editForm.notes || null,
+    }).eq('id', editingEntry.id);
+    if (error) { toast.error('Failed to update'); return; }
+
+    // Adjust stock if quantity changed
+    if (qtyDiff !== 0) {
+      const stockRes = await supabase.from('stock_inventory').select('id, current_stock').eq('product_name', editForm.product_name).single();
+      if (stockRes.data) {
+        await supabase.from('stock_inventory').update({ current_stock: Math.max(0, Number(stockRes.data.current_stock) + qtyDiff) }).eq('id', stockRes.data.id);
+      }
+    }
+
+    toast.success('Entry updated');
+    setIsEditOpen(false);
+    setEditingEntry(null);
     fetchData();
   };
 
@@ -85,7 +122,6 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
   const totalDowntime = entries.reduce((s, e) => s + Number(e.downtime_hours || 0), 0);
   const efficiency = totalHours > 0 ? (((totalHours - totalDowntime) / totalHours) * 100).toFixed(1) : '—';
 
-  // Product-wise
   const productWise: Record<string, number> = {};
   entries.forEach(e => { productWise[e.product_name] = (productWise[e.product_name] || 0) + Number(e.quantity_produced); });
 
@@ -130,7 +166,6 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
         </CardContent></Card>
       </div>
 
-      {/* Product-wise breakdown */}
       {Object.keys(productWise).length > 0 && (
         <Card className="mb-4"><CardContent className="p-3">
           <p className="text-xs font-bold text-foreground mb-2">Product Breakdown</p>
@@ -165,6 +200,28 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Production Entry</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Date</Label><Input type="date" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} /></div>
+            <div><Label>Product</Label>
+              <Select value={editForm.product_name} onValueChange={v => setEditForm({...editForm, product_name: v})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PRODUCTS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Quantity (tonnes)</Label><Input type="number" value={editForm.quantity_produced} onChange={e => setEditForm({...editForm, quantity_produced: e.target.value})} /></div>
+            <div><Label>Crusher Hours</Label><Input type="number" value={editForm.crusher_hours} onChange={e => setEditForm({...editForm, crusher_hours: e.target.value})} /></div>
+            <div><Label>Downtime Hours</Label><Input type="number" value={editForm.downtime_hours} onChange={e => setEditForm({...editForm, downtime_hours: e.target.value})} /></div>
+            <div><Label>Downtime Reason</Label><Input value={editForm.downtime_reason} onChange={e => setEditForm({...editForm, downtime_reason: e.target.value})} /></div>
+            <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} /></div>
+            <Button className="w-full" onClick={handleEdit}>Update Entry</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Entries list */}
       <div className="space-y-2">
         {entries.map(e => (
@@ -177,6 +234,9 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-bold text-foreground">{Number(e.quantity_produced).toLocaleString()} T</p>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEdit(e)}>
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(e)}>
                   <Trash2 className="h-3 w-3 text-destructive" />
                 </Button>

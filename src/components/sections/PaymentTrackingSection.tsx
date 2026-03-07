@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, IndianRupee, AlertTriangle, Clock, CheckCircle, CreditCard, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Plus, IndianRupee, AlertTriangle, Clock, CheckCircle, CreditCard, TrendingUp, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -49,7 +49,10 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
   const [selectedParty, setSelectedParty] = useState<string>('all');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isLimitOpen, setIsLimitOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [newPayment, setNewPayment] = useState({ party_id: '', amount: '', payment_mode: 'cash', notes: '', date: format(new Date(), 'yyyy-MM-dd') });
+  const [editForm, setEditForm] = useState({ amount: '', payment_mode: 'cash', notes: '', date: '' });
   const [limitParty, setLimitParty] = useState({ id: '', limit: '' });
 
   useEffect(() => { fetchData(); }, []);
@@ -68,34 +71,54 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
   const getPartyStats = (partyId: string) => {
     const partyTxns = transactions.filter(t => t.party_id === partyId);
     const partyPayments = payments.filter(p => p.party_id === partyId);
-    
     const totalDebit = partyTxns.filter(t => t.transaction_type !== 'credit_payment').reduce((s, t) => s + Number(t.amount), 0);
     const totalCredit = partyTxns.filter(t => t.transaction_type === 'credit_payment').reduce((s, t) => s + Number(t.amount), 0);
     const totalReceived = partyPayments.filter(p => p.payment_type === 'received').reduce((s, p) => s + Number(p.amount), 0);
     const dueAmount = totalDebit - totalCredit - totalReceived;
-    
     const lastPayment = partyPayments.length > 0 ? partyPayments[0] : null;
     const oldestUnpaid = partyTxns.filter(t => t.transaction_type !== 'credit_payment').sort((a, b) => a.date.localeCompare(b.date))[0];
     const overdueDays = oldestUnpaid && dueAmount > 0 ? differenceInDays(new Date(), new Date(oldestUnpaid.date)) : 0;
-    
     return { totalDebit, totalCredit: totalCredit + totalReceived, dueAmount, overdueDays, lastPayment };
   };
 
   const handleAddPayment = async () => {
     if (!newPayment.party_id || !newPayment.amount) { toast.error('Select party and enter amount'); return; }
     const { error } = await supabase.from('party_payments').insert({
-      party_id: newPayment.party_id,
-      amount: parseFloat(newPayment.amount),
-      payment_type: 'received',
-      payment_mode: newPayment.payment_mode,
-      date: newPayment.date,
-      notes: newPayment.notes || null,
+      party_id: newPayment.party_id, amount: parseFloat(newPayment.amount),
+      payment_type: 'received', payment_mode: newPayment.payment_mode,
+      date: newPayment.date, notes: newPayment.notes || null,
     });
     if (error) { toast.error('Failed to add payment'); return; }
     toast.success('Payment recorded!');
     setIsAddOpen(false);
     setNewPayment({ party_id: '', amount: '', payment_mode: 'cash', notes: '', date: format(new Date(), 'yyyy-MM-dd') });
     fetchData();
+  };
+
+  const handleDeletePayment = async (id: string) => {
+    if (!confirm('Delete this payment?')) return;
+    await supabase.from('party_payments').delete().eq('id', id);
+    toast.success('Payment deleted');
+    fetchData();
+  };
+
+  const handleEditPayment = async () => {
+    if (!editingPayment) return;
+    const { error } = await supabase.from('party_payments').update({
+      amount: parseFloat(editForm.amount), payment_mode: editForm.payment_mode,
+      date: editForm.date, notes: editForm.notes || null,
+    }).eq('id', editingPayment.id);
+    if (error) { toast.error('Failed to update'); return; }
+    toast.success('Payment updated');
+    setIsEditOpen(false);
+    setEditingPayment(null);
+    fetchData();
+  };
+
+  const openEditPayment = (p: Payment) => {
+    setEditingPayment(p);
+    setEditForm({ amount: String(p.amount), payment_mode: p.payment_mode || 'cash', notes: p.notes || '', date: p.date });
+    setIsEditOpen(true);
   };
 
   const handleSetLimit = async () => {
@@ -108,7 +131,6 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
   };
 
   const filteredParties = selectedParty === 'all' ? parties : parties.filter(p => p.id === selectedParty);
-
   const totalDue = parties.reduce((s, p) => s + Math.max(0, getPartyStats(p.id).dueAmount), 0);
   const totalReceived = payments.filter(p => p.payment_type === 'received').reduce((s, p) => s + Number(p.amount), 0);
   const overdueParties = parties.filter(p => getPartyStats(p.id).overdueDays > 30 && getPartyStats(p.id).dueAmount > 0);
@@ -213,6 +235,30 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
         </Dialog>
       </div>
 
+      {/* Edit Payment Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Payment</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Amount (₹)</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm({...editForm, amount: e.target.value})} /></div>
+            <div><Label>Date</Label><Input type="date" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} /></div>
+            <div><Label>Mode</Label>
+              <Select value={editForm.payment_mode} onValueChange={(v) => setEditForm({...editForm, payment_mode: v})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="bank">Bank Transfer</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} /></div>
+            <Button className="w-full" onClick={handleEditPayment}>Update Payment</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Filter */}
       <Select value={selectedParty} onValueChange={setSelectedParty}>
         <SelectTrigger className="mb-4"><SelectValue placeholder="Filter by party" /></SelectTrigger>
@@ -229,7 +275,6 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
           const limit = Number(party.credit_limit);
           const isOverLimit = limit > 0 && stats.dueAmount > limit;
           const isOverdue = stats.overdueDays > 30 && stats.dueAmount > 0;
-          
           return (
             <Card key={party.id} className={isOverLimit ? 'border-destructive/50' : isOverdue ? 'border-orange-500/50' : ''}>
               <CardContent className="p-4">
@@ -270,11 +315,19 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
               return (
                 <Card key={p.id}>
                   <CardContent className="p-3 flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">{party?.name || 'Unknown'}</p>
                       <p className="text-xs text-muted-foreground">{format(new Date(p.date), 'dd MMM yyyy')} • {p.payment_mode}</p>
                     </div>
-                    <p className="text-sm font-bold text-green-600">₹{Number(p.amount).toLocaleString()}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-green-600">₹{Number(p.amount).toLocaleString()}</p>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditPayment(p)}>
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeletePayment(p.id)}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
