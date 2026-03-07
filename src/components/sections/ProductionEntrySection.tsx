@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Factory, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Factory, Clock, AlertTriangle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -62,6 +62,21 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
     toast.success('Production entry added & stock updated!');
     setIsAddOpen(false);
     setNewEntry({ date: format(new Date(), 'yyyy-MM-dd'), crusher_hours: '', product_name: '20MM', quantity_produced: '', downtime_hours: '', downtime_reason: '', notes: '' });
+    fetchData();
+  };
+
+  const handleDelete = async (entry: any) => {
+    if (!confirm(`Delete ${entry.product_name} entry for ${format(new Date(entry.date), 'dd MMM')}?`)) return;
+    // Reverse stock update
+    const stockRes = await supabase.from('stock_inventory').select('id, current_stock').eq('product_name', entry.product_name).single();
+    if (stockRes.data) {
+      await supabase.from('stock_inventory').update({ current_stock: Math.max(0, Number(stockRes.data.current_stock) - Number(entry.quantity_produced)) }).eq('id', stockRes.data.id);
+    }
+    // Delete related stock movement
+    await supabase.from('stock_movements').delete().eq('product_name', entry.product_name).eq('date', entry.date).eq('movement_type', 'production').eq('quantity', entry.quantity_produced);
+    // Delete entry
+    await supabase.from('production_entries').delete().eq('id', entry.id);
+    toast.success('Entry deleted & stock reversed');
     fetchData();
   };
 
@@ -155,12 +170,17 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
         {entries.map(e => (
           <Card key={e.id}><CardContent className="p-3">
             <div className="flex justify-between items-start">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">{e.product_name} - {format(new Date(e.date), 'dd MMM')}</p>
                 <p className="text-xs text-muted-foreground">{e.crusher_hours}h running {e.downtime_hours > 0 ? `• ${e.downtime_hours}h down` : ''}</p>
                 {e.downtime_reason && <p className="text-xs text-orange-600">{e.downtime_reason}</p>}
               </div>
-              <p className="text-sm font-bold text-foreground">{Number(e.quantity_produced).toLocaleString()} T</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-foreground">{Number(e.quantity_produced).toLocaleString()} T</p>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(e)}>
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
+              </div>
             </div>
           </CardContent></Card>
         ))}

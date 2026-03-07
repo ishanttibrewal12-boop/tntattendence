@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Package, TrendingDown, TrendingUp, AlertTriangle, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Plus, Package, TrendingDown, TrendingUp, AlertTriangle, BarChart3, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -86,6 +86,20 @@ const StockDashboardSection = ({ onBack }: StockDashboardProps) => {
     toast.success('Stock updated!');
     setIsAddOpen(false);
     setNewMovement({ product_name: '', movement_type: 'production', quantity: '', notes: '', date: format(new Date(), 'yyyy-MM-dd') });
+    fetchData();
+  };
+
+  const handleDeleteMovement = async (m: StockMovement) => {
+    if (!confirm(`Delete ${m.product_name} ${m.movement_type} (${m.quantity}T)?`)) return;
+    // Reverse stock
+    const stock = stocks.find(s => s.product_name === m.product_name);
+    if (stock) {
+      const isAdd = m.movement_type === 'production' || m.movement_type === 'purchase';
+      const newStock = isAdd ? stock.current_stock - m.quantity : stock.current_stock + m.quantity;
+      await supabase.from('stock_inventory').update({ current_stock: Math.max(0, newStock) }).eq('id', stock.id);
+    }
+    await supabase.from('stock_movements').delete().eq('id', m.id);
+    toast.success('Movement deleted & stock reversed');
     fetchData();
   };
 
@@ -193,13 +207,18 @@ const StockDashboardSection = ({ onBack }: StockDashboardProps) => {
       <div className="space-y-2">
         {movements.slice(0, 15).map(m => (
           <Card key={m.id}><CardContent className="p-3 flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-foreground">{m.product_name}</p>
               <p className="text-xs text-muted-foreground">{format(new Date(m.date), 'dd MMM yyyy')} • {m.movement_type}</p>
             </div>
-            <p className={`text-sm font-bold ${m.movement_type === 'production' || m.movement_type === 'purchase' ? 'text-green-600' : 'text-destructive'}`}>
-              {m.movement_type === 'production' || m.movement_type === 'purchase' ? '+' : '-'}{m.quantity} T
-            </p>
+            <div className="flex items-center gap-2">
+              <p className={`text-sm font-bold ${m.movement_type === 'production' || m.movement_type === 'purchase' ? 'text-green-600' : 'text-destructive'}`}>
+                {m.movement_type === 'production' || m.movement_type === 'purchase' ? '+' : '-'}{m.quantity} T
+              </p>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMovement(m)}>
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </Button>
+            </div>
           </CardContent></Card>
         ))}
       </div>
