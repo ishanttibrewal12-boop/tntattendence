@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Truck, AlertTriangle, Wrench, Calendar, Fuel } from 'lucide-react';
+import { ArrowLeft, Plus, Truck, AlertTriangle, Wrench, Calendar, Fuel, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,10 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
   const [dispatches, setDispatches] = useState<any[]>([]);
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isAddMaintenanceOpen, setIsAddMaintenanceOpen] = useState(false);
+  const [isEditVehicleOpen, setIsEditVehicleOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [newVehicle, setNewVehicle] = useState({ truck_number: '', driver_name: '', insurance_expiry: '', fitness_expiry: '', notes: '' });
+  const [editVehicleForm, setEditVehicleForm] = useState({ truck_number: '', driver_name: '', insurance_expiry: '', fitness_expiry: '', notes: '' });
   const [newMaintenance, setNewMaintenance] = useState({ vehicle_id: '', maintenance_type: '', description: '', cost: '', date: format(new Date(), 'yyyy-MM-dd'), next_due_date: '' });
 
   useEffect(() => { fetchData(); }, []);
@@ -60,12 +63,9 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
   const handleAddMaintenance = async () => {
     if (!newMaintenance.vehicle_id || !newMaintenance.maintenance_type) { toast.error('Fill required fields'); return; }
     const { error } = await supabase.from('vehicle_maintenance').insert({
-      vehicle_id: newMaintenance.vehicle_id,
-      maintenance_type: newMaintenance.maintenance_type,
-      description: newMaintenance.description || null,
-      cost: parseFloat(newMaintenance.cost) || 0,
-      date: newMaintenance.date,
-      next_due_date: newMaintenance.next_due_date || null,
+      vehicle_id: newMaintenance.vehicle_id, maintenance_type: newMaintenance.maintenance_type,
+      description: newMaintenance.description || null, cost: parseFloat(newMaintenance.cost) || 0,
+      date: newMaintenance.date, next_due_date: newMaintenance.next_due_date || null,
     });
     if (error) { toast.error('Failed'); return; }
     toast.success('Maintenance recorded!');
@@ -74,7 +74,46 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
     fetchData();
   };
 
-  // Expiry alerts
+  const handleDeleteVehicle = async (id: string) => {
+    if (!confirm('Delete this vehicle? Maintenance records will also be removed.')) return;
+    await supabase.from('vehicle_maintenance').delete().eq('vehicle_id', id);
+    await supabase.from('vehicles').delete().eq('id', id);
+    toast.success('Vehicle deleted');
+    fetchData();
+  };
+
+  const handleDeleteMaintenance = async (id: string) => {
+    if (!confirm('Delete this maintenance record?')) return;
+    await supabase.from('vehicle_maintenance').delete().eq('id', id);
+    toast.success('Record deleted');
+    fetchData();
+  };
+
+  const openEditVehicle = (v: any) => {
+    setEditingVehicle(v);
+    setEditVehicleForm({
+      truck_number: v.truck_number, driver_name: v.driver_name || '',
+      insurance_expiry: v.insurance_expiry || '', fitness_expiry: v.fitness_expiry || '', notes: v.notes || '',
+    });
+    setIsEditVehicleOpen(true);
+  };
+
+  const handleEditVehicle = async () => {
+    if (!editingVehicle) return;
+    const { error } = await supabase.from('vehicles').update({
+      truck_number: editVehicleForm.truck_number.toUpperCase(),
+      driver_name: editVehicleForm.driver_name || null,
+      insurance_expiry: editVehicleForm.insurance_expiry || null,
+      fitness_expiry: editVehicleForm.fitness_expiry || null,
+      notes: editVehicleForm.notes || null,
+    }).eq('id', editingVehicle.id);
+    if (error) { toast.error('Failed to update'); return; }
+    toast.success('Vehicle updated');
+    setIsEditVehicleOpen(false);
+    setEditingVehicle(null);
+    fetchData();
+  };
+
   const expiryAlerts = vehicles.filter(v => {
     const insExpiry = v.insurance_expiry ? differenceInDays(new Date(v.insurance_expiry), new Date()) : 999;
     const fitExpiry = v.fitness_expiry ? differenceInDays(new Date(v.fitness_expiry), new Date()) : 999;
@@ -88,7 +127,6 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
         <h1 className="text-xl font-bold text-foreground">🚛 Vehicle Management</h1>
       </div>
 
-      {/* Expiry Alerts */}
       {expiryAlerts.length > 0 && (
         <Card className="mb-4 border-orange-500/50"><CardContent className="p-3">
           <div className="flex items-center gap-2 text-orange-600 mb-1">
@@ -107,7 +145,6 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
         </CardContent></Card>
       )}
 
-      {/* Actions */}
       <div className="flex gap-2 mb-4">
         <Dialog open={isAddVehicleOpen} onOpenChange={setIsAddVehicleOpen}>
           <DialogTrigger asChild><Button size="sm" className="flex-1"><Plus className="h-4 w-4 mr-1" /> Add Vehicle</Button></DialogTrigger>
@@ -145,6 +182,21 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
         </Dialog>
       </div>
 
+      {/* Edit Vehicle Dialog */}
+      <Dialog open={isEditVehicleOpen} onOpenChange={setIsEditVehicleOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Vehicle</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Truck Number</Label><Input value={editVehicleForm.truck_number} onChange={e => setEditVehicleForm({...editVehicleForm, truck_number: e.target.value})} /></div>
+            <div><Label>Driver Name</Label><Input value={editVehicleForm.driver_name} onChange={e => setEditVehicleForm({...editVehicleForm, driver_name: e.target.value})} /></div>
+            <div><Label>Insurance Expiry</Label><Input type="date" value={editVehicleForm.insurance_expiry} onChange={e => setEditVehicleForm({...editVehicleForm, insurance_expiry: e.target.value})} /></div>
+            <div><Label>Fitness Expiry</Label><Input type="date" value={editVehicleForm.fitness_expiry} onChange={e => setEditVehicleForm({...editVehicleForm, fitness_expiry: e.target.value})} /></div>
+            <div><Label>Notes</Label><Textarea value={editVehicleForm.notes} onChange={e => setEditVehicleForm({...editVehicleForm, notes: e.target.value})} /></div>
+            <Button className="w-full" onClick={handleEditVehicle}>Update Vehicle</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Tabs defaultValue="vehicles">
         <TabsList className="w-full"><TabsTrigger value="vehicles" className="flex-1">Vehicles</TabsTrigger><TabsTrigger value="history" className="flex-1">History</TabsTrigger><TabsTrigger value="fuel" className="flex-1">Fuel</TabsTrigger></TabsList>
         
@@ -165,6 +217,12 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
                       <div className="flex gap-1">
                         {v.insurance_expiry && differenceInDays(new Date(v.insurance_expiry), new Date()) < 0 && <Badge variant="destructive" className="text-xs">Ins Expired</Badge>}
                         {v.fitness_expiry && differenceInDays(new Date(v.fitness_expiry), new Date()) < 0 && <Badge variant="destructive" className="text-xs">Fit Expired</Badge>}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditVehicle(v)}>
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteVehicle(v.id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
                       </div>
                     </div>
                     {v.driver_name && <p className="text-xs text-muted-foreground mb-1">Driver: {v.driver_name}</p>}
@@ -188,12 +246,17 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
               return (
                 <Card key={m.id}><CardContent className="p-3">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">{v?.truck_number || 'Unknown'} - {m.maintenance_type}</p>
                       <p className="text-xs text-muted-foreground">{format(new Date(m.date), 'dd MMM yyyy')}</p>
                       {m.description && <p className="text-xs text-muted-foreground mt-1">{m.description}</p>}
                     </div>
-                    <p className="text-sm font-bold text-foreground">₹{Number(m.cost).toLocaleString()}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-foreground">₹{Number(m.cost).toLocaleString()}</p>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMaintenance(m.id)}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent></Card>
               );
