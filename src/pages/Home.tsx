@@ -222,6 +222,7 @@ const Home = () => {
           {activeSection === 'activity-log' && <ActivityLogSection onBack={onBack} />}
           {activeSection === 'profit-tracker' && <ProfitTrackerSection onBack={onBack} />}
           {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
+          {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
         </div>
       </Suspense>
     );
