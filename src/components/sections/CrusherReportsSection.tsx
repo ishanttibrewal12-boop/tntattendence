@@ -129,8 +129,9 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       msg = `🪨 *New Bolder Entry*\n\n📅 Date: ${entry.date}\n🏢 Company: ${entry.company}\n⭐ Quality: ${entry.quality}\n🚚 Truck: ${entry.truck}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
     }
     const encoded = encodeURIComponent(msg);
-    // Open WhatsApp with pre-filled message
-    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    // Open WhatsApp with pre-filled message to first configured number
+    const primaryNumber = whatsappNumbers[0]?.replace(/[^0-9]/g, '') || '916203229118';
+    window.open(`https://wa.me/${primaryNumber}?text=${encoded}`, '_blank');
     // Also try Twilio auto-send via edge function
     sendTwilioWhatsApp(msg);
   };
