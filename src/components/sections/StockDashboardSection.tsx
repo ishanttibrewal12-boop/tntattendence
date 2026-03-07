@@ -89,6 +89,20 @@ const StockDashboardSection = ({ onBack }: StockDashboardProps) => {
     fetchData();
   };
 
+  const handleDeleteMovement = async (m: StockMovement) => {
+    if (!confirm(`Delete ${m.product_name} ${m.movement_type} (${m.quantity}T)?`)) return;
+    // Reverse stock
+    const stock = stocks.find(s => s.product_name === m.product_name);
+    if (stock) {
+      const isAdd = m.movement_type === 'production' || m.movement_type === 'purchase';
+      const newStock = isAdd ? stock.current_stock - m.quantity : stock.current_stock + m.quantity;
+      await supabase.from('stock_inventory').update({ current_stock: Math.max(0, newStock) }).eq('id', stock.id);
+    }
+    await supabase.from('stock_movements').delete().eq('id', m.id);
+    toast.success('Movement deleted & stock reversed');
+    fetchData();
+  };
+
   const lowStockItems = stocks.filter(s => s.current_stock < s.low_stock_threshold);
   const totalStock = stocks.reduce((s, st) => s + Number(st.current_stock), 0);
 

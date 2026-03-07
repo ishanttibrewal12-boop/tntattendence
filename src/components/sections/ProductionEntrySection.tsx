@@ -170,12 +170,17 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
         {entries.map(e => (
           <Card key={e.id}><CardContent className="p-3">
             <div className="flex justify-between items-start">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">{e.product_name} - {format(new Date(e.date), 'dd MMM')}</p>
                 <p className="text-xs text-muted-foreground">{e.crusher_hours}h running {e.downtime_hours > 0 ? `• ${e.downtime_hours}h down` : ''}</p>
                 {e.downtime_reason && <p className="text-xs text-orange-600">{e.downtime_reason}</p>}
               </div>
-              <p className="text-sm font-bold text-foreground">{Number(e.quantity_produced).toLocaleString()} T</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-foreground">{Number(e.quantity_produced).toLocaleString()} T</p>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(e)}>
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
+              </div>
             </div>
           </CardContent></Card>
         ))}
