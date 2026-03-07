@@ -390,6 +390,7 @@ const Home = () => {
                 { id: 'production-entry' as SectionType, title: '🏭 Production Entry', icon: Factory, desc: 'Crusher hours & output' },
                 { id: 'activity-log' as SectionType, title: '🛡️ Activity Log', icon: Shield, desc: 'Audit trail' },
                 { id: 'invoice-generator' as SectionType, title: '🧾 Invoice Generator', icon: FileText, desc: 'GST invoices & PDF' },
+                { id: 'crusher-fuel-analysis' as SectionType, title: '⛽ Fuel Analysis', icon: Fuel, desc: 'Crusher fuel tracking' },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
