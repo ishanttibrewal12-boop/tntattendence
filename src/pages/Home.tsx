@@ -355,6 +355,32 @@ const Home = () => {
           })}
         </div>
 
+        {/* 🚀 Crusher ERP - Manager & Crusher Admin (Fuel Analysis) */}
+        {(isManager || isCrusherAdmin) && (
+          <>
+            {isCrusherAdmin && !isManager && (
+              <>
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">⛽ Crusher Tools</p>
+                <div className="space-y-2 mb-6">
+                  <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('crusher-fuel-analysis')}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg" style={{ background: '#1e3a5f' }}>
+                          <Fuel className="h-5 w-5" style={{ color: 'white' }} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">⛽ Fuel Analysis</p>
+                          <p className="text-xs text-muted-foreground">Crusher fuel tracking</p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
+          </>
+        )}
         {/* 🚀 Crusher ERP - Manager Only */}
         {isManager && (
           <>
