@@ -50,6 +50,7 @@ type SubView = 'add' | 'daily' | 'monthly';
 
 const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   const { toast } = useToast();
+  const [whatsappNumbers, setWhatsappNumbers] = useState<string[]>(['+916203229118']);
   const [activePage, setActivePage] = useState<ActivePage>('landing');
   const [subView, setSubView] = useState<SubView>('add');
 
@@ -99,6 +100,21 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   useEffect(() => {
     fetchDispatches();
     fetchBolders();
+    // Fetch WhatsApp numbers from settings
+    const fetchWANumbers = async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'whatsapp_numbers')
+          .single();
+        if (data?.setting_value) {
+          const parsed = JSON.parse(data.setting_value);
+          if (Array.isArray(parsed) && parsed.length > 0) setWhatsappNumbers(parsed);
+        }
+      } catch {}
+    };
+    fetchWANumbers();
     const ch1 = supabase.channel('dispatch_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'dispatch_reports' }, () => fetchDispatches()).subscribe();
     const ch2 = supabase.channel('bolder_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'bolder_reports' }, () => fetchBolders()).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
@@ -113,8 +129,9 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       msg = `🪨 *New Bolder Entry*\n\n📅 Date: ${entry.date}\n🏢 Company: ${entry.company}\n⭐ Quality: ${entry.quality}\n🚚 Truck: ${entry.truck}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
     }
     const encoded = encodeURIComponent(msg);
-    // Open WhatsApp with pre-filled message
-    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    // Open WhatsApp with pre-filled message to first configured number
+    const primaryNumber = whatsappNumbers[0]?.replace(/[^0-9]/g, '') || '916203229118';
+    window.open(`https://wa.me/${primaryNumber}?text=${encoded}`, '_blank');
     // Also try Twilio auto-send via edge function
     sendTwilioWhatsApp(msg);
   };
