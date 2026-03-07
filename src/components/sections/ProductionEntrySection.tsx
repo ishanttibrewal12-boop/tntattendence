@@ -65,6 +65,21 @@ const ProductionEntrySection = ({ onBack }: ProductionEntryProps) => {
     fetchData();
   };
 
+  const handleDelete = async (entry: any) => {
+    if (!confirm(`Delete ${entry.product_name} entry for ${format(new Date(entry.date), 'dd MMM')}?`)) return;
+    // Reverse stock update
+    const stockRes = await supabase.from('stock_inventory').select('id, current_stock').eq('product_name', entry.product_name).single();
+    if (stockRes.data) {
+      await supabase.from('stock_inventory').update({ current_stock: Math.max(0, Number(stockRes.data.current_stock) - Number(entry.quantity_produced)) }).eq('id', stockRes.data.id);
+    }
+    // Delete related stock movement
+    await supabase.from('stock_movements').delete().eq('product_name', entry.product_name).eq('date', entry.date).eq('movement_type', 'production').eq('quantity', entry.quantity_produced);
+    // Delete entry
+    await supabase.from('production_entries').delete().eq('id', entry.id);
+    toast.success('Entry deleted & stock reversed');
+    fetchData();
+  };
+
   const totalProduction = entries.reduce((s, e) => s + Number(e.quantity_produced), 0);
   const totalHours = entries.reduce((s, e) => s + Number(e.crusher_hours), 0);
   const totalDowntime = entries.reduce((s, e) => s + Number(e.downtime_hours || 0), 0);
