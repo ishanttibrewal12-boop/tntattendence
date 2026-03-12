@@ -208,13 +208,7 @@ const Home = () => {
           {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
           {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
           {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
-          {activeSection === 'payment-tracking' && <PaymentTrackingSection onBack={onBack} />}
-          {activeSection === 'stock-dashboard' && <StockDashboardSection onBack={onBack} />}
-          {activeSection === 'analytics-dashboard' && <AnalyticsDashboardSection onBack={onBack} />}
           {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
-          {activeSection === 'production-entry' && <ProductionEntrySection onBack={onBack} />}
-          {activeSection === 'activity-log' && <ActivityLogSection onBack={onBack} />}
-          {activeSection === 'profit-tracker' && <ProfitTrackerSection onBack={onBack} />}
           {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
           {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
         </div>
