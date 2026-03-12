@@ -32,13 +32,7 @@ const CrusherReportsSection = lazy(() => import('@/components/sections/CrusherRe
 const MLTServicesSection = lazy(() => import('@/components/sections/MLTServicesSection'));
 const MLTFuelReportSection = lazy(() => import('@/components/sections/MLTFuelReportSection'));
 const UserManagementSection = lazy(() => import('@/components/sections/UserManagementSection'));
-const PaymentTrackingSection = lazy(() => import('@/components/sections/PaymentTrackingSection'));
-const StockDashboardSection = lazy(() => import('@/components/sections/StockDashboardSection'));
-const AnalyticsDashboardSection = lazy(() => import('@/components/sections/AnalyticsDashboardSection'));
 const VehicleManagementSection = lazy(() => import('@/components/sections/VehicleManagementSection'));
-const ProductionEntrySection = lazy(() => import('@/components/sections/ProductionEntrySection'));
-const ActivityLogSection = lazy(() => import('@/components/sections/ActivityLogSection'));
-const ProfitTrackerSection = lazy(() => import('@/components/sections/ProfitTrackerSection'));
 const InvoiceGeneratorSection = lazy(() => import('@/components/sections/InvoiceGeneratorSection'));
 const CrusherFuelAnalysisSection = lazy(() => import('@/components/sections/CrusherFuelAnalysisSection'));
 
