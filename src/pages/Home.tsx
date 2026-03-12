@@ -373,36 +373,9 @@ const Home = () => {
         {isManager && (
           <>
             <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">🚀 Crusher ERP</p>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {[
-                { id: 'payment-tracking' as SectionType, title: '💰 Payment Tracking', icon: IndianRupee, desc: 'Credit limits & dues' },
-                { id: 'stock-dashboard' as SectionType, title: '🏗 Live Stock', icon: Package, desc: 'Inventory levels' },
-                { id: 'analytics-dashboard' as SectionType, title: '📈 Analytics', icon: BarChart3, desc: 'Revenue & charts' },
-                { id: 'profit-tracker' as SectionType, title: '📊 Profit Tracker', icon: TrendingUp, desc: 'Margins & costs' },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(item.id)}>
-                    <CardContent className="p-3">
-                      <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-2 rounded-lg" style={{ background: '#1e3a5f' }}>
-                          <Icon className="h-5 w-5" style={{ color: 'white' }} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.desc}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
             <div className="space-y-2 mb-6">
               {[
                 { id: 'vehicle-management' as SectionType, title: '🚛 Vehicle Management', icon: Truck, desc: 'Trucks, maintenance & fuel' },
-                { id: 'production-entry' as SectionType, title: '🏭 Production Entry', icon: Factory, desc: 'Crusher hours & output' },
-                { id: 'activity-log' as SectionType, title: '🛡️ Activity Log', icon: Shield, desc: 'Audit trail' },
                 { id: 'invoice-generator' as SectionType, title: '🧾 Invoice Generator', icon: FileText, desc: 'GST invoices & PDF' },
                 { id: 'crusher-fuel-analysis' as SectionType, title: '⛽ Fuel Analysis', icon: Fuel, desc: 'Crusher fuel tracking' },
               ].map((item) => {
