@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench, Package, TrendingUp, Factory, Shield, IndianRupee } from 'lucide-react';
+import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
@@ -32,17 +32,11 @@ const CrusherReportsSection = lazy(() => import('@/components/sections/CrusherRe
 const MLTServicesSection = lazy(() => import('@/components/sections/MLTServicesSection'));
 const MLTFuelReportSection = lazy(() => import('@/components/sections/MLTFuelReportSection'));
 const UserManagementSection = lazy(() => import('@/components/sections/UserManagementSection'));
-const PaymentTrackingSection = lazy(() => import('@/components/sections/PaymentTrackingSection'));
-const StockDashboardSection = lazy(() => import('@/components/sections/StockDashboardSection'));
-const AnalyticsDashboardSection = lazy(() => import('@/components/sections/AnalyticsDashboardSection'));
 const VehicleManagementSection = lazy(() => import('@/components/sections/VehicleManagementSection'));
-const ProductionEntrySection = lazy(() => import('@/components/sections/ProductionEntrySection'));
-const ActivityLogSection = lazy(() => import('@/components/sections/ActivityLogSection'));
-const ProfitTrackerSection = lazy(() => import('@/components/sections/ProfitTrackerSection'));
 const InvoiceGeneratorSection = lazy(() => import('@/components/sections/InvoiceGeneratorSection'));
 const CrusherFuelAnalysisSection = lazy(() => import('@/components/sections/CrusherFuelAnalysisSection'));
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | 'user-management' | 'payment-tracking' | 'stock-dashboard' | 'analytics-dashboard' | 'vehicle-management' | 'production-entry' | 'activity-log' | 'profit-tracker' | 'invoice-generator' | 'crusher-fuel-analysis' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | 'user-management' | 'vehicle-management' | 'invoice-generator' | 'crusher-fuel-analysis' | null;
 
 type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | 'crusher-reports' | null;
 
@@ -214,13 +208,7 @@ const Home = () => {
           {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
           {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
           {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
-          {activeSection === 'payment-tracking' && <PaymentTrackingSection onBack={onBack} />}
-          {activeSection === 'stock-dashboard' && <StockDashboardSection onBack={onBack} />}
-          {activeSection === 'analytics-dashboard' && <AnalyticsDashboardSection onBack={onBack} />}
           {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
-          {activeSection === 'production-entry' && <ProductionEntrySection onBack={onBack} />}
-          {activeSection === 'activity-log' && <ActivityLogSection onBack={onBack} />}
-          {activeSection === 'profit-tracker' && <ProfitTrackerSection onBack={onBack} />}
           {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
           {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
         </div>
@@ -385,36 +373,9 @@ const Home = () => {
         {isManager && (
           <>
             <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">🚀 Crusher ERP</p>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {[
-                { id: 'payment-tracking' as SectionType, title: '💰 Payment Tracking', icon: IndianRupee, desc: 'Credit limits & dues' },
-                { id: 'stock-dashboard' as SectionType, title: '🏗 Live Stock', icon: Package, desc: 'Inventory levels' },
-                { id: 'analytics-dashboard' as SectionType, title: '📈 Analytics', icon: BarChart3, desc: 'Revenue & charts' },
-                { id: 'profit-tracker' as SectionType, title: '📊 Profit Tracker', icon: TrendingUp, desc: 'Margins & costs' },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(item.id)}>
-                    <CardContent className="p-3">
-                      <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-2 rounded-lg" style={{ background: '#1e3a5f' }}>
-                          <Icon className="h-5 w-5" style={{ color: 'white' }} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.desc}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
             <div className="space-y-2 mb-6">
               {[
                 { id: 'vehicle-management' as SectionType, title: '🚛 Vehicle Management', icon: Truck, desc: 'Trucks, maintenance & fuel' },
-                { id: 'production-entry' as SectionType, title: '🏭 Production Entry', icon: Factory, desc: 'Crusher hours & output' },
-                { id: 'activity-log' as SectionType, title: '🛡️ Activity Log', icon: Shield, desc: 'Audit trail' },
                 { id: 'invoice-generator' as SectionType, title: '🧾 Invoice Generator', icon: FileText, desc: 'GST invoices & PDF' },
                 { id: 'crusher-fuel-analysis' as SectionType, title: '⛽ Fuel Analysis', icon: Fuel, desc: 'Crusher fuel tracking' },
               ].map((item) => {
