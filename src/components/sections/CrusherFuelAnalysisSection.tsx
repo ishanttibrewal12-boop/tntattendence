@@ -85,8 +85,8 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   };
 
   const handleAddEntry = async () => {
-    if (!formSection || !formLitres || !formRate) {
-      toast.error('Section, Litres, and Rate are required');
+    if (!formSection || !formLitres) {
+      toast.error('Section and Litres are required');
       return;
     }
     const { error } = await supabase.from('crusher_fuel_entries').insert({
@@ -94,7 +94,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
       section: formSection,
       litres: parseFloat(formLitres),
       running_hours: parseFloat(formHours) || 0,
-      rate_per_litre: parseFloat(formRate),
+      rate_per_litre: parseFloat(formRate) || 0,
       notes: formNotes || null,
     });
     if (error) { toast.error('Failed to add entry'); return; }
@@ -123,14 +123,14 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   };
 
   const handleEditEntry = async () => {
-    if (!editingEntry || !editSection || !editLitres || !editRate) {
-      toast.error('Section, Litres, and Rate are required');
+    if (!editingEntry || !editSection || !editLitres) {
+      toast.error('Section and Litres are required');
       return;
     }
     const { error } = await supabase.from('crusher_fuel_entries').update({
       date: editDate, section: editSection,
       litres: parseFloat(editLitres), running_hours: parseFloat(editHours) || 0,
-      rate_per_litre: parseFloat(editRate), notes: editNotes || null,
+      rate_per_litre: parseFloat(editRate) || 0, notes: editNotes || null,
     }).eq('id', editingEntry.id);
     if (error) { toast.error('Failed to update'); return; }
     toast.success('Entry updated');
@@ -282,7 +282,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                 <Input type="number" placeholder="Litres" value={formLitres} onChange={e => setFormLitres(e.target.value)} />
                 <Input type="number" placeholder="Hours" value={formHours} onChange={e => setFormHours(e.target.value)} />
               </div>
-              <Input type="number" placeholder="Rate ₹/litre" value={formRate} onChange={e => setFormRate(e.target.value)} />
+              <Input type="number" placeholder="Rate ₹/litre (optional)" value={formRate} onChange={e => setFormRate(e.target.value)} />
               {formLitres && formRate && (
                 <p className="text-sm text-muted-foreground">Total: ₹{(parseFloat(formLitres) * parseFloat(formRate)).toLocaleString()}</p>
               )}
@@ -380,7 +380,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                   <Input type="number" placeholder="Litres" value={editLitres} onChange={e => setEditLitres(e.target.value)} />
                   <Input type="number" placeholder="Hours" value={editHours} onChange={e => setEditHours(e.target.value)} />
                 </div>
-                <Input type="number" placeholder="Rate ₹/litre" value={editRate} onChange={e => setEditRate(e.target.value)} />
+                <Input type="number" placeholder="Rate ₹/litre (optional)" value={editRate} onChange={e => setEditRate(e.target.value)} />
                 {editLitres && editRate && (
                   <p className="text-sm text-muted-foreground">Total: ₹{(parseFloat(editLitres) * parseFloat(editRate)).toLocaleString()}</p>
                 )}
