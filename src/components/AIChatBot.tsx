@@ -12,7 +12,7 @@ interface AIChatBotProps {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
-export default function AIChatBot() {
+export default function AIChatBot({ includeData = true }: AIChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
