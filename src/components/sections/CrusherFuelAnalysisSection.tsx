@@ -282,7 +282,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                 <Input type="number" placeholder="Litres" value={formLitres} onChange={e => setFormLitres(e.target.value)} />
                 <Input type="number" placeholder="Hours" value={formHours} onChange={e => setFormHours(e.target.value)} />
               </div>
-              <Input type="number" placeholder="Rate ₹/litre" value={formRate} onChange={e => setFormRate(e.target.value)} />
+              <Input type="number" placeholder="Rate ₹/litre (optional)" value={formRate} onChange={e => setFormRate(e.target.value)} />
               {formLitres && formRate && (
                 <p className="text-sm text-muted-foreground">Total: ₹{(parseFloat(formLitres) * parseFloat(formRate)).toLocaleString()}</p>
               )}
