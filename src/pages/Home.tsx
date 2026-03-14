@@ -465,6 +465,7 @@ const Home = () => {
           <p>Mining & Construction • Jharkhand</p>
         </div>
       </div>
+      <AIChatBot includeData={true} />
     </div>
   );
 };
