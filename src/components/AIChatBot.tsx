@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -12,13 +13,43 @@ interface AIChatBotProps {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
+function getSessionId(prefix: string): string {
+  const key = `ai-chat-session-${prefix}`;
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = `${prefix}-${crypto.randomUUID()}`;
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export default function AIChatBot({ includeData = true }: AIChatBotProps) {
+  const sessionId = useMemo(() => getSessionId(includeData ? 'dash' : 'pub'), [includeData]);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load chat history when opened
+  useEffect(() => {
+    if (isOpen && !historyLoaded) {
+      (async () => {
+        const { data } = await supabase
+          .from('chat_messages')
+          .select('role, content')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true })
+          .limit(100);
+        if (data && data.length > 0) {
+          setMessages(data.map((m: any) => ({ role: m.role, content: m.content })));
+        }
+        setHistoryLoaded(true);
+      })();
+    }
+  }, [isOpen, historyLoaded, sessionId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -29,6 +60,17 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
   useEffect(() => {
     if (isOpen && inputRef.current) inputRef.current.focus();
   }, [isOpen]);
+
+  const clearChat = useCallback(async () => {
+    setMessages([]);
+    // Delete from DB
+    await supabase.from('chat_messages').delete().eq('session_id', sessionId);
+    // Reset session
+    const key = `ai-chat-session-${includeData ? 'dash' : 'pub'}`;
+    const newId = `${includeData ? 'dash' : 'pub'}-${crypto.randomUUID()}`;
+    sessionStorage.setItem(key, newId);
+    setHistoryLoaded(false);
+  }, [sessionId, includeData]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -49,7 +91,7 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages, includeData }),
+        body: JSON.stringify({ messages: allMessages, includeData, sessionId }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -122,11 +164,14 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [input, messages, isLoading]);
+  }, [input, messages, isLoading, includeData, sessionId]);
+
+  const welcomeText = includeData
+    ? 'Ask me anything about your business — staff, attendance, salary, dispatch, vehicles & more.'
+    : 'Ask me anything about Tibrewal & Tibrewal — our operations, services, and more.';
 
   return (
     <>
-      {/* Floating Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -136,43 +181,29 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
         </button>
       )}
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary text-primary-foreground rounded-t-2xl">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
               <span className="font-semibold text-sm">AI Assistant</span>
             </div>
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
-                onClick={() => setMessages([])}
-                title="Clear chat"
-              >
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20" onClick={clearChat} title="Clear chat">
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
-                onClick={() => setIsOpen(false)}
-              >
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setIsOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground text-sm mt-8">
                 <Bot className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="font-medium">Hi! I'm your AI Assistant 👋</p>
-                <p className="text-xs mt-1">Ask me anything about your business — staff, attendance, vehicles, reports & more.</p>
+                <p className="text-xs mt-1">{welcomeText}</p>
               </div>
             )}
             {messages.map((msg, i) => (
@@ -182,21 +213,12 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
                     <Bot className="h-4 w-4 text-primary" />
                   </div>
                 )}
-                <div
-                  className={cn(
-                    'max-w-[80%] rounded-xl px-3 py-2 text-sm',
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-sm'
-                      : 'bg-muted text-foreground rounded-bl-sm'
-                  )}
-                >
+                <div className={cn('max-w-[80%] rounded-xl px-3 py-2 text-sm', msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm')}>
                   {msg.role === 'assistant' ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
-                  ) : (
-                    msg.content
-                  )}
+                  ) : msg.content}
                 </div>
                 {msg.role === 'user' && (
                   <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
@@ -217,7 +239,6 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
             )}
           </div>
 
-          {/* Input */}
           <div className="border-t border-border p-3">
             <div className="flex items-end gap-2">
               <textarea
@@ -225,21 +246,13 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
                 }}
                 placeholder="Type a message..."
                 rows={1}
                 className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary max-h-24"
               />
-              <Button
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
-              >
+              <Button size="icon" className="h-9 w-9 shrink-0" onClick={sendMessage} disabled={!input.trim() || isLoading}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
