@@ -317,7 +317,14 @@ const MLTFuelReportSection = ({ onBack }: Props) => {
           <DialogHeader><DialogTitle>Add Fuel Record</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Truck Number *</Label><Input placeholder="e.g. JH 10 AB 1234" value={form.truck_number} onChange={e => setForm(f => ({ ...f, truck_number: e.target.value }))} /></div>
-            <div><Label>Fuel (Litres) *</Label><Input type="number" placeholder="0" value={form.fuel_litres} onChange={e => setForm(f => ({ ...f, fuel_litres: e.target.value }))} /></div>
+            <div><Label>Fuel (Litres) *</Label><Input type="number" placeholder="0" value={form.fuel_litres} onChange={e => {
+              const litres = e.target.value;
+              setForm(f => ({ ...f, fuel_litres: litres, amount: f.rate && litres ? (parseFloat(litres) * parseFloat(f.rate)).toFixed(2) : f.amount }));
+            }} /></div>
+            <div><Label>Rate per Litre (₹) (optional)</Label><Input type="number" placeholder="e.g. 89.50" value={form.rate} onChange={e => {
+              const rate = e.target.value;
+              setForm(f => ({ ...f, rate, amount: rate && f.fuel_litres ? (parseFloat(f.fuel_litres) * parseFloat(rate)).toFixed(2) : f.amount }));
+            }} /></div>
             <div><Label>Amount (₹) (optional)</Label><Input type="number" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
             <div>
               <Label>Date *</Label>
