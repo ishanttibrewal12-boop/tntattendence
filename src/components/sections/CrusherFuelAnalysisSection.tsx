@@ -380,7 +380,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
                   <Input type="number" placeholder="Litres" value={editLitres} onChange={e => setEditLitres(e.target.value)} />
                   <Input type="number" placeholder="Hours" value={editHours} onChange={e => setEditHours(e.target.value)} />
                 </div>
-                <Input type="number" placeholder="Rate ₹/litre" value={editRate} onChange={e => setEditRate(e.target.value)} />
+                <Input type="number" placeholder="Rate ₹/litre (optional)" value={editRate} onChange={e => setEditRate(e.target.value)} />
                 {editLitres && editRate && (
                   <p className="text-sm text-muted-foreground">Total: ₹{(parseFloat(editLitres) * parseFloat(editRate)).toLocaleString()}</p>
                 )}
