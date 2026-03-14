@@ -6,6 +6,7 @@ import { useAppAuth } from '@/contexts/AppAuthContext';
 import companyLogo from '@/assets/company-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import AIChatBot from '@/components/AIChatBot';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
