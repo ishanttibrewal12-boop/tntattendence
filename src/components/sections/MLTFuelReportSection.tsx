@@ -96,7 +96,7 @@ const MLTFuelReportSection = ({ onBack }: Props) => {
     if (error) { toast.error('Failed to add record'); return; }
     toast.success('Fuel record added');
     setShowAdd(false);
-    setForm({ truck_number: '', fuel_litres: '', amount: '', date: new Date(), driver_name: '', notes: '' });
+    setForm({ truck_number: '', fuel_litres: '', amount: '', rate: '', date: new Date(), driver_name: '', notes: '' });
     fetchRecords();
   };
 
