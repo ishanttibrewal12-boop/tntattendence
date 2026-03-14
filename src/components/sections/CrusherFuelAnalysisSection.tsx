@@ -123,14 +123,14 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   };
 
   const handleEditEntry = async () => {
-    if (!editingEntry || !editSection || !editLitres || !editRate) {
-      toast.error('Section, Litres, and Rate are required');
+    if (!editingEntry || !editSection || !editLitres) {
+      toast.error('Section and Litres are required');
       return;
     }
     const { error } = await supabase.from('crusher_fuel_entries').update({
       date: editDate, section: editSection,
       litres: parseFloat(editLitres), running_hours: parseFloat(editHours) || 0,
-      rate_per_litre: parseFloat(editRate), notes: editNotes || null,
+      rate_per_litre: parseFloat(editRate) || 0, notes: editNotes || null,
     }).eq('id', editingEntry.id);
     if (error) { toast.error('Failed to update'); return; }
     toast.success('Entry updated');
