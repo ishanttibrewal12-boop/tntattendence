@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
+import AIChatBot from '@/components/AIChatBot';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -28,6 +29,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <main className="flex-1 lg:ml-0 mt-14 lg:mt-0 overflow-auto">
         <div className="p-6 lg:p-8">{children}</div>
       </main>
+      <AIChatBot />
     </div>
   );
 };
