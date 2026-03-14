@@ -85,8 +85,8 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   };
 
   const handleAddEntry = async () => {
-    if (!formSection || !formLitres || !formRate) {
-      toast.error('Section, Litres, and Rate are required');
+    if (!formSection || !formLitres) {
+      toast.error('Section and Litres are required');
       return;
     }
     const { error } = await supabase.from('crusher_fuel_entries').insert({
@@ -94,7 +94,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
       section: formSection,
       litres: parseFloat(formLitres),
       running_hours: parseFloat(formHours) || 0,
-      rate_per_litre: parseFloat(formRate),
+      rate_per_litre: parseFloat(formRate) || 0,
       notes: formNotes || null,
     });
     if (error) { toast.error('Failed to add entry'); return; }
