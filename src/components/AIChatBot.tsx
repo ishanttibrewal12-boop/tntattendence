@@ -6,6 +6,10 @@ import ReactMarkdown from 'react-markdown';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
+interface AIChatBotProps {
+  includeData?: boolean;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 export default function AIChatBot() {
