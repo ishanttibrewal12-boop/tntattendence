@@ -121,6 +121,7 @@ const LandingContent = () => {
           </form>
         </DialogContent>
       </Dialog>
+      <AIChatBot includeData={false} />
     </div>
   );
 };
