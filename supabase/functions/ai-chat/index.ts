@@ -13,21 +13,38 @@ async function fetchBusinessContext(supabase: any): Promise<string> {
   const [
     staffRes, mltStaffRes, todayAttRes, todayMltAttRes, vehiclesRes,
     petroleumRes, tyreRes, fuelRes, advancesRes, mltAdvancesRes,
-    creditPartiesRes, dispatchRes, salaryRes,
+    creditPartiesRes, dispatchRes, salaryRes, payrollRes,
+    productionRes, bolderRes, petPayRes, mltFuelRes, mltServicesRes,
+    stockRes, stockMovRes, creditTxRes, partyPayRes, remindersRes,
+    crusherSectionsRes, maintenanceRes, activityRes,
   ] = await Promise.all([
-    supabase.from('staff').select('id, name, category, is_active, shift_rate, base_salary').eq('is_active', true),
-    supabase.from('mlt_staff').select('id, name, category, is_active, shift_rate').eq('is_active', true),
-    supabase.from('attendance').select('id, staff_id, status, shift_count, date').eq('date', today),
-    supabase.from('mlt_attendance').select('id, staff_id, status, shift_count, date').eq('date', today),
-    supabase.from('vehicles').select('id, truck_number, driver_name, is_active, insurance_expiry, fitness_expiry').eq('is_active', true),
-    supabase.from('petroleum_sales').select('amount, sale_type, date').gte('date', monthStart),
-    supabase.from('tyre_sales').select('amount, date').gte('date', monthStart),
-    supabase.from('crusher_fuel_entries').select('litres, total_cost, section, date').gte('date', monthStart),
-    supabase.from('advances').select('amount, staff_id, date, is_deducted').gte('date', monthStart),
-    supabase.from('mlt_advances').select('amount, staff_id, date, is_deducted').gte('date', monthStart),
-    supabase.from('credit_parties').select('id, name, is_active').eq('is_active', true),
-    supabase.from('dispatch_reports').select('date, party_name, product_name, truck_number, quantity, amount, challan_number').gte('date', monthStart).order('date', { ascending: false }).limit(50),
-    supabase.from('salary_records').select('staff_id, staff_type, month, year, total_shifts, shift_rate, gross_salary, total_advances, total_paid, pending_amount, is_paid').order('year', { ascending: false }).order('month', { ascending: false }).limit(100),
+    supabase.from('staff').select('id, name, category, is_active, shift_rate, base_salary, phone, designation, joining_date').eq('is_active', true),
+    supabase.from('mlt_staff').select('id, name, category, is_active, shift_rate, base_salary, phone, designation').eq('is_active', true),
+    supabase.from('attendance').select('id, staff_id, status, shift_count, date, notes').eq('date', today),
+    supabase.from('mlt_attendance').select('id, staff_id, status, shift_count, date, notes').eq('date', today),
+    supabase.from('vehicles').select('id, truck_number, driver_name, is_active, insurance_expiry, fitness_expiry, notes').eq('is_active', true),
+    supabase.from('petroleum_sales').select('amount, sale_type, date, notes').gte('date', monthStart),
+    supabase.from('tyre_sales').select('amount, date, notes').gte('date', monthStart),
+    supabase.from('crusher_fuel_entries').select('litres, total_cost, section, date, running_hours, rate_per_litre, notes').gte('date', monthStart),
+    supabase.from('advances').select('amount, staff_id, date, is_deducted, notes').gte('date', monthStart),
+    supabase.from('mlt_advances').select('amount, staff_id, date, is_deducted, notes').gte('date', monthStart),
+    supabase.from('credit_parties').select('id, name, is_active, phone, credit_limit').eq('is_active', true),
+    supabase.from('dispatch_reports').select('*').gte('date', monthStart).order('date', { ascending: false }).limit(100),
+    supabase.from('salary_records').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
+    supabase.from('payroll').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
+    supabase.from('production_entries').select('*').gte('date', monthStart).order('date', { ascending: false }),
+    supabase.from('bolder_reports').select('*').gte('date', monthStart).order('date', { ascending: false }).limit(50),
+    supabase.from('petroleum_payments').select('*').gte('date', monthStart),
+    supabase.from('mlt_fuel_reports').select('*').gte('date', monthStart).order('date', { ascending: false }),
+    supabase.from('mlt_services').select('*').gte('date', monthStart).order('date', { ascending: false }),
+    supabase.from('stock_inventory').select('*'),
+    supabase.from('stock_movements').select('*').gte('date', monthStart).order('date', { ascending: false }).limit(50),
+    supabase.from('credit_party_transactions').select('*').gte('date', monthStart).order('date', { ascending: false }).limit(100),
+    supabase.from('party_payments').select('*').gte('date', monthStart).order('date', { ascending: false }).limit(100),
+    supabase.from('reminders').select('*').order('reminder_date', { ascending: true }).limit(20),
+    supabase.from('crusher_fuel_sections').select('*'),
+    supabase.from('vehicle_maintenance').select('*').gte('date', monthStart).order('date', { ascending: false }).limit(50),
+    supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20),
   ]);
 
   const staff = staffRes.data || [];
@@ -43,13 +60,39 @@ async function fetchBusinessContext(supabase: any): Promise<string> {
   const creditParties = creditPartiesRes.data || [];
   const dispatches = dispatchRes.data || [];
   const salaryRecords = salaryRes.data || [];
+  const payrollRecords = payrollRes.data || [];
+  const productions = productionRes.data || [];
+  const bolders = bolderRes.data || [];
+  const petPayments = petPayRes.data || [];
+  const mltFuel = mltFuelRes.data || [];
+  const mltServices = mltServicesRes.data || [];
+  const stockItems = stockRes.data || [];
+  const stockMoves = stockMovRes.data || [];
+  const creditTxs = creditTxRes.data || [];
+  const partyPays = partyPayRes.data || [];
+  const reminders = remindersRes.data || [];
+  const crusherSections = crusherSectionsRes.data || [];
+  const maintenance = maintenanceRes.data || [];
+  const activityLogs = activityRes.data || [];
 
+  // Summaries
   const petroleumTotal = petroleumSales.reduce((s: number, r: any) => s + Number(r.amount), 0);
   const tyreTotal = tyreSales.reduce((s: number, r: any) => s + Number(r.amount), 0);
   const fuelTotal = fuelEntries.reduce((s: number, r: any) => s + Number(r.total_cost || 0), 0);
   const fuelLitres = fuelEntries.reduce((s: number, r: any) => s + Number(r.litres), 0);
   const advancesTotal = advances.reduce((s: number, r: any) => s + Number(r.amount), 0);
   const mltAdvancesTotal = mltAdvances.reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const petPayTotal = petPayments.reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const dispatchTotal = dispatches.reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const dispatchQty = dispatches.reduce((s: number, r: any) => s + Number(r.quantity), 0);
+  const productionQty = productions.reduce((s: number, r: any) => s + Number(r.quantity_produced), 0);
+  const productionHours = productions.reduce((s: number, r: any) => s + Number(r.crusher_hours), 0);
+  const mltFuelLitres = mltFuel.reduce((s: number, r: any) => s + Number(r.fuel_litres), 0);
+  const mltFuelAmount = mltFuel.reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+  const mltServiceTotal = mltServices.reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const maintenanceCost = maintenance.reduce((s: number, r: any) => s + Number(r.cost), 0);
+  const creditTxTotal = creditTxs.reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const partyPayTotal = partyPays.reduce((s: number, r: any) => s + Number(r.amount), 0);
 
   const presentToday = todayAtt.filter((a: any) => a.status === 'present').length;
   const absentToday = todayAtt.filter((a: any) => a.status === 'absent').length;
@@ -72,17 +115,22 @@ async function fetchBusinessContext(supabase: any): Promise<string> {
     (v.fitness_expiry && v.fitness_expiry <= thirtyDaysLater)
   );
 
-  // Dispatch summary
-  const dispatchTotal = dispatches.reduce((s: number, r: any) => s + Number(r.amount), 0);
-  const dispatchQty = dispatches.reduce((s: number, r: any) => s + Number(r.quantity), 0);
-
-  // Salary summary
-  const totalPaid = salaryRecords.filter((s: any) => s.is_paid).reduce((sum: number, s: any) => sum + Number(s.total_paid || 0), 0);
-  const totalPending = salaryRecords.filter((s: any) => !s.is_paid).reduce((sum: number, s: any) => sum + Number(s.pending_amount || 0), 0);
-
-  // Build staff name->salary map for recent records
   const staffMap = new Map(staff.map((s: any) => [s.id, s.name]));
   const mltMap = new Map(mltStaff.map((s: any) => [s.id, s.name]));
+  const vehicleMap = new Map(vehicles.map((v: any) => [v.id, v.truck_number]));
+  const partyMap = new Map(creditParties.map((p: any) => [p.id, p.name]));
+
+  // Salary summaries
+  const totalPaid = salaryRecords.filter((s: any) => s.is_paid).reduce((sum: number, s: any) => sum + Number(s.total_paid || 0), 0);
+  const totalPending = salaryRecords.filter((s: any) => !s.is_paid).reduce((sum: number, s: any) => sum + Number(s.pending_amount || 0), 0);
+  const payrollPaid = payrollRecords.filter((p: any) => p.is_paid).reduce((sum: number, p: any) => sum + Number(p.net_salary || 0), 0);
+  const payrollPending = payrollRecords.filter((p: any) => !p.is_paid).reduce((sum: number, p: any) => sum + Number(p.net_salary || 0), 0);
+
+  // Low stock alerts
+  const lowStock = stockItems.filter((s: any) => s.current_stock <= (s.low_stock_threshold || 50));
+
+  // Upcoming reminders
+  const upcomingReminders = reminders.filter((r: any) => !r.is_sent && r.reminder_date >= today);
 
   return `
 === LIVE BUSINESS DATA (${today}) ===
@@ -90,37 +138,77 @@ async function fetchBusinessContext(supabase: any): Promise<string> {
 STAFF SUMMARY:
 - Total Active Staff: ${staff.length} (Petroleum: ${staffByCategory.petroleum}, Crusher: ${staffByCategory.crusher}, Office: ${staffByCategory.office})
 - MLT Staff: ${mltStaff.length} (Drivers: ${mltByCategory.driver}, Khalasi: ${mltByCategory.khalasi})
-- Staff list: ${staff.map((s: any) => `${s.name} (${s.category}, ₹${s.shift_rate}/shift)`).join(', ')}
-- MLT list: ${mltStaff.map((s: any) => `${s.name} (${s.category}, ₹${s.shift_rate}/shift)`).join(', ')}
+- Staff details: ${staff.map((s: any) => `${s.name} (${s.category}, ₹${s.shift_rate}/shift, ₹${s.base_salary} base, ${s.designation || 'N/A'}, Ph: ${s.phone || 'N/A'})`).join('; ')}
+- MLT details: ${mltStaff.map((s: any) => `${s.name} (${s.category}, ₹${s.shift_rate}/shift, ₹${s.base_salary} base, Ph: ${s.phone || 'N/A'})`).join('; ')}
 
-TODAY'S ATTENDANCE:
+TODAY'S ATTENDANCE (${today}):
 - Crusher/Petroleum/Office: ${todayAtt.length} marked — ${presentToday} present, ${absentToday} absent, ${halfDayToday} half-day (of ${staff.length} total)
 - MLT: ${todayMltAtt.length} marked — ${mltPresentToday} present (of ${mltStaff.length} total)
+- Today's attendance details: ${todayAtt.map((a: any) => `${staffMap.get(a.staff_id) || 'Unknown'}: ${a.status}${a.shift_count ? ' (' + a.shift_count + ' shifts)' : ''}${a.notes ? ' - ' + a.notes : ''}`).join('; ')}
+- Today's MLT attendance: ${todayMltAtt.map((a: any) => `${mltMap.get(a.staff_id) || 'Unknown'}: ${a.status}${a.shift_count ? ' (' + a.shift_count + ' shifts)' : ''}`).join('; ')}
 
-THIS MONTH (${monthStart} to ${today}):
-- Petroleum Sales: ₹${petroleumTotal.toLocaleString('en-IN')} (${petroleumSales.length} entries)
+THIS MONTH FINANCIALS (${monthStart} to ${today}):
+- Petroleum Sales: ₹${petroleumTotal.toLocaleString('en-IN')} (${petroleumSales.length} entries) — by type: ${Object.entries(petroleumSales.reduce((acc: any, s: any) => { acc[s.sale_type] = (acc[s.sale_type] || 0) + Number(s.amount); return acc; }, {})).map(([k, v]) => `${k}: ₹${Number(v).toLocaleString('en-IN')}`).join(', ')}
+- Petroleum Payments: ₹${petPayTotal.toLocaleString('en-IN')} (${petPayments.length} entries)
 - Tyre Sales: ₹${tyreTotal.toLocaleString('en-IN')} (${tyreSales.length} entries)
-- Crusher Fuel: ${fuelLitres} litres, ₹${fuelTotal.toLocaleString('en-IN')} total cost
+- Crusher Fuel: ${fuelLitres} litres, ₹${fuelTotal.toLocaleString('en-IN')} cost (${fuelEntries.length} entries)
 - Advances Given: ₹${advancesTotal.toLocaleString('en-IN')} (Staff), ₹${mltAdvancesTotal.toLocaleString('en-IN')} (MLT)
 
-DISPATCH REPORTS (This Month):
-- Total Dispatches: ${dispatches.length} entries
+DISPATCH REPORTS (This Month — ${dispatches.length} entries):
 - Total Quantity: ${dispatchQty} units, Total Amount: ₹${dispatchTotal.toLocaleString('en-IN')}
-- Recent dispatches: ${dispatches.slice(0, 10).map((d: any) => `${d.date}: ${d.product_name} to ${d.party_name} via ${d.truck_number} (${d.quantity} units, ₹${Number(d.amount).toLocaleString('en-IN')})`).join('; ')}
+- Recent: ${dispatches.slice(0, 15).map((d: any) => `${d.date}: ${d.product_name} to ${d.party_name} via ${d.truck_number} (${d.quantity} units, ₹${Number(d.amount).toLocaleString('en-IN')}, Challan: ${d.challan_number || 'N/A'}${d.diesel_cost ? ', Diesel: ₹' + d.diesel_cost : ''}${d.labour_cost ? ', Labour: ₹' + d.labour_cost : ''})`).join('; ')}
+
+PRODUCTION (This Month — ${productions.length} entries):
+- Total Produced: ${productionQty} units, Crusher Hours: ${productionHours}
+- Details: ${productions.slice(0, 15).map((p: any) => `${p.date}: ${p.product_name} — ${p.quantity_produced} units in ${p.crusher_hours}h${p.downtime_hours ? ' (Downtime: ' + p.downtime_hours + 'h - ' + (p.downtime_reason || '') + ')' : ''}`).join('; ')}
+
+BOLDER REPORTS (This Month — ${bolders.length} entries):
+- Details: ${bolders.slice(0, 10).map((b: any) => `${b.date}: ${b.company_name} — ${b.quality}, Truck: ${b.truck_number}, Challan: ${b.challan_number || 'N/A'}`).join('; ')}
 
 SALARY RECORDS (Recent):
-- Total Paid: ₹${totalPaid.toLocaleString('en-IN')}
-- Total Pending: ₹${totalPending.toLocaleString('en-IN')}
-- Recent records: ${salaryRecords.slice(0, 15).map((s: any) => {
+- Staff Salary — Total Paid: ₹${totalPaid.toLocaleString('en-IN')}, Total Pending: ₹${totalPending.toLocaleString('en-IN')}
+- Payroll — Total Paid: ₹${payrollPaid.toLocaleString('en-IN')}, Total Pending: ₹${payrollPending.toLocaleString('en-IN')}
+- Recent salary records: ${salaryRecords.slice(0, 20).map((s: any) => {
     const name = staffMap.get(s.staff_id) || mltMap.get(s.staff_id) || 'Unknown';
-    return `${name} (${s.month}/${s.year}): Gross ₹${Number(s.gross_salary || 0).toLocaleString('en-IN')}, Paid ₹${Number(s.total_paid || 0).toLocaleString('en-IN')}, Pending ₹${Number(s.pending_amount || 0).toLocaleString('en-IN')} [${s.is_paid ? 'PAID' : 'UNPAID'}]`;
+    return `${name} (${s.staff_type}, ${s.month}/${s.year}): ${s.total_shifts} shifts × ₹${s.shift_rate}/shift = Gross ₹${Number(s.gross_salary || 0).toLocaleString('en-IN')}, Advances ₹${Number(s.total_advances || 0).toLocaleString('en-IN')}, Paid ₹${Number(s.total_paid || 0).toLocaleString('en-IN')}, Pending ₹${Number(s.pending_amount || 0).toLocaleString('en-IN')} [${s.is_paid ? 'PAID' : 'UNPAID'}]`;
   }).join('; ')}
+- Payroll details: ${payrollRecords.slice(0, 20).map((p: any) => {
+    const name = staffMap.get(p.staff_id) || 'Unknown';
+    return `${name} (${p.month}/${p.year}): ${p.present_days}P/${p.absent_days}A/${p.half_days}H days, Base ₹${Number(p.base_salary).toLocaleString('en-IN')}, Deductions ₹${Number(p.deductions).toLocaleString('en-IN')}, Bonus ₹${Number(p.bonus).toLocaleString('en-IN')}, Net ₹${Number(p.net_salary).toLocaleString('en-IN')} [${p.is_paid ? 'PAID' : 'UNPAID'}]`;
+  }).join('; ')}
+
+MLT FUEL REPORTS (This Month — ${mltFuel.length} entries):
+- Total: ${mltFuelLitres} litres, ₹${mltFuelAmount.toLocaleString('en-IN')}
+- Details: ${mltFuel.slice(0, 15).map((f: any) => `${f.date}: ${f.truck_number} — ${f.fuel_litres}L, ₹${Number(f.amount || 0).toLocaleString('en-IN')}, Driver: ${f.driver_name || 'N/A'}`).join('; ')}
+
+MLT SERVICES (This Month — ${mltServices.length} entries):
+- Total Cost: ₹${mltServiceTotal.toLocaleString('en-IN')}
+- Details: ${mltServices.slice(0, 10).map((s: any) => `${s.date}: ${s.truck_number} at ${s.service_place} — ${s.work_description}, ₹${Number(s.amount).toLocaleString('en-IN')}`).join('; ')}
 
 VEHICLES:
 - Active Fleet: ${vehicles.length} vehicles
-- Expiring in 30 days: ${expiringVehicles.length > 0 ? expiringVehicles.map((v: any) => `${v.truck_number} (Ins: ${v.insurance_expiry || 'N/A'}, Fit: ${v.fitness_expiry || 'N/A'})`).join(', ') : 'None'}
+- Details: ${vehicles.map((v: any) => `${v.truck_number} (Driver: ${v.driver_name || 'N/A'}, Ins: ${v.insurance_expiry || 'N/A'}, Fit: ${v.fitness_expiry || 'N/A'})`).join('; ')}
+- Expiring in 30 days: ${expiringVehicles.length > 0 ? expiringVehicles.map((v: any) => `${v.truck_number}`).join(', ') : 'None'}
+- Maintenance this month: ${maintenance.length} records, Total Cost: ₹${maintenanceCost.toLocaleString('en-IN')}
+- Maintenance details: ${maintenance.slice(0, 10).map((m: any) => `${m.date}: ${vehicleMap.get(m.vehicle_id) || 'Unknown'} — ${m.maintenance_type}: ${m.description || ''}, ₹${Number(m.cost).toLocaleString('en-IN')}${m.next_due_date ? ', Next due: ' + m.next_due_date : ''}`).join('; ')}
 
-CREDIT PARTIES: ${creditParties.length} active parties
+CRUSHER FUEL SECTIONS: ${crusherSections.map((s: any) => s.name).join(', ')}
+- Fuel by section: ${Object.entries(fuelEntries.reduce((acc: any, f: any) => { acc[f.section] = (acc[f.section] || 0) + Number(f.litres); return acc; }, {})).map(([k, v]) => `${k}: ${v}L`).join(', ')}
+
+STOCK INVENTORY:
+- Items: ${stockItems.map((s: any) => `${s.product_name}: ${s.current_stock} ${s.unit}${s.current_stock <= (s.low_stock_threshold || 50) ? ' ⚠️LOW' : ''}`).join('; ')}
+- Recent movements: ${stockMoves.slice(0, 10).map((m: any) => `${m.date}: ${m.product_name} ${m.movement_type} ${m.quantity} ${m.notes || ''}`).join('; ')}
+
+CREDIT PARTIES (${creditParties.length} active):
+- Parties: ${creditParties.map((p: any) => `${p.name} (Limit: ₹${Number(p.credit_limit || 0).toLocaleString('en-IN')}, Ph: ${p.phone || 'N/A'})`).join('; ')}
+- Recent transactions: ${creditTxs.slice(0, 15).map((t: any) => `${t.date}: ${partyMap.get(t.party_id) || 'Unknown'} — ${t.transaction_type} ₹${Number(t.amount).toLocaleString('en-IN')}${t.litres ? ' (' + t.litres + 'L)' : ''}${t.tyre_name ? ' Tyre: ' + t.tyre_name : ''}`).join('; ')}
+- Recent payments: ${partyPays.slice(0, 10).map((p: any) => `${p.date}: ${partyMap.get(p.party_id) || 'Unknown'} — ${p.payment_type} ₹${Number(p.amount).toLocaleString('en-IN')} via ${p.payment_mode || 'N/A'}`).join('; ')}
+
+REMINDERS:
+- Upcoming: ${upcomingReminders.length > 0 ? upcomingReminders.map((r: any) => `${r.reminder_date} ${r.reminder_time}: ${r.title}${r.message ? ' - ' + r.message : ''}`).join('; ') : 'None'}
+
+RECENT ACTIVITY (Last 20):
+${activityLogs.slice(0, 10).map((l: any) => `- ${l.user_name} ${l.action} on ${l.table_name} (${new Date(l.created_at).toLocaleString()})`).join('\n')}
 `;
 }
 
@@ -149,7 +237,6 @@ serve(async (req) => {
     let systemPrompt: string;
 
     if (includeData === false) {
-      // Landing page - public info only
       systemPrompt = `You are a helpful AI assistant for the website of Tibrewal & Tibrewal Private Limited — a prominent mining and logistics business group based in Jharkhand, India, established in 2021.
 
 PUBLIC COMPANY INFORMATION (only share this):
@@ -171,7 +258,6 @@ RULES:
 - Use Indian Rupee (₹) for currency references
 - Format responses with markdown`;
     } else {
-      // Dashboard - full data access
       let dataContext = "";
       try {
         dataContext = await fetchBusinessContext(supabase);
@@ -180,28 +266,34 @@ RULES:
         dataContext = "\n[Could not fetch live data]\n";
       }
 
-      systemPrompt = `You are a helpful AI assistant for Tibrewal & Tibrewal Private Limited, a mining and logistics company in Jharkhand, India established in 2021. The company operates stone crushing, a fleet of 50+ trucks, a Bharat Petroleum fuel station, and Tibrewal Tyres. Proprietor: Trishav Tibrewal.
+      systemPrompt = `You are a powerful AI business assistant for Tibrewal & Tibrewal Private Limited, a mining and logistics company in Jharkhand, India established in 2021. Proprietor: Trishav Tibrewal.
 
-You help the management team with:
-- Staff management, attendance tracking, and salary queries
-- Vehicle fleet and logistics operations
-- Crusher operations, fuel analysis, and production
-- Petroleum sales and tyre business
-- Dispatch reports and delivery tracking
-- Salary records, advances, and payment status
-- Financial calculations, reports, and business insights
-- General business advice and problem solving
+You have FULL ACCESS to all business data. You help the management team with ANY query about:
+- Staff management (names, roles, salaries, attendance, advances, contact details)
+- Vehicle fleet (truck numbers, drivers, insurance/fitness expiry, maintenance)
+- Crusher operations (fuel analysis by section, production entries, running hours, downtime)
+- Petroleum sales & payments (daily/monthly totals by payment type)
+- Tyre sales and credit party transactions
+- Dispatch reports (quantities, parties, truck details, challans, costs)
+- Salary & payroll records (shifts, rates, gross/net salary, advances, pending amounts)
+- MLT operations (fuel reports, services, staff, attendance)
+- Stock inventory & movements (current levels, low stock alerts)
+- Credit parties (balances, transactions, payments)
+- Bolder reports (company, quality, challan details)
+- Reminders and activity logs
+- Financial calculations, profit analysis, and business insights
 
 ${dataContext}
 
 IMPORTANT RULES:
 - Use Indian Rupee (₹) for all currency
 - Answer in Hindi or English based on user's language
-- When asked about data, use the LIVE BUSINESS DATA above — do not make up numbers
-- If data is not available for a specific query, say so honestly
-- Format responses with markdown for readability
-- Be concise and professional
-- Salary formula: (Total Shifts × Shift Rate) - Total Advances + Carry Forward = Payable`;
+- Use the LIVE BUSINESS DATA above — never make up numbers
+- If data is not available, say so honestly
+- Format responses with markdown tables when showing tabular data
+- Be concise, accurate, and professional
+- For salary: (Total Shifts × Shift Rate) - Total Advances + Carry Forward = Payable
+- You can cross-reference data across tables (e.g., link staff attendance to salary, dispatch costs to profit)`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -238,11 +330,9 @@ IMPORTANT RULES:
       });
     }
 
-    // We need to tee the stream to save the assistant response
     if (sessionId) {
       const [streamForClient, streamForSave] = response.body!.tee();
 
-      // Save assistant response in background
       const savePromise = (async () => {
         const reader = streamForSave.getReader();
         const decoder = new TextDecoder();
@@ -276,7 +366,6 @@ IMPORTANT RULES:
         }
       })();
 
-      // Don't await the save - let it run in background
       savePromise.catch(e => console.error("Failed to save assistant message:", e));
 
       return new Response(streamForClient, {
