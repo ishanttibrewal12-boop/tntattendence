@@ -41,7 +41,7 @@ const MLTFuelReportSection = ({ onBack }: Props) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const [form, setForm] = useState({ truck_number: '', fuel_litres: '', amount: '', date: new Date(), driver_name: '', notes: '' });
+  const [form, setForm] = useState({ truck_number: '', fuel_litres: '', amount: '', rate: '', date: new Date(), driver_name: '', notes: '' });
   const [formCalendarOpen, setFormCalendarOpen] = useState(false);
 
   const [truckFilter, setTruckFilter] = useState('');
