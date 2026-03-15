@@ -1045,7 +1045,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           const staffAdvancesList = advances.filter(a => a.staff_id === staff.id);
 
           return (
-            <Card key={staff.id} className={calc.isPaid ? 'opacity-60' : ''}>
+            <Card key={staff.id}>
               <CardContent className="p-3">
                 <div className="flex justify-between items-start mb-2">
                   <div>
