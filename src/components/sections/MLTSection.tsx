@@ -554,10 +554,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       });
       message += `Total Advances: -₹${calc.totalAdvance.toLocaleString()}\n`;
     }
-    if (calc.carryForward > 0) {
-      message += `\n📌 *Carry Forward: +₹${calc.carryForward.toLocaleString()}*\n`;
-    }
-    message += `\n*Payable: ₹${calc.payable.toLocaleString()}* ${calc.isPaid ? '✅' : '⏳'}\n`;
+    message += `\n*Payable: ₹${calc.payable.toLocaleString()}*\n`;
     message += `\n_${REPORT_FOOTER}_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
