@@ -110,7 +110,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   
   // Editing staff
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', notes: '', designation: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', shift_rate_28: '', shift_rate_30: '', shift_rate_31: '', notes: '', designation: '' });
 
   // Salary
   const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number }}>();
