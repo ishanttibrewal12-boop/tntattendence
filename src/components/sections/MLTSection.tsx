@@ -18,7 +18,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JSZip from 'jszip';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
-import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF, getShiftRateForMonth } from '@/lib/formatUtils';
 
 interface MLTStaff {
   id: string;
@@ -29,6 +29,9 @@ interface MLTStaff {
   notes: string | null;
   base_salary: number;
   shift_rate: number | null;
+  shift_rate_28: number | null;
+  shift_rate_30: number | null;
+  shift_rate_31: number | null;
   is_active: boolean;
   photo_url: string | null;
   designation: string | null;
@@ -110,7 +113,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', notes: '', designation: '' });
 
   // Salary
-  const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number, isPaid: boolean, carryForward: number }}>();
+  const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number }}>();
   const [salaryRecords, setSalaryRecords] = useState<any[]>([]);
 
   useEffect(() => {
@@ -131,15 +134,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       supabase.from('mlt_attendance').select('*').gte('date', startDate).lte('date', endDate),
     ]);
 
-    // Fetch previous month's salary records for carry-forward
-    const prevMonth = reportMonth === 1 ? 12 : reportMonth - 1;
-    const prevYear = reportMonth === 1 ? reportYear - 1 : reportYear;
-    const { data: prevSalaryRecords } = await supabase.from('salary_records')
-      .select('*')
-      .eq('staff_type', 'mlt')
-      .eq('month', prevMonth)
-      .eq('year', prevYear);
-
     // Fetch current month salary records
     const { data: currentSalaryRecords } = await supabase.from('salary_records')
       .select('*')
@@ -154,26 +148,16 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     if (advancesRes.data) setAdvances(advancesRes.data as MLTAdvance[]);
     if (monthlyAttendanceRes.data) setMonthlyAttendance(monthlyAttendanceRes.data as MLTAttendance[]);
     
-    // Calculate salary data with carry-forward
+    // Calculate salary data
     if (staffRes.data && monthlyAttendanceRes.data && advancesRes.data) {
-      const salaries: {[staffId: string]: { totalShifts: number, totalAdvance: number, isPaid: boolean, carryForward: number }} = {};
+      const salaries: {[staffId: string]: { totalShifts: number, totalAdvance: number }} = {};
       staffRes.data.forEach((staff: MLTStaff) => {
         const staffAttendance = monthlyAttendanceRes.data.filter((a: MLTAttendance) => a.staff_id === staff.id);
         const totalShifts = staffAttendance.reduce((sum: number, a: MLTAttendance) => sum + (a.shift_count || 1), 0);
         const staffAdvances = advancesRes.data.filter((a: MLTAdvance) => a.staff_id === staff.id);
         const totalAdvance = staffAdvances.reduce((sum: number, a: MLTAdvance) => sum + Number(a.amount), 0);
         
-        // Carry-forward: unpaid pending from previous month
-        let carryForward = 0;
-        if (prevSalaryRecords) {
-          const prevRecord = prevSalaryRecords.find((r: any) => r.staff_id === staff.id);
-          if (prevRecord && !prevRecord.is_paid && Number(prevRecord.pending_amount) > 0) {
-            carryForward = Number(prevRecord.pending_amount);
-          }
-        }
-
-        const currentRecord = currentSalaryRecords?.find((r: any) => r.staff_id === staff.id);
-        salaries[staff.id] = { totalShifts, totalAdvance, isPaid: currentRecord?.is_paid || false, carryForward };
+        salaries[staff.id] = { totalShifts, totalAdvance };
       });
       setSalaryData(salaries);
     }
@@ -512,16 +496,15 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Salary exports - using shift_rate
+  // Salary exports - using month-based shift_rate
   const getStaffSalaryCalc = (staff: MLTStaff) => {
     const data = salaryData?.[staff.id];
     const totalShifts = data?.totalShifts || 0;
     const totalAdvance = data?.totalAdvance || 0;
-    const carryForward = data?.carryForward || 0;
-    const shiftRate = Number(staff.shift_rate || 0);
+    const shiftRate = getShiftRateForMonth(staff, reportMonth, reportYear);
     const shiftAmount = totalShifts * shiftRate;
-    const payable = shiftAmount - totalAdvance + carryForward;
-    return { totalShifts, totalAdvance, shiftRate, shiftAmount, payable, isPaid: data?.isPaid || false, carryForward };
+    const payable = shiftAmount - totalAdvance;
+    return { totalShifts, totalAdvance, shiftRate, shiftAmount, payable };
   };
 
   const exportSingleStaffSalaryPDF = (staff: MLTStaff) => {
@@ -539,12 +522,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     doc.text(`Total Shifts: ${calc.totalShifts}`, 14, 48);
     doc.text(`Shift Amount: Rs. ${calc.shiftAmount.toLocaleString('en-IN')}`, 14, 56);
     doc.text(`Total Advances: Rs. ${calc.totalAdvance.toLocaleString('en-IN')}`, 14, 64);
-    if (calc.carryForward > 0) {
-      doc.text(`Carry Forward: Rs. ${calc.carryForward.toLocaleString('en-IN')}`, 14, 72);
-      doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 80);
-    } else {
-      doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 72);
-    }
+    doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 72);
 
     if (staffAdvancesList.length > 0) {
       doc.text('Date-wise Advances:', 14, 86);
@@ -576,10 +554,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       });
       message += `Total Advances: -₹${calc.totalAdvance.toLocaleString()}\n`;
     }
-    if (calc.carryForward > 0) {
-      message += `\n📌 *Carry Forward: +₹${calc.carryForward.toLocaleString()}*\n`;
-    }
-    message += `\n*Payable: ₹${calc.payable.toLocaleString()}* ${calc.isPaid ? '✅' : '⏳'}\n`;
+    message += `\n*Payable: ₹${calc.payable.toLocaleString()}*\n`;
     message += `\n_${REPORT_FOOTER}_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -593,11 +568,11 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
     const tableData = staffList.map(staff => {
       const calc = getStaffSalaryCalc(staff);
-      return [staff.name, staff.category, `Rs. ${calc.shiftRate}/shift`, calc.totalShifts.toString(), formatCurrencyForPDF(calc.shiftAmount), formatCurrencyForPDF(calc.totalAdvance), formatCurrencyForPDF(calc.payable), calc.isPaid ? 'Paid' : 'Pending'];
+      return [staff.name, staff.category, `Rs. ${calc.shiftRate}/shift`, calc.totalShifts.toString(), formatCurrencyForPDF(calc.shiftAmount), formatCurrencyForPDF(calc.totalAdvance), formatCurrencyForPDF(calc.payable)];
     });
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Rate', 'Shifts', 'Shift Amt', 'Advance', 'Payable', 'Status']],
+      head: [['Name', 'Category', 'Rate', 'Shifts', 'Shift Amt', 'Advance', 'Payable']],
       body: tableData,
       startY: 28,
       styles: { fontSize: 7 },
@@ -610,10 +585,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   };
 
   const exportSalaryExcel = () => {
-    const headers = ['Name', 'Category', 'Shift Rate', 'Shifts', 'Shift Amount', 'Advance', 'Payable', 'Status'];
+    const headers = ['Name', 'Category', 'Shift Rate', 'Shifts', 'Shift Amount', 'Advance', 'Payable'];
     const data = staffList.map(staff => {
       const calc = getStaffSalaryCalc(staff);
-      return [staff.name, staff.category, calc.shiftRate, calc.totalShifts, calc.shiftAmount, calc.totalAdvance, calc.payable, calc.isPaid ? 'Paid' : 'Pending'];
+      return [staff.name, staff.category, calc.shiftRate, calc.totalShifts, calc.shiftAmount, calc.totalAdvance, calc.payable];
     });
     exportToExcel(data, headers, `mlt-salary-${reportMonth}-${reportYear}`, 'Salary', `MLT Salary - ${months[reportMonth - 1]} ${reportYear}`);
     toast.success('Excel downloaded');
@@ -623,7 +598,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     let message = `🚛 *MLT Salary - ${months[reportMonth - 1]} ${reportYear}*\n\n`;
     staffList.forEach(staff => {
       const calc = getStaffSalaryCalc(staff);
-      message += `${calc.isPaid ? '✅' : '⏳'} *${staff.name}*\n`;
+      message += `*${staff.name}*\n`;
       message += `   ${calc.totalShifts} shifts × ₹${calc.shiftRate} = ₹${calc.shiftAmount.toLocaleString()}\n`;
       message += `   Advances: -₹${calc.totalAdvance.toLocaleString()}\n`;
       message += `   *Payable: ₹${calc.payable.toLocaleString()}*\n\n`;
@@ -1070,7 +1045,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           const staffAdvancesList = advances.filter(a => a.staff_id === staff.id);
 
           return (
-            <Card key={staff.id} className={calc.isPaid ? 'opacity-60' : ''}>
+            <Card key={staff.id}>
               <CardContent className="p-3">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -1079,7 +1054,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                   </div>
                   <div className="text-right">
                     <p className="font-bold">{formatFullCurrency(calc.payable)}</p>
-                    {calc.isPaid && <span className="text-xs text-green-600">Paid ✓</span>}
                   </div>
                 </div>
 
@@ -1093,12 +1067,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                     <div className="flex justify-between text-destructive">
                       <span>− Advances</span>
                       <span>− ₹{calc.totalAdvance.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {calc.carryForward > 0 && (
-                    <div className="flex justify-between text-orange-600">
-                      <span>+ Carry Forward</span>
-                      <span>+ ₹{calc.carryForward.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold border-t border-border pt-1">

@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
+import { formatCurrency, formatCurrencyForPDF, getShiftRateForMonth } from '@/lib/formatUtils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -22,17 +21,19 @@ interface StaffMember {
   name: string;
   category: string;
   shift_rate: number;
+  shift_rate_28: number | null;
+  shift_rate_30: number | null;
+  shift_rate_31: number | null;
   type: 'staff' | 'mlt';
 }
 
 interface SalaryData {
   staff: StaffMember;
   totalShifts: number;
+  shiftRate: number;
   shiftAmount: number;
   totalAdvances: number;
-  carryForward: number;
   payable: number;
-  isPaid: boolean;
 }
 
 const MONTHS = [
@@ -51,27 +52,25 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
   const fetchSalaryData = async () => {
     setIsLoading(true);
     try {
-      let staffQuery = supabase.from('staff').select('id, name, category, shift_rate').eq('is_active', true);
+      let staffQuery = supabase.from('staff').select('id, name, category, shift_rate, shift_rate_28, shift_rate_30, shift_rate_31').eq('is_active', true);
       if (category) staffQuery = staffQuery.eq('category', category);
       const { data: staffData } = await staffQuery;
 
       let allStaff: StaffMember[] = (staffData || []).map(s => ({ ...s, type: 'staff' as const, shift_rate: Number(s.shift_rate) || 0 }));
 
       if (!category) {
-        const { data: mltData } = await supabase.from('mlt_staff').select('id, name, category, shift_rate').eq('is_active', true);
+        const { data: mltData } = await supabase.from('mlt_staff').select('id, name, category, shift_rate, shift_rate_28, shift_rate_30, shift_rate_31').eq('is_active', true);
         allStaff = [...allStaff, ...(mltData || []).map(s => ({ ...s, type: 'mlt' as const, shift_rate: Number(s.shift_rate) || 0 }))];
       }
 
       const startDate = format(startOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
 
-      const [attRes, mltAttRes, advRes, mltAdvRes, payrollRes, prevRes] = await Promise.all([
+      const [attRes, mltAttRes, advRes, mltAdvRes] = await Promise.all([
         supabase.from('attendance').select('staff_id, shift_count').gte('date', startDate).lte('date', endDate).in('status', ['present', 'half_day']),
         supabase.from('mlt_attendance').select('staff_id, shift_count').gte('date', startDate).lte('date', endDate).in('status', ['present', 'half_day']),
         supabase.from('advances').select('staff_id, amount').gte('date', startDate).lte('date', endDate),
         supabase.from('mlt_advances').select('staff_id, amount').gte('date', startDate).lte('date', endDate),
-        supabase.from('payroll').select('staff_id, is_paid').eq('month', selectedMonth).eq('year', selectedYear),
-        supabase.from('salary_records').select('staff_id, pending_amount, is_paid').eq('month', selectedMonth === 1 ? 12 : selectedMonth - 1).eq('year', selectedMonth === 1 ? selectedYear - 1 : selectedYear),
       ]);
 
       const calculatedData: SalaryData[] = allStaff.map(staff => {
@@ -79,20 +78,17 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
           ? (attRes.data || []).filter(a => a.staff_id === staff.id)
           : (mltAttRes.data || []).filter(a => a.staff_id === staff.id);
         const totalShifts = attendance.reduce((sum, a) => sum + (a.shift_count || 1), 0);
-        const shiftAmount = totalShifts * staff.shift_rate;
+        const shiftRate = getShiftRateForMonth(staff, selectedMonth, selectedYear);
+        const shiftAmount = totalShifts * shiftRate;
 
         const advances = staff.type === 'staff'
           ? (advRes.data || []).filter(a => a.staff_id === staff.id)
           : (mltAdvRes.data || []).filter(a => a.staff_id === staff.id);
         const totalAdvances = advances.reduce((sum, a) => sum + Number(a.amount), 0);
 
-        const prevRecord = (prevRes.data || []).find(p => p.staff_id === staff.id);
-        const carryForward = (prevRecord && !prevRecord.is_paid) ? Number(prevRecord.pending_amount || 0) : 0;
+        const payable = shiftAmount - totalAdvances;
 
-        const payable = shiftAmount - totalAdvances + carryForward;
-        const isPaid = (payrollRes.data || []).some(p => p.staff_id === staff.id && p.is_paid);
-
-        return { staff, totalShifts, shiftAmount, totalAdvances, carryForward, payable, isPaid };
+        return { staff, totalShifts, shiftRate, shiftAmount, totalAdvances, payable };
       });
 
       setSalaryData(calculatedData);
@@ -128,17 +124,15 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
 
     const tableData = filteredData.map(item => [
       item.staff.name,
-      `Rs. ${item.staff.shift_rate}/shift`,
+      `Rs. ${item.shiftRate}/shift`,
       item.totalShifts.toString(),
       `Rs. ${item.shiftAmount.toLocaleString('en-IN')}`,
       `Rs. ${item.totalAdvances.toLocaleString('en-IN')}`,
-      item.carryForward > 0 ? `Rs. ${item.carryForward.toLocaleString('en-IN')}` : '-',
       `Rs. ${item.payable.toLocaleString('en-IN')}`,
-      item.isPaid ? 'PAID' : 'PENDING',
     ]);
 
     autoTable(doc, {
-      head: [['Name', 'Rate', 'Shifts', 'Shift Amt', 'Advances', 'Carry Fwd', 'Payable', 'Status']],
+      head: [['Name', 'Rate', 'Shifts', 'Shift Amt', 'Advances', 'Payable']],
       body: tableData,
       startY: 35,
       styles: { fontSize: 7 },
@@ -158,10 +152,9 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
     let message = `📊 *Salary Report - ${monthName} ${selectedYear}*\n\n`;
     filteredData.forEach(item => {
       message += `👤 *${item.staff.name}*\n`;
-      message += `   ${item.totalShifts} shifts × ₹${item.staff.shift_rate} = ₹${item.shiftAmount.toLocaleString('en-IN')}\n`;
+      message += `   ${item.totalShifts} shifts × ₹${item.shiftRate} = ₹${item.shiftAmount.toLocaleString('en-IN')}\n`;
       message += `   Advances: -₹${item.totalAdvances.toLocaleString('en-IN')}\n`;
-      if (item.carryForward > 0) message += `   Carry Fwd: +₹${item.carryForward.toLocaleString('en-IN')}\n`;
-      message += `   *Payable: ₹${item.payable.toLocaleString('en-IN')}* ${item.isPaid ? '✅' : '⏳'}\n\n`;
+      message += `   *Payable: ₹${item.payable.toLocaleString('en-IN')}*\n\n`;
     });
     message += `💰 *Total Payable: ₹${totals.payable.toLocaleString('en-IN')}*`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
@@ -237,17 +230,15 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="font-medium">{item.staff.name}</h3>
-                      <p className="text-xs text-muted-foreground">Rate: {formatCurrency(item.staff.shift_rate)}/shift</p>
+                      <p className="text-xs text-muted-foreground">Rate: {formatCurrency(item.shiftRate)}/shift</p>
                     </div>
-                    <Badge variant={item.isPaid ? 'default' : 'secondary'}>
-                      {item.isPaid ? 'Paid' : 'Pending'}
-                    </Badge>
+                    <p className="font-bold">{formatCurrency(item.payable)}</p>
                   </div>
 
                   {/* Simple Math */}
                   <div className="bg-muted/40 rounded p-2 text-xs space-y-1 font-mono">
                     <div className="flex justify-between">
-                      <span>{item.totalShifts} shifts × ₹{item.staff.shift_rate.toLocaleString('en-IN')}</span>
+                      <span>{item.totalShifts} shifts × ₹{item.shiftRate.toLocaleString('en-IN')}</span>
                       <span>= ₹{item.shiftAmount.toLocaleString('en-IN')}</span>
                     </div>
                     {item.totalAdvances > 0 && (
@@ -256,21 +247,11 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
                         <span>− ₹{item.totalAdvances.toLocaleString('en-IN')}</span>
                       </div>
                     )}
-                    {item.carryForward > 0 && (
-                      <div className="flex justify-between text-orange-600">
-                        <span>+ Carry Forward</span>
-                        <span>+ ₹{item.carryForward.toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between font-bold border-t border-border pt-1">
                       <span>Payable</span>
                       <span>= ₹{item.payable.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
-
-                  {!item.isPaid && item.payable > 0 && (
-                    <p className="text-xs text-orange-600 mt-1">⚠ Unpaid – Will carry forward</p>
-                  )}
                 </CardContent>
               </Card>
             ))
