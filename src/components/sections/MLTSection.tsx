@@ -818,7 +818,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                   else setSelectedStaffIds(selectedStaffIds.filter(id => id !== staff.id));
                 }}
               />
-              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), notes: staff.notes || '', designation: staff.designation || '' }); setView('profile'); }}>
+              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' }); setView('profile'); }}>
                 <p className="font-medium">{staff.name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
               </div>
