@@ -522,12 +522,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     doc.text(`Total Shifts: ${calc.totalShifts}`, 14, 48);
     doc.text(`Shift Amount: Rs. ${calc.shiftAmount.toLocaleString('en-IN')}`, 14, 56);
     doc.text(`Total Advances: Rs. ${calc.totalAdvance.toLocaleString('en-IN')}`, 14, 64);
-    if (calc.carryForward > 0) {
-      doc.text(`Carry Forward: Rs. ${calc.carryForward.toLocaleString('en-IN')}`, 14, 72);
-      doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 80);
-    } else {
-      doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 72);
-    }
+    doc.text(`Payable: Rs. ${calc.payable.toLocaleString('en-IN')}`, 14, 72);
 
     if (staffAdvancesList.length > 0) {
       doc.text('Date-wise Advances:', 14, 86);
