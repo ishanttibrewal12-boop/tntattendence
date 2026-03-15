@@ -585,10 +585,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   };
 
   const exportSalaryExcel = () => {
-    const headers = ['Name', 'Category', 'Shift Rate', 'Shifts', 'Shift Amount', 'Advance', 'Payable', 'Status'];
+    const headers = ['Name', 'Category', 'Shift Rate', 'Shifts', 'Shift Amount', 'Advance', 'Payable'];
     const data = staffList.map(staff => {
       const calc = getStaffSalaryCalc(staff);
-      return [staff.name, staff.category, calc.shiftRate, calc.totalShifts, calc.shiftAmount, calc.totalAdvance, calc.payable, calc.isPaid ? 'Paid' : 'Pending'];
+      return [staff.name, staff.category, calc.shiftRate, calc.totalShifts, calc.shiftAmount, calc.totalAdvance, calc.payable];
     });
     exportToExcel(data, headers, `mlt-salary-${reportMonth}-${reportYear}`, 'Salary', `MLT Salary - ${months[reportMonth - 1]} ${reportYear}`);
     toast.success('Excel downloaded');
