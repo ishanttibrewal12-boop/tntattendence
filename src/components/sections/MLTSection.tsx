@@ -496,16 +496,15 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Salary exports - using shift_rate
+  // Salary exports - using month-based shift_rate
   const getStaffSalaryCalc = (staff: MLTStaff) => {
     const data = salaryData?.[staff.id];
     const totalShifts = data?.totalShifts || 0;
     const totalAdvance = data?.totalAdvance || 0;
-    const carryForward = data?.carryForward || 0;
-    const shiftRate = Number(staff.shift_rate || 0);
+    const shiftRate = getShiftRateForMonth(staff, reportMonth, reportYear);
     const shiftAmount = totalShifts * shiftRate;
-    const payable = shiftAmount - totalAdvance + carryForward;
-    return { totalShifts, totalAdvance, shiftRate, shiftAmount, payable, isPaid: data?.isPaid || false, carryForward };
+    const payable = shiftAmount - totalAdvance;
+    return { totalShifts, totalAdvance, shiftRate, shiftAmount, payable };
   };
 
   const exportSingleStaffSalaryPDF = (staff: MLTStaff) => {
