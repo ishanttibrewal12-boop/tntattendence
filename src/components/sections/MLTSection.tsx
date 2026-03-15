@@ -113,7 +113,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', notes: '', designation: '' });
 
   // Salary
-  const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number, isPaid: boolean, carryForward: number }}>();
+  const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number }}>();
   const [salaryRecords, setSalaryRecords] = useState<any[]>([]);
 
   useEffect(() => {
