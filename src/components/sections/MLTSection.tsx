@@ -134,15 +134,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       supabase.from('mlt_attendance').select('*').gte('date', startDate).lte('date', endDate),
     ]);
 
-    // Fetch previous month's salary records for carry-forward
-    const prevMonth = reportMonth === 1 ? 12 : reportMonth - 1;
-    const prevYear = reportMonth === 1 ? reportYear - 1 : reportYear;
-    const { data: prevSalaryRecords } = await supabase.from('salary_records')
-      .select('*')
-      .eq('staff_type', 'mlt')
-      .eq('month', prevMonth)
-      .eq('year', prevYear);
-
     // Fetch current month salary records
     const { data: currentSalaryRecords } = await supabase.from('salary_records')
       .select('*')
@@ -157,26 +148,16 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     if (advancesRes.data) setAdvances(advancesRes.data as MLTAdvance[]);
     if (monthlyAttendanceRes.data) setMonthlyAttendance(monthlyAttendanceRes.data as MLTAttendance[]);
     
-    // Calculate salary data with carry-forward
+    // Calculate salary data
     if (staffRes.data && monthlyAttendanceRes.data && advancesRes.data) {
-      const salaries: {[staffId: string]: { totalShifts: number, totalAdvance: number, isPaid: boolean, carryForward: number }} = {};
+      const salaries: {[staffId: string]: { totalShifts: number, totalAdvance: number }} = {};
       staffRes.data.forEach((staff: MLTStaff) => {
         const staffAttendance = monthlyAttendanceRes.data.filter((a: MLTAttendance) => a.staff_id === staff.id);
         const totalShifts = staffAttendance.reduce((sum: number, a: MLTAttendance) => sum + (a.shift_count || 1), 0);
         const staffAdvances = advancesRes.data.filter((a: MLTAdvance) => a.staff_id === staff.id);
         const totalAdvance = staffAdvances.reduce((sum: number, a: MLTAdvance) => sum + Number(a.amount), 0);
         
-        // Carry-forward: unpaid pending from previous month
-        let carryForward = 0;
-        if (prevSalaryRecords) {
-          const prevRecord = prevSalaryRecords.find((r: any) => r.staff_id === staff.id);
-          if (prevRecord && !prevRecord.is_paid && Number(prevRecord.pending_amount) > 0) {
-            carryForward = Number(prevRecord.pending_amount);
-          }
-        }
-
-        const currentRecord = currentSalaryRecords?.find((r: any) => r.staff_id === staff.id);
-        salaries[staff.id] = { totalShifts, totalAdvance, isPaid: currentRecord?.is_paid || false, carryForward };
+        salaries[staff.id] = { totalShifts, totalAdvance };
       });
       setSalaryData(salaries);
     }
