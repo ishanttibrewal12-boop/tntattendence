@@ -149,6 +149,9 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
       category: staff.category,
       base_salary: staff.base_salary.toString(),
       shift_rate: staff.shift_rate?.toString() || '',
+      shift_rate_28: staff.shift_rate_28?.toString() || '',
+      shift_rate_30: staff.shift_rate_30?.toString() || '',
+      shift_rate_31: staff.shift_rate_31?.toString() || '',
       notes: staff.notes || '',
       designation: staff.designation || '',
     });
