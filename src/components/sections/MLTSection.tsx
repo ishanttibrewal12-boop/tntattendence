@@ -598,7 +598,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     let message = `🚛 *MLT Salary - ${months[reportMonth - 1]} ${reportYear}*\n\n`;
     staffList.forEach(staff => {
       const calc = getStaffSalaryCalc(staff);
-      message += `${calc.isPaid ? '✅' : '⏳'} *${staff.name}*\n`;
+      message += `*${staff.name}*\n`;
       message += `   ${calc.totalShifts} shifts × ₹${calc.shiftRate} = ₹${calc.shiftAmount.toLocaleString()}\n`;
       message += `   Advances: -₹${calc.totalAdvance.toLocaleString()}\n`;
       message += `   *Payable: ₹${calc.payable.toLocaleString()}*\n\n`;
