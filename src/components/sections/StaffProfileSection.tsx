@@ -629,25 +629,7 @@ const StaffProfileSection = ({ onBack, category }: StaffProfileSectionProps) => 
                 </Card>
               </div>
 
-              {/* Payment Status Card */}
-              <Card className={`mb-4 ${payrollStatus?.is_paid ? 'bg-green-500/10 border-green-500/30' : 'bg-destructive/10 border-destructive/30'}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Salary Status - {months[selectedMonth - 1]}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {payrollStatus?.is_paid 
-                          ? `Paid on ${payrollStatus.paid_date ? format(new Date(payrollStatus.paid_date), 'dd MMM yyyy') : 'N/A'}`
-                          : 'Not Paid Yet'
-                        }
-                      </p>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${payrollStatus?.is_paid ? 'bg-green-500 text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
-                      {payrollStatus?.is_paid ? '✓ Paid' : '✗ Unpaid'}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+
 
               {/* Advance Summary with Deduction Status */}
               <Card className="mb-4 bg-muted/30">
