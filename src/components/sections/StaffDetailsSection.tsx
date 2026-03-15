@@ -456,8 +456,12 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
 
                   <div className="flex items-center gap-2 text-sm">
                     <Wallet className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Shift Rate:</span>
-                    <span className="text-foreground font-medium">₹{(selectedStaff.shift_rate || 0).toLocaleString()}/shift</span>
+                    <span className="text-muted-foreground">Shift Rates:</span>
+                  </div>
+                  <div className="pl-6 text-xs space-y-0.5 text-muted-foreground">
+                    <p>28-day month: <span className="text-foreground font-medium">₹{(selectedStaff.shift_rate_28 || 0).toLocaleString()}/shift</span></p>
+                    <p>30-day month: <span className="text-foreground font-medium">₹{(selectedStaff.shift_rate_30 || 0).toLocaleString()}/shift</span></p>
+                    <p>31-day month: <span className="text-foreground font-medium">₹{(selectedStaff.shift_rate_31 || 0).toLocaleString()}/shift</span></p>
                   </div>
 
                   {selectedStaff.notes && (
