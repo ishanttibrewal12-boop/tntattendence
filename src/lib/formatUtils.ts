@@ -68,3 +68,15 @@ export const formatCompactCurrencyForPDF = (amount: number): string => {
   }
   return `Rs. ${amount.toLocaleString('en-IN')}`;
 };
+
+// Get the appropriate shift rate based on the number of days in the month
+export const getShiftRateForMonth = (
+  staff: { shift_rate_28?: number | null; shift_rate_30?: number | null; shift_rate_31?: number | null; shift_rate?: number | null },
+  month: number,
+  year: number
+): number => {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (daysInMonth <= 28) return Number(staff.shift_rate_28 ?? staff.shift_rate ?? 0);
+  if (daysInMonth <= 30) return Number(staff.shift_rate_30 ?? staff.shift_rate ?? 0);
+  return Number(staff.shift_rate_31 ?? staff.shift_rate ?? 0);
+};
