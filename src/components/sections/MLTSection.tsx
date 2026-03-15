@@ -1276,6 +1276,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               </div>
               <div><Label>Designation</Label><Input value={editForm.designation} onChange={(e) => setEditForm({...editForm, designation: e.target.value})} /></div>
               <div><Label>Base Salary</Label><Input type="number" value={editForm.base_salary} onChange={(e) => setEditForm({...editForm, base_salary: e.target.value})} /></div>
+              <div><Label>Shift Rate - 28 days (₹) e.g. Feb</Label><Input type="number" value={editForm.shift_rate_28} onChange={(e) => setEditForm({...editForm, shift_rate_28: e.target.value})} placeholder="Rate for 28-day months" /></div>
+              <div><Label>Shift Rate - 30 days (₹) e.g. Apr</Label><Input type="number" value={editForm.shift_rate_30} onChange={(e) => setEditForm({...editForm, shift_rate_30: e.target.value})} placeholder="Rate for 30-day months" /></div>
+              <div><Label>Shift Rate - 31 days (₹) e.g. Jan</Label><Input type="number" value={editForm.shift_rate_31} onChange={(e) => setEditForm({...editForm, shift_rate_31: e.target.value})} placeholder="Rate for 31-day months" /></div>
               <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm({...editForm, notes: e.target.value})} /></div>
             </CardContent>
           </Card>
