@@ -18,7 +18,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JSZip from 'jszip';
 import { exportToExcel, addReportNotes, REPORT_FOOTER } from '@/lib/exportUtils';
-import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF, getShiftRateForMonth } from '@/lib/formatUtils';
 
 interface MLTStaff {
   id: string;
