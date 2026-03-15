@@ -110,7 +110,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   
   // Editing staff
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', notes: '', designation: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', shift_rate_28: '', shift_rate_30: '', shift_rate_31: '', notes: '', designation: '' });
 
   // Salary
   const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number }}>();
@@ -297,6 +297,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       address: editForm.address || null,
       category: editForm.category,
       base_salary: parseFloat(editForm.base_salary) || 0,
+      shift_rate_28: parseFloat(editForm.shift_rate_28) || 0,
+      shift_rate_30: parseFloat(editForm.shift_rate_30) || 0,
+      shift_rate_31: parseFloat(editForm.shift_rate_31) || 0,
       notes: editForm.notes || null,
       designation: editForm.designation || null,
     }).eq('id', selectedStaff.id);
@@ -815,7 +818,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                   else setSelectedStaffIds(selectedStaffIds.filter(id => id !== staff.id));
                 }}
               />
-              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), notes: staff.notes || '', designation: staff.designation || '' }); setView('profile'); }}>
+              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' }); setView('profile'); }}>
                 <p className="font-medium">{staff.name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
               </div>
@@ -1122,7 +1125,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         {filteredStaff.map(staff => (
           <Card key={staff.id} className="cursor-pointer hover:shadow-md" onClick={() => { 
             setSelectedStaff(staff); 
-            setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), notes: staff.notes || '', designation: staff.designation || '' }); 
+            setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' }); 
             setView('profile'); 
           }}>
             <CardContent className="p-3 flex items-center gap-3">
@@ -1273,6 +1276,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               </div>
               <div><Label>Designation</Label><Input value={editForm.designation} onChange={(e) => setEditForm({...editForm, designation: e.target.value})} /></div>
               <div><Label>Base Salary</Label><Input type="number" value={editForm.base_salary} onChange={(e) => setEditForm({...editForm, base_salary: e.target.value})} /></div>
+              <div><Label>Shift Rate - 28 days (₹) e.g. Feb</Label><Input type="number" value={editForm.shift_rate_28} onChange={(e) => setEditForm({...editForm, shift_rate_28: e.target.value})} placeholder="Rate for 28-day months" /></div>
+              <div><Label>Shift Rate - 30 days (₹) e.g. Apr</Label><Input type="number" value={editForm.shift_rate_30} onChange={(e) => setEditForm({...editForm, shift_rate_30: e.target.value})} placeholder="Rate for 30-day months" /></div>
+              <div><Label>Shift Rate - 31 days (₹) e.g. Jan</Label><Input type="number" value={editForm.shift_rate_31} onChange={(e) => setEditForm({...editForm, shift_rate_31: e.target.value})} placeholder="Rate for 31-day months" /></div>
               <div><Label>Notes</Label><Textarea value={editForm.notes} onChange={(e) => setEditForm({...editForm, notes: e.target.value})} /></div>
             </CardContent>
           </Card>
@@ -1288,6 +1294,14 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                 {selectedStaff.address && <p className="text-sm"><span className="text-muted-foreground">Address:</span> {selectedStaff.address}</p>}
                 {selectedStaff.designation && <p className="text-sm"><span className="text-muted-foreground">Designation:</span> {selectedStaff.designation}</p>}
                 <p className="text-sm"><span className="text-muted-foreground">Base Salary:</span> ₹{selectedStaff.base_salary.toLocaleString()}</p>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Shift Rates:</span>
+                  <div className="pl-4 text-xs space-y-0.5 mt-1">
+                    <p>28-day month: <span className="font-medium">₹{(selectedStaff.shift_rate_28 || 0).toLocaleString()}/shift</span></p>
+                    <p>30-day month: <span className="font-medium">₹{(selectedStaff.shift_rate_30 || 0).toLocaleString()}/shift</span></p>
+                    <p>31-day month: <span className="font-medium">₹{(selectedStaff.shift_rate_31 || 0).toLocaleString()}/shift</span></p>
+                  </div>
+                </div>
                 {selectedStaff.notes && <p className="text-sm"><span className="text-muted-foreground">Notes:</span> {selectedStaff.notes}</p>}
               </CardContent>
             </Card>
