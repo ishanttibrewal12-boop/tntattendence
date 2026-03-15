@@ -363,12 +363,30 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
                     />
                   </div>
                   <div>
-                    <Label>Shift Rate (₹)</Label>
+                    <Label>Shift Rate - 28 days (₹) e.g. Feb</Label>
                     <Input
                       type="number"
-                      value={editForm.shift_rate}
-                      onChange={(e) => setEditForm({ ...editForm, shift_rate: e.target.value })}
-                      placeholder="Amount per shift in ₹"
+                      value={editForm.shift_rate_28}
+                      onChange={(e) => setEditForm({ ...editForm, shift_rate_28: e.target.value })}
+                      placeholder="Rate for 28-day months"
+                    />
+                  </div>
+                  <div>
+                    <Label>Shift Rate - 30 days (₹) e.g. Apr</Label>
+                    <Input
+                      type="number"
+                      value={editForm.shift_rate_30}
+                      onChange={(e) => setEditForm({ ...editForm, shift_rate_30: e.target.value })}
+                      placeholder="Rate for 30-day months"
+                    />
+                  </div>
+                  <div>
+                    <Label>Shift Rate - 31 days (₹) e.g. Jan</Label>
+                    <Input
+                      type="number"
+                      value={editForm.shift_rate_31}
+                      onChange={(e) => setEditForm({ ...editForm, shift_rate_31: e.target.value })}
+                      placeholder="Rate for 31-day months"
                     />
                   </div>
                   <div>
