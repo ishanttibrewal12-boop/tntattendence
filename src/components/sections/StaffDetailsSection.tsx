@@ -197,6 +197,9 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
       category: editForm.category,
       base_salary: parseFloat(editForm.base_salary) || 0,
       shift_rate: parseFloat(editForm.shift_rate) || 0,
+      shift_rate_28: parseFloat(editForm.shift_rate_28) || 0,
+      shift_rate_30: parseFloat(editForm.shift_rate_30) || 0,
+      shift_rate_31: parseFloat(editForm.shift_rate_31) || 0,
       notes: editForm.notes.trim() || null,
       designation: editForm.designation.trim() || null,
     });
