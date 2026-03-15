@@ -568,7 +568,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
     const tableData = staffList.map(staff => {
       const calc = getStaffSalaryCalc(staff);
-      return [staff.name, staff.category, `Rs. ${calc.shiftRate}/shift`, calc.totalShifts.toString(), formatCurrencyForPDF(calc.shiftAmount), formatCurrencyForPDF(calc.totalAdvance), formatCurrencyForPDF(calc.payable), calc.isPaid ? 'Paid' : 'Pending'];
+      return [staff.name, staff.category, `Rs. ${calc.shiftRate}/shift`, calc.totalShifts.toString(), formatCurrencyForPDF(calc.shiftAmount), formatCurrencyForPDF(calc.totalAdvance), formatCurrencyForPDF(calc.payable)];
     });
 
     autoTable(doc, {
