@@ -69,10 +69,10 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
     setIsLoading(true);
     let query = supabase
       .from('staff')
-      .select('id, name, category, phone, address, base_salary, shift_rate, notes, designation, photo_url')
+      .select('id, name, category, phone, address, base_salary, shift_rate, shift_rate_28, shift_rate_30, shift_rate_31, notes, designation, photo_url')
       .eq('is_active', true)
       .order('name');
-    
+
     if (category) query = query.eq('category', category);
 
     const { data } = await query;
