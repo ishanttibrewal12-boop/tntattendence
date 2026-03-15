@@ -54,6 +54,9 @@ const StaffDetailsSection = ({ onBack, category }: StaffDetailsSectionProps) => 
     category: 'petroleum' as 'petroleum' | 'crusher' | 'office',
     base_salary: '',
     shift_rate: '',
+    shift_rate_28: '',
+    shift_rate_30: '',
+    shift_rate_31: '',
     notes: '',
     designation: '',
   });
