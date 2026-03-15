@@ -1294,6 +1294,14 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                 {selectedStaff.address && <p className="text-sm"><span className="text-muted-foreground">Address:</span> {selectedStaff.address}</p>}
                 {selectedStaff.designation && <p className="text-sm"><span className="text-muted-foreground">Designation:</span> {selectedStaff.designation}</p>}
                 <p className="text-sm"><span className="text-muted-foreground">Base Salary:</span> ₹{selectedStaff.base_salary.toLocaleString()}</p>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Shift Rates:</span>
+                  <div className="pl-4 text-xs space-y-0.5 mt-1">
+                    <p>28-day month: <span className="font-medium">₹{(selectedStaff.shift_rate_28 || 0).toLocaleString()}/shift</span></p>
+                    <p>30-day month: <span className="font-medium">₹{(selectedStaff.shift_rate_30 || 0).toLocaleString()}/shift</span></p>
+                    <p>31-day month: <span className="font-medium">₹{(selectedStaff.shift_rate_31 || 0).toLocaleString()}/shift</span></p>
+                  </div>
+                </div>
                 {selectedStaff.notes && <p className="text-sm"><span className="text-muted-foreground">Notes:</span> {selectedStaff.notes}</p>}
               </CardContent>
             </Card>
