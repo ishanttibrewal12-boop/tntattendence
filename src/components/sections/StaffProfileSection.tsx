@@ -98,19 +98,13 @@ const StaffProfileSection = ({ onBack, category }: StaffProfileSectionProps) => 
     const startDate = format(startOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(new Date(selectedYear, selectedMonth - 1)), 'yyyy-MM-dd');
 
-    const [attendanceRes, advancesRes, payrollRes] = await Promise.all([
+    const [attendanceRes, advancesRes] = await Promise.all([
       supabase.from('attendance').select('date, status, shift_count').eq('staff_id', selectedStaffId).gte('date', startDate).lte('date', endDate).order('date'),
       supabase.from('advances').select('id, amount, date, notes, is_deducted').eq('staff_id', selectedStaffId).gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
-      supabase.from('payroll').select('is_paid, paid_date').eq('staff_id', selectedStaffId).eq('month', selectedMonth).eq('year', selectedYear).single(),
     ]);
 
     if (attendanceRes.data) setAttendance(attendanceRes.data as AttendanceRecord[]);
     if (advancesRes.data) setAdvances(advancesRes.data as Advance[]);
-    if (payrollRes.data) {
-      setPayrollStatus(payrollRes.data);
-    } else {
-      setPayrollStatus(null);
-    }
     setIsLoading(false);
   };
 
