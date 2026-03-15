@@ -297,6 +297,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       address: editForm.address || null,
       category: editForm.category,
       base_salary: parseFloat(editForm.base_salary) || 0,
+      shift_rate_28: parseFloat(editForm.shift_rate_28) || 0,
+      shift_rate_30: parseFloat(editForm.shift_rate_30) || 0,
+      shift_rate_31: parseFloat(editForm.shift_rate_31) || 0,
       notes: editForm.notes || null,
       designation: editForm.designation || null,
     }).eq('id', selectedStaff.id);
