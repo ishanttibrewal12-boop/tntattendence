@@ -1125,7 +1125,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         {filteredStaff.map(staff => (
           <Card key={staff.id} className="cursor-pointer hover:shadow-md" onClick={() => { 
             setSelectedStaff(staff); 
-            setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), notes: staff.notes || '', designation: staff.designation || '' }); 
+            setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' }); 
             setView('profile'); 
           }}>
             <CardContent className="p-3 flex items-center gap-3">
