@@ -61,7 +61,7 @@ const StaffProfileSection = ({ onBack, category }: StaffProfileSectionProps) => 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [payrollStatus, setPayrollStatus] = useState<{ is_paid: boolean; paid_date: string | null } | null>(null);
+  // payrollStatus removed - no longer tracking paid/unpaid
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
