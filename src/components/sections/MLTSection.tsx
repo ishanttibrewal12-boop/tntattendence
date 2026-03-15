@@ -29,6 +29,9 @@ interface MLTStaff {
   notes: string | null;
   base_salary: number;
   shift_rate: number | null;
+  shift_rate_28: number | null;
+  shift_rate_30: number | null;
+  shift_rate_31: number | null;
   is_active: boolean;
   photo_url: string | null;
   designation: string | null;
