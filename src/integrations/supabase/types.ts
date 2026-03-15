@@ -718,6 +718,9 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           shift_rate: number | null
+          shift_rate_28: number | null
+          shift_rate_30: number | null
+          shift_rate_31: number | null
           updated_at: string
         }
         Insert: {
@@ -734,6 +737,9 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           shift_rate?: number | null
+          shift_rate_28?: number | null
+          shift_rate_30?: number | null
+          shift_rate_31?: number | null
           updated_at?: string
         }
         Update: {
@@ -750,6 +756,9 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           shift_rate?: number | null
+          shift_rate_28?: number | null
+          shift_rate_30?: number | null
+          shift_rate_31?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -1070,6 +1079,9 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           shift_rate: number | null
+          shift_rate_28: number | null
+          shift_rate_30: number | null
+          shift_rate_31: number | null
           updated_at: string
         }
         Insert: {
@@ -1086,6 +1098,9 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           shift_rate?: number | null
+          shift_rate_28?: number | null
+          shift_rate_30?: number | null
+          shift_rate_31?: number | null
           updated_at?: string
         }
         Update: {
@@ -1102,6 +1117,9 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           shift_rate?: number | null
+          shift_rate_28?: number | null
+          shift_rate_30?: number | null
+          shift_rate_31?: number | null
           updated_at?: string
         }
         Relationships: []
