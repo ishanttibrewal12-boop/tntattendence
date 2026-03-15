@@ -1054,7 +1054,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                   </div>
                   <div className="text-right">
                     <p className="font-bold">{formatFullCurrency(calc.payable)}</p>
-                    {calc.isPaid && <span className="text-xs text-green-600">Paid ✓</span>}
                   </div>
                 </div>
 
@@ -1068,12 +1067,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
                     <div className="flex justify-between text-destructive">
                       <span>− Advances</span>
                       <span>− ₹{calc.totalAdvance.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {calc.carryForward > 0 && (
-                    <div className="flex justify-between text-orange-600">
-                      <span>+ Carry Forward</span>
-                      <span>+ ₹{calc.carryForward.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold border-t border-border pt-1">
