@@ -572,7 +572,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     });
 
     autoTable(doc, {
-      head: [['Name', 'Category', 'Rate', 'Shifts', 'Shift Amt', 'Advance', 'Payable', 'Status']],
+      head: [['Name', 'Category', 'Rate', 'Shifts', 'Shift Amt', 'Advance', 'Payable']],
       body: tableData,
       startY: 28,
       styles: { fontSize: 7 },
