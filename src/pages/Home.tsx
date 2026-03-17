@@ -576,10 +576,9 @@ const Home = () => {
     if (!activeSection) return null;
     const onBack = () => {
       if (activeDepartment) {
-        setActiveSection(null);
+        triggerLogoBack('section');
       } else {
-        setActiveSection(null);
-        setActiveDepartment(null);
+        triggerLogoBack('section');
       }
     };
     return (
