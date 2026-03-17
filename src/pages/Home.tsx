@@ -975,6 +975,7 @@ const Home = () => {
       )}
 
       <AIChatBot includeData={!activeSection} />
+      <LogoWipeTransition show={showLogoWipe} onComplete={handleLogoWipeComplete} />
     </div>
   );
 };
