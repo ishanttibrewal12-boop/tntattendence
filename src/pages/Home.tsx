@@ -11,6 +11,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import PageTransition from '@/components/ui/PageTransition';
+import LogoWipeTransition from '@/components/ui/LogoWipeTransition';
+import { RevenueChart, DispatchChart } from '@/components/dashboard/DashboardCharts';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
@@ -279,6 +281,8 @@ const Home = () => {
   const [activeSection, setActiveSection] = useState<SectionType>(null);
   const [activeDepartment, setActiveDepartment] = useState<DepartmentType>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoWipe, setShowLogoWipe] = useState(false);
+  const [pendingBack, setPendingBack] = useState<'section' | 'department' | null>(null);
   const { user, logout } = useAppAuth();
   const isMobile = useIsMobile();
 
@@ -291,14 +295,29 @@ const Home = () => {
   useEffect(() => {
     const handlePopState = () => {
       if (activeSection) {
-        setActiveSection(null);
+        triggerLogoBack('section');
       } else if (activeDepartment) {
-        setActiveDepartment(null);
+        triggerLogoBack('department');
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeSection, activeDepartment]);
+
+  const triggerLogoBack = useCallback((type: 'section' | 'department') => {
+    setPendingBack(type);
+    setShowLogoWipe(true);
+  }, []);
+
+  const handleLogoWipeComplete = useCallback(() => {
+    if (pendingBack === 'section') {
+      setActiveSection(null);
+    } else if (pendingBack === 'department') {
+      setActiveDepartment(null);
+    }
+    setPendingBack(null);
+    setShowLogoWipe(false);
+  }, [pendingBack]);
 
   const navigateToSection = useCallback((section: SectionType) => {
     window.history.pushState({}, '', '');
@@ -557,10 +576,9 @@ const Home = () => {
     if (!activeSection) return null;
     const onBack = () => {
       if (activeDepartment) {
-        setActiveSection(null);
+        triggerLogoBack('section');
       } else {
-        setActiveSection(null);
-        setActiveDepartment(null);
+        triggerLogoBack('section');
       }
     };
     return (
@@ -748,6 +766,14 @@ const Home = () => {
                   </CardContent>
                 </Card>
               </motion.div>
+            </div>
+          )}
+
+          {/* Charts Zone */}
+          {isManager && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+              <RevenueChart />
+              <DispatchChart />
             </div>
           )}
 
@@ -949,6 +975,7 @@ const Home = () => {
       )}
 
       <AIChatBot includeData={!activeSection} />
+      <LogoWipeTransition show={showLogoWipe} onComplete={handleLogoWipeComplete} />
     </div>
   );
 };
