@@ -67,12 +67,25 @@ interface NavItem {
   primary?: boolean;
 }
 
+const SkeletonPulse = ({ className = '' }: { className?: string }) => (
+  <div className={`animate-pulse rounded bg-muted ${className}`} />
+);
+
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center py-20">
-    <div className="text-center">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-      <p className="text-sm text-muted-foreground">Loading...</p>
+  <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-4">
+    <SkeletonPulse className="h-8 w-48" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i} className="border">
+          <CardContent className="p-4 space-y-3">
+            <SkeletonPulse className="h-4 w-24" />
+            <SkeletonPulse className="h-6 w-full" />
+            <SkeletonPulse className="h-4 w-3/4" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
+    <SkeletonPulse className="h-64 w-full rounded-lg" />
   </div>
 );
 
