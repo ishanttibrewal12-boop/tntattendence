@@ -295,14 +295,29 @@ const Home = () => {
   useEffect(() => {
     const handlePopState = () => {
       if (activeSection) {
-        setActiveSection(null);
+        triggerLogoBack('section');
       } else if (activeDepartment) {
-        setActiveDepartment(null);
+        triggerLogoBack('department');
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeSection, activeDepartment]);
+
+  const triggerLogoBack = useCallback((type: 'section' | 'department') => {
+    setPendingBack(type);
+    setShowLogoWipe(true);
+  }, []);
+
+  const handleLogoWipeComplete = useCallback(() => {
+    if (pendingBack === 'section') {
+      setActiveSection(null);
+    } else if (pendingBack === 'department') {
+      setActiveDepartment(null);
+    }
+    setPendingBack(null);
+    setShowLogoWipe(false);
+  }, [pendingBack]);
 
   const navigateToSection = useCallback((section: SectionType) => {
     window.history.pushState({}, '', '');
