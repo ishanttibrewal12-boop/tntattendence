@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect, useCallback } from 'react';
-import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench, LayoutDashboard, Menu, X, TrendingUp, AlertTriangle, Zap, Home as HomeIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
@@ -8,6 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import AIChatBot from '@/components/AIChatBot';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedNumber from '@/components/ui/AnimatedNumber';
+import PageTransition from '@/components/ui/PageTransition';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
@@ -68,28 +71,25 @@ interface NavItem {
 }
 
 const SkeletonPulse = ({ className = '' }: { className?: string }) => (
-  <div className={`animate-pulse rounded bg-muted ${className}`} />
+  <div className={`animate-pulse rounded-lg bg-muted ${className}`} />
 );
 
 const LoadingFallback = () => (
-  <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-4">
+  <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-4">
     <SkeletonPulse className="h-8 w-48" />
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {[...Array(4)].map((_, i) => (
-        <Card key={i} className="border">
-          <CardContent className="p-4 space-y-3">
-            <SkeletonPulse className="h-4 w-24" />
-            <SkeletonPulse className="h-6 w-full" />
-            <SkeletonPulse className="h-4 w-3/4" />
-          </CardContent>
-        </Card>
+        <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <SkeletonPulse className="h-4 w-24" />
+          <SkeletonPulse className="h-8 w-32" />
+        </div>
       ))}
     </div>
-    <SkeletonPulse className="h-64 w-full rounded-lg" />
+    <SkeletonPulse className="h-64 w-full rounded-xl" />
   </div>
 );
 
-// --- KPI Cards Component ---
+// --- KPI Cards Component with count-up animation ---
 const KpiCards = () => {
   const [stats, setStats] = useState({ totalStaff: 0, todayPresent: 0, pendingAdvances: 0, monthlyExpense: 0 });
   const [loading, setLoading] = useState(true);
@@ -115,48 +115,95 @@ const KpiCards = () => {
   }, []);
 
   const kpis = [
-    { label: 'Total Staff', value: stats.totalStaff.toString(), icon: Users, color: 'bg-primary/10 text-primary' },
-    { label: 'Today Attendance', value: stats.todayPresent.toString(), icon: Calendar, color: 'bg-accent/10 text-accent' },
-    { label: 'Pending Advances', value: `₹${stats.pendingAdvances.toLocaleString('en-IN')}`, icon: Wallet, color: 'bg-destructive/10 text-destructive' },
-    { label: 'Monthly Salary', value: '₹0', icon: DollarSign, color: 'bg-chart-1/10 text-chart-1' },
+    { label: 'Active Staff', value: stats.totalStaff, icon: Users, prefix: '', gradient: 'from-primary/10 to-primary/5', iconBg: 'bg-primary', trend: '+2 this week' },
+    { label: 'Today Attendance', value: stats.todayPresent, icon: Calendar, prefix: '', gradient: 'from-chart-1/10 to-chart-1/5', iconBg: 'bg-chart-1', trend: 'Live count' },
+    { label: 'Pending Advances', value: stats.pendingAdvances, icon: Wallet, prefix: '₹', gradient: 'from-accent/10 to-accent/5', iconBg: 'bg-accent', trend: 'Outstanding' },
+    { label: 'Monthly Salary', value: stats.monthlyExpense, icon: DollarSign, prefix: '₹', gradient: 'from-chart-3/10 to-chart-3/5', iconBg: 'bg-chart-3', trend: 'This month' },
   ];
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="border shadow-sm">
-            <CardContent className="p-4 space-y-3">
-              <SkeletonPulse className="h-3 w-20" />
-              <SkeletonPulse className="h-7 w-24" />
-            </CardContent>
-          </Card>
+          <div key={i} className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <SkeletonPulse className="h-4 w-20" />
+            <SkeletonPulse className="h-8 w-28" />
+            <SkeletonPulse className="h-3 w-16" />
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-      {kpis.map((kpi) => {
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {kpis.map((kpi, i) => {
         const Icon = kpi.icon;
         return (
-          <Card key={kpi.label} className="border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{kpi.label}</p>
-                  <p className="text-xl lg:text-2xl font-bold text-foreground mt-1">{kpi.value}</p>
+          <motion.div
+            key={kpi.label}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08, duration: 0.35, ease: [0.33, 1, 0.68, 1] }}
+          >
+            <Card className={`border border-border/50 card-hover overflow-hidden bg-gradient-to-br ${kpi.gradient}`}>
+              <CardContent className="p-4 lg:p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{kpi.label}</p>
+                  <div className={`p-2 rounded-lg ${kpi.iconBg}`}>
+                    <Icon className="h-4 w-4 text-primary-foreground" />
+                  </div>
                 </div>
-                <div className={`p-2 rounded-lg ${kpi.color}`}>
-                  <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
+                <div className="text-2xl lg:text-[28px] font-bold text-foreground tracking-tight">
+                  <AnimatedNumber value={kpi.value} prefix={kpi.prefix} />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-[10px] text-muted-foreground mt-1.5 font-medium">{kpi.trend}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
         );
       })}
     </div>
+  );
+};
+
+// --- Insight Panel ---
+const InsightPanel = () => {
+  const insights = [
+    { icon: TrendingUp, text: 'All departments operational today', type: 'success' as const },
+    { icon: AlertTriangle, text: 'Review pending advance settlements', type: 'warning' as const },
+    { icon: Zap, text: 'Staff attendance tracking is live', type: 'info' as const },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.35, duration: 0.3 }}
+    >
+      <Card className="border border-border/50 overflow-hidden">
+        <CardContent className="p-4 lg:p-5">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">System Insights</p>
+          <div className="space-y-2.5">
+            {insights.map((insight, i) => {
+              const Icon = insight.icon;
+              return (
+                <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
+                  <div className={`p-1.5 rounded-md ${
+                    insight.type === 'success' ? 'bg-chart-1/15 text-chart-1' :
+                    insight.type === 'warning' ? 'bg-accent/15 text-accent' :
+                    'bg-primary/15 text-primary'
+                  }`}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-xs font-medium text-foreground/80">{insight.text}</span>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
@@ -170,20 +217,63 @@ interface SidebarNavItemProps {
 }
 
 const SidebarNavItem = ({ icon: Icon, label, active, onClick, indent }: SidebarNavItemProps) => (
-  <button
+  <motion.button
+    whileHover={{ x: 3 }}
+    whileTap={{ scale: 0.97 }}
+    transition={{ duration: 0.15 }}
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors relative ${
       indent ? 'pl-9' : ''
     } ${
       active
-        ? 'bg-sidebar-accent text-sidebar-primary'
-        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+        ? 'bg-sidebar-accent text-sidebar-primary sidebar-glow'
+        : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground'
     }`}
   >
-    <Icon className="h-4 w-4 flex-shrink-0" />
+    <Icon className="h-[18px] w-[18px] flex-shrink-0" />
     <span className="truncate">{label}</span>
-  </button>
+  </motion.button>
 );
+
+// --- Mobile Bottom Nav ---
+const MobileBottomNav = ({ activeDepartment, activeSection, onHome, onDept }: {
+  activeDepartment: DepartmentType;
+  activeSection: SectionType;
+  onHome: () => void;
+  onDept: (d: DepartmentType) => void;
+}) => {
+  const tabs = [
+    { id: 'home', icon: HomeIcon, label: 'Home' },
+    { id: 'crusher', icon: Calendar, label: 'Crusher' },
+    { id: 'petroleum', icon: Fuel, label: 'Petroleum' },
+    { id: 'mlt', icon: Truck, label: 'MLT' },
+  ];
+
+  const activeId = !activeDepartment && !activeSection ? 'home' : activeDepartment || '';
+
+  return (
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-header border-t border-border">
+      <div className="flex items-center justify-around py-2 px-1 safe-area-bottom">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeId === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => tab.id === 'home' ? onHome() : onDept(tab.id as DepartmentType)}
+              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors ${
+                isActive ? 'text-accent' : 'text-muted-foreground'
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] font-semibold">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const Home = () => {
   const [activeSection, setActiveSection] = useState<SectionType>(null);
@@ -300,24 +390,24 @@ const Home = () => {
   // --- Desktop Sidebar ---
   const renderSidebar = () => (
     <aside className={`
-      fixed inset-y-0 left-0 z-50 w-64 bg-sidebar flex flex-col border-r border-sidebar-border
-      transition-transform duration-200
+      fixed inset-y-0 left-0 z-50 w-[260px] bg-sidebar flex flex-col border-r border-sidebar-border
+      transition-transform duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]
       ${isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
       lg:static lg:translate-x-0
     `}>
       {/* Logo */}
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img src={companyLogo} alt="T&T" className="h-9 w-9 object-contain rounded" />
+          <img src={companyLogo} alt="T&T" className="h-9 w-9 object-contain rounded-lg" />
           <div>
-            <h1 className="text-sm font-bold text-sidebar-foreground">Tibrewal & Tibrewal</h1>
-            <p className="text-xs text-sidebar-foreground/50">Private Limited</p>
+            <h1 className="text-sm font-bold text-sidebar-foreground tracking-tight">Tibrewal & Tibrewal</h1>
+            <p className="text-[10px] text-sidebar-foreground/40 font-medium">Private Limited</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
         <SidebarNavItem
           icon={LayoutDashboard}
           label="Dashboard"
@@ -325,8 +415,8 @@ const Home = () => {
           onClick={navigateHome}
         />
 
-        <div className="pt-3 pb-1">
-          <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">Departments</p>
+        <div className="pt-4 pb-1.5">
+          <p className="px-3 text-[9px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.15em]">Departments</p>
         </div>
 
         {departments.map((dept) => (
@@ -342,8 +432,8 @@ const Home = () => {
         {/* Crusher ERP tools */}
         {(isManager || isCrusherAdmin) && (
           <>
-            <div className="pt-3 pb-1">
-              <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">Crusher ERP</p>
+            <div className="pt-4 pb-1.5">
+              <p className="px-3 text-[9px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.15em]">Crusher ERP</p>
             </div>
             {isManager && (
               <>
@@ -358,8 +448,8 @@ const Home = () => {
         {/* Manager tools */}
         {isManager && (
           <>
-            <div className="pt-3 pb-1">
-              <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">Tools</p>
+            <div className="pt-4 pb-1.5">
+              <p className="px-3 text-[9px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.15em]">Tools</p>
             </div>
             <SidebarNavItem icon={Calculator} label="Calculator" active={activeSection === 'calculator'} onClick={() => navigateToSection('calculator')} />
             <SidebarNavItem icon={Image} label="Photo Gallery" active={activeSection === 'photo-gallery'} onClick={() => navigateToSection('photo-gallery')} />
@@ -374,24 +464,26 @@ const Home = () => {
       {/* User section */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-xs font-bold text-sidebar-foreground">{user?.full_name?.charAt(0)}</span>
+          <div className="h-9 w-9 rounded-lg bg-sidebar-accent flex items-center justify-center">
+            <span className="text-xs font-bold text-sidebar-primary">{user?.full_name?.charAt(0)}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.full_name}</p>
-            <p className="text-[10px] text-sidebar-foreground/50 capitalize">{user?.role?.replace('_', ' ')}</p>
+            <p className="text-xs font-semibold text-sidebar-foreground truncate">{user?.full_name}</p>
+            <p className="text-[10px] text-sidebar-foreground/40 capitalize font-medium">{user?.role?.replace('_', ' ')}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/60 hover:text-destructive">
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <motion.div whileTap={{ scale: 0.9 }}>
+            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-destructive">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </motion.div>
         </div>
       </div>
     </aside>
   );
 
-  // --- Top Header (Desktop + Mobile) ---
+  // --- Glass Header ---
   const renderHeader = () => (
-    <header className="sticky top-0 z-40 h-14 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
+    <header className="sticky top-0 z-40 h-16 glass-header border-b border-border/50 flex items-center justify-between px-4 lg:px-8">
       <div className="flex items-center gap-3">
         {isMobile && (
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -399,17 +491,23 @@ const Home = () => {
           </Button>
         )}
         <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            {activeSection ? getSectionTitle(activeSection) : activeDepartment ? getDeptTitle(activeDepartment) : 'Dashboard'}
+          <h2 className="text-sm font-bold text-foreground tracking-tight">
+            {activeSection ? getSectionTitle(activeSection) : activeDepartment ? getDeptTitle(activeDepartment) : 'Command Center'}
           </h2>
           {!isMobile && (
-            <p className="text-[11px] text-muted-foreground">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+            <p className="text-[11px] text-muted-foreground font-medium">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
           )}
         </div>
       </div>
       <div className="flex items-center gap-3">
         {!isMobile && (
-          <span className="text-xs text-muted-foreground">{user?.full_name}</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+            <div className="h-2 w-2 rounded-full bg-chart-1 animate-pulse" />
+            <span className="text-[11px] font-medium text-muted-foreground">Live</span>
+          </div>
+        )}
+        {!isMobile && (
+          <span className="text-xs font-semibold text-foreground/70">{user?.full_name}</span>
         )}
         {isMobile && (
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={logout}>
@@ -466,35 +564,37 @@ const Home = () => {
       }
     };
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        {activeSection === 'attendance' && <AttendanceSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'advance-salary' && <AdvanceSalarySection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'staff' && <StaffSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'staff-details' && <StaffDetailsSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'monthly-calendar' && <MonthlyCalendarSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'bulk-import' && <BulkImportSection onBack={onBack} />}
-        {activeSection === 'staff-profile' && <StaffProfileSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'settings' && <SettingsSection onBack={onBack} />}
-        {activeSection === 'daily-report' && <DailyReportSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'calculator' && <CalculatorSection onBack={onBack} />}
-        {activeSection === 'photo-gallery' && <PhotoGallerySection onBack={onBack} />}
-        {activeSection === 'reminders' && <RemindersSection onBack={onBack} />}
-        {activeSection === 'mlt' && <MLTSection onBack={onBack} />}
-        {activeSection === 'petroleum-sales' && <PetroleumSalesSection onBack={onBack} />}
-        {activeSection === 'backup' && <BackupSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'paid-deducted' && <PaymentDeductionSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'salary' && <SalarySection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'yearly-data' && <YearlyDataSection onBack={onBack} category={deptCategory} />}
-        {activeSection === 'tyre-sales' && <TyreSalesSection onBack={onBack} />}
-        {activeSection === 'credit-parties' && <CreditPartiesSection onBack={onBack} />}
-        {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
-        {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
-        {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
-        {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
-        {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
-        {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
-        {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
-      </Suspense>
+      <PageTransition>
+        <Suspense fallback={<LoadingFallback />}>
+          {activeSection === 'attendance' && <AttendanceSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'advance-salary' && <AdvanceSalarySection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'staff' && <StaffSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'staff-details' && <StaffDetailsSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'monthly-calendar' && <MonthlyCalendarSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'bulk-import' && <BulkImportSection onBack={onBack} />}
+          {activeSection === 'staff-profile' && <StaffProfileSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'settings' && <SettingsSection onBack={onBack} />}
+          {activeSection === 'daily-report' && <DailyReportSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'calculator' && <CalculatorSection onBack={onBack} />}
+          {activeSection === 'photo-gallery' && <PhotoGallerySection onBack={onBack} />}
+          {activeSection === 'reminders' && <RemindersSection onBack={onBack} />}
+          {activeSection === 'mlt' && <MLTSection onBack={onBack} />}
+          {activeSection === 'petroleum-sales' && <PetroleumSalesSection onBack={onBack} />}
+          {activeSection === 'backup' && <BackupSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'paid-deducted' && <PaymentDeductionSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'salary' && <SalarySection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'yearly-data' && <YearlyDataSection onBack={onBack} category={deptCategory} />}
+          {activeSection === 'tyre-sales' && <TyreSalesSection onBack={onBack} />}
+          {activeSection === 'credit-parties' && <CreditPartiesSection onBack={onBack} />}
+          {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
+          {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
+          {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
+          {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
+          {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
+          {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
+          {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
+        </Suspense>
+      </PageTransition>
     );
   };
 
@@ -521,57 +621,73 @@ const Home = () => {
     const secondarySections = sections.filter(s => !s.primary);
 
     return (
-      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        {/* Primary Actions */}
-        {primarySections.length > 0 && (
-          <>
-            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Primary Actions</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-              {primarySections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(section.id)}>
-                    <CardContent className="p-4 lg:p-5 flex flex-col items-center text-center gap-3">
-                      <div className="p-3 rounded-lg bg-primary">
-                        <Icon className="h-6 w-6 lg:h-7 lg:w-7 text-primary-foreground" />
-                      </div>
-                      <p className="text-base lg:text-lg font-bold text-foreground">{section.title}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </>
-        )}
+      <PageTransition>
+        <div className="p-4 lg:p-8 max-w-6xl mx-auto">
+          {/* Primary Actions */}
+          {primarySections.length > 0 && (
+            <>
+              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Quick Actions</p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {primarySections.map((section, i) => {
+                  const Icon = section.icon;
+                  return (
+                    <motion.div
+                      key={section.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.06, duration: 0.3 }}
+                    >
+                      <Card className="cursor-pointer card-hover border border-border/50 overflow-hidden" onClick={() => navigateToSection(section.id)}>
+                        <CardContent className="p-5 flex flex-col items-center text-center gap-3">
+                          <div className="p-3.5 rounded-xl bg-primary glow-accent">
+                            <Icon className="h-6 w-6 text-primary-foreground" />
+                          </div>
+                          <p className="text-sm font-bold text-foreground tracking-tight">{section.title}</p>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
-        {/* Management */}
-        {secondarySections.length > 0 && (
-          <>
-            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Management</p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
-              {secondarySections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(section.id)}>
-                    <CardContent className="p-3 lg:p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary">
-                          <Icon className="h-5 w-5 text-primary-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground">{section.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">{section.description}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
+          {/* Management */}
+          {secondarySections.length > 0 && (
+            <>
+              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Management</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {secondarySections.map((section, i) => {
+                  const Icon = section.icon;
+                  return (
+                    <motion.div
+                      key={section.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + i * 0.04, duration: 0.25 }}
+                    >
+                      <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection(section.id)}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-primary/10">
+                              <Icon className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-semibold text-foreground tracking-tight">{section.title}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{section.description}</p>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </PageTransition>
     );
   };
 
@@ -580,150 +696,219 @@ const Home = () => {
     if (activeDepartment || activeSection) return null;
 
     return (
-      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        {/* KPI Cards */}
-        {isManager && (
-          <div className="mb-6">
-            <KpiCards />
+      <PageTransition>
+        <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8">
+          {/* KPI Cards */}
+          {isManager && (
+            <div className="mb-8">
+              <KpiCards />
+            </div>
+          )}
+
+          {/* Insight Panel + Quick Actions Row */}
+          {isManager && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+              <div className="lg:col-span-2">
+                <InsightPanel />
+              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+              >
+                <Card className="border border-border/50 h-full">
+                  <CardContent className="p-4 lg:p-5">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-3">Quick Actions</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'Add Attendance', icon: Calendar, section: 'attendance' as SectionType, dept: 'crusher' as DepartmentType },
+                        { label: 'Record Advance', icon: Wallet, section: 'advance-salary' as SectionType, dept: 'crusher' as DepartmentType },
+                        { label: 'View Reports', icon: FileText, section: 'crusher-reports' as SectionType, dept: null },
+                      ].map((action) => {
+                        const Icon = action.icon;
+                        return (
+                          <motion.button
+                            key={action.label}
+                            whileTap={{ scale: 0.97 }}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+                            onClick={() => {
+                              if (action.dept) setActiveDepartment(action.dept);
+                              navigateToSection(action.section);
+                            }}
+                          >
+                            <div className="p-2 rounded-lg bg-accent/15">
+                              <Icon className="h-4 w-4 text-accent" />
+                            </div>
+                            <span className="text-[13px] font-semibold text-foreground">{action.label}</span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/40 ml-auto" />
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Departments */}
+          <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Departments</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {departments.map((dept, i) => {
+              const Icon = dept.icon;
+              return (
+                <motion.div
+                  key={dept.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
+                >
+                  <Card className="cursor-pointer card-hover border border-border/50 overflow-hidden group" onClick={() => navigateToDepartment(dept.id)}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-xl bg-primary transition-all group-hover:glow-accent">
+                          <Icon className="h-6 w-6 text-primary-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-[15px] font-bold text-foreground tracking-tight">{dept.title}</h2>
+                          <p className="text-[11px] text-muted-foreground font-medium">{dept.description}</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground/40 flex-shrink-0 transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
-        )}
 
-        {/* Departments */}
-        <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Departments</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mb-6">
-          {departments.map((dept) => {
-            const Icon = dept.icon;
-            return (
-              <Card key={dept.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToDepartment(dept.id)}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-primary">
-                      <Icon className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-base font-semibold text-foreground">{dept.title}</h2>
-                      <p className="text-xs text-muted-foreground">{dept.description}</p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Crusher ERP - Crusher Admin fuel analysis */}
-        {isCrusherAdmin && !isManager && (
-          <>
-            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">⛽ Crusher Tools</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-              <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection('crusher-fuel-analysis')}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-secondary">
-                      <Fuel className="h-5 w-5 text-secondary-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">⛽ Fuel Analysis</p>
-                      <p className="text-xs text-muted-foreground">Crusher fuel tracking</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
-
-        {/* Crusher ERP - Manager Only */}
-        {isManager && (
-          <>
-            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">🚀 Crusher ERP</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-              {[
-                { id: 'vehicle-management' as SectionType, title: '🚛 Vehicle Management', icon: Truck, desc: 'Trucks, maintenance & fuel' },
-                { id: 'invoice-generator' as SectionType, title: '🧾 Invoice Generator', icon: FileText, desc: 'GST invoices & PDF' },
-                { id: 'crusher-fuel-analysis' as SectionType, title: '⛽ Fuel Analysis', icon: Fuel, desc: 'Crusher fuel tracking' },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(item.id)}>
-                    <CardContent className="p-3 lg:p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-secondary">
-                          <Icon className="h-5 w-5 text-secondary-foreground" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.desc}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          {/* Crusher ERP - Crusher Admin fuel analysis */}
+          {isCrusherAdmin && !isManager && (
+            <>
+              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Crusher Tools</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection('crusher-fuel-analysis')}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-accent/15">
+                        <Fuel className="h-5 w-5 text-accent" />
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Manager tools */}
-            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Tools</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-              {[
-                { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator },
-                { id: 'photo-gallery' as SectionType, title: 'Photo Gallery', icon: Image },
-                { id: 'reminders' as SectionType, title: 'Reminders', icon: Bell },
-                { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(item.id)}>
-                    <CardContent className="p-3 lg:p-4">
-                      <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-2 rounded-lg bg-primary">
-                          <Icon className="h-5 w-5 text-primary-foreground" />
-                        </div>
-                        <p className="text-sm font-medium text-foreground">{item.title}</p>
+                      <div className="flex-1">
+                        <p className="text-[13px] font-semibold text-foreground">Fuel Analysis</p>
+                        <p className="text-[11px] text-muted-foreground">Crusher fuel tracking</p>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection('user-management')}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary"><Users className="h-5 w-5 text-primary-foreground" /></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">User Management</p>
-                      <p className="text-xs text-muted-foreground">Add & manage user profiles</p>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection('settings')}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-muted"><Settings className="h-5 w-5 text-muted-foreground" /></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">Settings</p>
-                      <p className="text-xs text-muted-foreground">Full Database Backup</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
 
-        <div className="mt-8 text-center text-xs text-muted-foreground">
-          <p>Tibrewal & Tibrewal Pvt. Ltd.</p>
-          <p>Mining & Construction • Jharkhand</p>
+          {/* Crusher ERP - Manager Only */}
+          {isManager && (
+            <>
+              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Crusher ERP</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {[
+                  { id: 'vehicle-management' as SectionType, title: 'Vehicle Management', icon: Truck, desc: 'Trucks, maintenance & fuel' },
+                  { id: 'invoice-generator' as SectionType, title: 'Invoice Generator', icon: FileText, desc: 'GST invoices & PDF' },
+                  { id: 'crusher-fuel-analysis' as SectionType, title: 'Fuel Analysis', icon: Fuel, desc: 'Crusher fuel tracking' },
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 + i * 0.05, duration: 0.25 }}
+                    >
+                      <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection(item.id)}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-secondary/10">
+                              <Icon className="h-5 w-5 text-secondary" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold text-foreground">{item.title}</p>
+                              <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Manager tools */}
+              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Tools</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+                {[
+                  { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator },
+                  { id: 'photo-gallery' as SectionType, title: 'Photo Gallery', icon: Image },
+                  { id: 'reminders' as SectionType, title: 'Reminders', icon: Bell },
+                  { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload },
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 + i * 0.04, duration: 0.2 }}
+                    >
+                      <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection(item.id)}>
+                        <CardContent className="p-4">
+                          <div className="flex flex-col items-center text-center gap-2.5">
+                            <div className="p-2.5 rounded-xl bg-primary/10">
+                              <Icon className="h-5 w-5 text-primary" />
+                            </div>
+                            <p className="text-[12px] font-semibold text-foreground">{item.title}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection('user-management')}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-primary/10"><Users className="h-5 w-5 text-primary" /></div>
+                      <div className="flex-1">
+                        <p className="text-[13px] font-semibold text-foreground">User Management</p>
+                        <p className="text-[11px] text-muted-foreground">Add & manage user profiles</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection('settings')}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-muted"><Settings className="h-5 w-5 text-muted-foreground" /></div>
+                      <div className="flex-1">
+                        <p className="text-[13px] font-semibold text-foreground">Settings</p>
+                        <p className="text-[11px] text-muted-foreground">Full Database Backup</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+
+          <div className="mt-10 text-center text-[11px] text-muted-foreground/50 font-medium">
+            <p>Tibrewal & Tibrewal Pvt. Ltd.</p>
+            <p className="text-[10px]">Mining & Construction · Jharkhand</p>
+          </div>
         </div>
-      </div>
+      </PageTransition>
     );
   };
 
@@ -734,16 +919,34 @@ const Home = () => {
 
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
-        <div className="fixed inset-0 bg-foreground/20 z-40" onClick={() => setSidebarOpen(false)} />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-foreground/30 backdrop-blur-sm z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {renderHeader()}
         <main className="flex-1 overflow-auto">
-          {activeSection ? renderSectionContent() : activeDepartment ? renderDepartmentContent() : renderDashboard()}
+          <AnimatePresence mode="wait">
+            {activeSection ? renderSectionContent() : activeDepartment ? renderDepartmentContent() : renderDashboard()}
+          </AnimatePresence>
         </main>
       </div>
+
+      {/* Mobile Bottom Nav */}
+      {isMobile && (
+        <MobileBottomNav
+          activeDepartment={activeDepartment}
+          activeSection={activeSection}
+          onHome={navigateHome}
+          onDept={navigateToDepartment}
+        />
+      )}
 
       <AIChatBot includeData={!activeSection} />
     </div>
