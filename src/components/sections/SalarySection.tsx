@@ -163,8 +163,7 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="flex items-center gap-3 p-4">
-          <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
+        <div className="flex items-center gap-3 p-4 max-w-5xl mx-auto">
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Salary Calculator</h1>
             <p className="text-xs text-muted-foreground">Shifts × Rate − Advances = Payable</p>
@@ -174,7 +173,7 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-4">
         <div className="flex gap-2">
           <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
             <SelectTrigger className="flex-1"><SelectValue placeholder="Month" /></SelectTrigger>
@@ -220,9 +219,24 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
         {/* Staff List */}
         <div className="space-y-2">
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Card key={i} className="border">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex justify-between">
+                      <div className="animate-pulse bg-muted h-4 w-28 rounded" />
+                      <div className="animate-pulse bg-muted h-5 w-20 rounded" />
+                    </div>
+                    <div className="animate-pulse bg-muted h-16 w-full rounded" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : filteredData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No staff found</div>
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm font-medium">No staff found</p>
+              <p className="text-xs mt-1">Try adjusting your search or filters</p>
+            </div>
           ) : (
             filteredData.map((item) => (
               <Card key={`${item.staff.type}-${item.staff.id}`}>

@@ -220,13 +220,8 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold">Petroleum Sales</h1>
-      </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg lg:text-xl font-bold mb-4">Petroleum Sales</h1>
 
       {/* Month/Year Selection */}
       <div className="grid grid-cols-2 gap-2 mb-4">
@@ -292,7 +287,17 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
       )}
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="border"><CardContent className="p-3 flex items-center gap-3">
+              <div className="animate-pulse bg-muted h-4 w-4 rounded" />
+              <div className="flex-1 space-y-1">
+                <div className="animate-pulse bg-muted h-4 w-24 rounded" />
+                <div className="animate-pulse bg-muted h-3 w-16 rounded" />
+              </div>
+            </CardContent></Card>
+          ))}
+        </div>
       ) : viewMode === 'list' ? (
         <>
           {/* Type Filter for List View */}

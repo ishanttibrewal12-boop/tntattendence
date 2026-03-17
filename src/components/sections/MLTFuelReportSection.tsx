@@ -215,11 +215,8 @@ const MLTFuelReportSection = ({ onBack }: Props) => {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto pb-20">
-      <div className="flex items-center gap-3 mb-4">
-        <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <h1 className="text-xl font-bold text-foreground">MLT Fuel Report</h1>
-      </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto pb-20">
+      <h1 className="text-lg lg:text-xl font-bold text-foreground mb-4">MLT Fuel Report</h1>
 
       <div className="flex gap-2 mb-4">
         {(['list', 'daily', 'monthly'] as ViewType[]).map(v => (

@@ -151,14 +151,8 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
   });
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground">{categoryTitle}Staff Management</h1>
-      </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg lg:text-xl font-bold text-foreground mb-4">{categoryTitle}Staff Management</h1>
 
       {/* Summary */}
       <Card className="mb-4">
@@ -249,9 +243,24 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
 
       {/* Staff List */}
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="border">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="animate-pulse bg-muted h-10 w-10 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="animate-pulse bg-muted h-4 w-32 rounded" />
+                  <div className="animate-pulse bg-muted h-3 w-20 rounded" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : filteredStaff.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">No staff found</div>
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-sm font-medium">No staff found</p>
+          <p className="text-xs mt-1">Try adjusting your search or add new staff</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {filteredStaff.map((staff) => (

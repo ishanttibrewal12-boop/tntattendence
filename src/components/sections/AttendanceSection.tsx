@@ -240,13 +240,8 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
   const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) + ' ' : '';
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground">{categoryTitle}Attendance</h1>
-      </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg lg:text-xl font-bold text-foreground mb-4">{categoryTitle}Attendance</h1>
 
       <div className="flex gap-2 mb-4">
         <Button 
@@ -368,7 +363,18 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="space-y-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
+                  <div className="animate-pulse bg-muted h-4 w-32 rounded" />
+                  <div className="flex gap-1">
+                    <div className="animate-pulse bg-muted h-8 w-8 rounded-md" />
+                    <div className="animate-pulse bg-muted h-8 w-8 rounded-md" />
+                    <div className="animate-pulse bg-muted h-8 w-8 rounded-md" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : filteredStaff.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No staff found</div>
           ) : (
