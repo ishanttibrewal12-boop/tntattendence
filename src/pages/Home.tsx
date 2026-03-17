@@ -1,5 +1,5 @@
-import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench } from 'lucide-react';
+import { useState, useMemo, lazy, Suspense, useEffect, useCallback } from 'react';
+import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench, LayoutDashboard, Menu, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
@@ -7,6 +7,7 @@ import companyLogo from '@/assets/company-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import AIChatBot from '@/components/AIChatBot';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
@@ -67,49 +68,146 @@ interface NavItem {
 }
 
 const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center" style={{ background: '#F4F6F8' }}>
-    <div className="animate-pulse text-sm" style={{ color: '#1e3a8a' }}>Loading...</div>
-  </div>
-);
-
-// Top Header Component
-const TopHeader = ({ deptTitle, userName, onLogout }: { deptTitle?: string; userName: string; onLogout: () => void }) => (
-  <div className="sticky top-0 z-50 px-4 py-3 flex items-center justify-between" style={{ background: '#0f172a' }}>
-    <div className="flex items-center gap-3 min-w-0">
-      <img src={companyLogo} alt="T&T" className="h-8 w-8 object-contain" loading="lazy" />
-      <div className="min-w-0">
-        <p className="text-sm font-bold truncate" style={{ color: 'white' }}>Tibrewal & Tibrewal</p>
-        {deptTitle && <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{deptTitle}</p>}
-      </div>
-    </div>
-    <div className="flex items-center gap-3">
-      <div className="text-right hidden sm:block">
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>{userName}</p>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{format(new Date(), 'dd MMM yyyy')}</p>
-      </div>
-      <Button variant="ghost" size="icon" onClick={onLogout} className="hover:bg-white/10">
-        <LogOut className="h-4 w-4" style={{ color: 'rgba(255,255,255,0.7)' }} />
-      </Button>
+  <div className="flex items-center justify-center py-20">
+    <div className="text-center">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+      <p className="text-sm text-muted-foreground">Loading...</p>
     </div>
   </div>
 );
 
+// --- KPI Cards Component ---
+const KpiCards = () => {
+  const [stats, setStats] = useState({ totalStaff: 0, todayPresent: 0, pendingAdvances: 0, monthlyExpense: 0 });
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const [staffRes, attendanceRes, advancesRes] = await Promise.all([
+        supabase.from('staff').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).in('status', ['present', 'half_day']),
+        supabase.from('advances').select('amount').eq('is_deducted', false),
+      ]);
+      const pendingAdv = (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0);
+      setStats({
+        totalStaff: staffRes.count || 0,
+        todayPresent: attendanceRes.count || 0,
+        pendingAdvances: pendingAdv,
+        monthlyExpense: 0,
+      });
+      setLoading(false);
+    };
+    fetchStats();
+  }, []);
+
+  const kpis = [
+    { label: 'Total Staff', value: loading ? '...' : stats.totalStaff.toString(), icon: Users, color: 'bg-primary/10 text-primary' },
+    { label: 'Today Attendance', value: loading ? '...' : stats.todayPresent.toString(), icon: Calendar, color: 'bg-accent/10 text-accent' },
+    { label: 'Pending Advances', value: loading ? '...' : `₹${stats.pendingAdvances.toLocaleString('en-IN')}`, icon: Wallet, color: 'bg-destructive/10 text-destructive' },
+    { label: 'Monthly Salary', value: loading ? '...' : '₹0', icon: DollarSign, color: 'bg-chart-1/10 text-chart-1' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+      {kpis.map((kpi) => {
+        const Icon = kpi.icon;
+        return (
+          <Card key={kpi.label} className="border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{kpi.label}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-foreground mt-1">{kpi.value}</p>
+                </div>
+                <div className={`p-2 rounded-lg ${kpi.color}`}>
+                  <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+};
+
+// --- Sidebar Navigation Item ---
+interface SidebarNavItemProps {
+  icon: typeof Calendar;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+  indent?: boolean;
+}
+
+const SidebarNavItem = ({ icon: Icon, label, active, onClick, indent }: SidebarNavItemProps) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+      indent ? 'pl-9' : ''
+    } ${
+      active
+        ? 'bg-sidebar-accent text-sidebar-primary'
+        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+    }`}
+  >
+    <Icon className="h-4 w-4 flex-shrink-0" />
+    <span className="truncate">{label}</span>
+  </button>
+);
 
 const Home = () => {
   const [activeSection, setActiveSection] = useState<SectionType>(null);
   const [activeDepartment, setActiveDepartment] = useState<DepartmentType>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAppAuth();
-
-  
+  const isMobile = useIsMobile();
 
   const isManager = user?.role === 'manager';
   const isMltAdmin = user?.role === 'mlt_admin';
   const isPetroleumAdmin = user?.role === 'petroleum_admin';
   const isCrusherAdmin = user?.role === 'crusher_admin';
 
+  // Browser back button support
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeSection) {
+        setActiveSection(null);
+      } else if (activeDepartment) {
+        setActiveDepartment(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeSection, activeDepartment]);
 
+  const navigateToSection = useCallback((section: SectionType) => {
+    window.history.pushState({}, '', '');
+    setActiveSection(section);
+    setSidebarOpen(false);
+  }, []);
 
+  const navigateToDepartment = useCallback((dept: DepartmentType) => {
+    if (dept === 'credit-parties') {
+      navigateToSection('credit-parties');
+      return;
+    }
+    if (dept === 'crusher-reports') {
+      navigateToSection('crusher-reports');
+      return;
+    }
+    window.history.pushState({}, '', '');
+    setActiveDepartment(dept);
+    setActiveSection(null);
+    setSidebarOpen(false);
+  }, [navigateToSection]);
+
+  const navigateHome = useCallback(() => {
+    setActiveSection(null);
+    setActiveDepartment(null);
+    setSidebarOpen(false);
+  }, []);
 
   // Department sections
   const getDeptSections = (dept: 'petroleum' | 'crusher' | 'tyres-office'): NavItem[] => {
@@ -117,23 +215,19 @@ const Home = () => {
       { id: 'attendance', title: 'Attendance', icon: Calendar, description: 'Mark daily attendance', primary: true },
       { id: 'advance-salary', title: 'Advances', icon: Wallet, description: 'Manage advance payments', primary: true },
     ];
-
     if (isManager) {
       primary.push(
         { id: 'salary', title: 'Salary', icon: DollarSign, description: 'Calculate salaries', primary: true },
         { id: 'paid-deducted', title: 'Paid & Deducted', icon: CheckCircle, description: 'Track payment status', primary: true },
       );
     }
-
     const secondary: NavItem[] = [];
-
     if (dept === 'petroleum' && isManager) {
       secondary.push({ id: 'petroleum-sales', title: 'Petroleum Sales', icon: Fuel, description: 'UPI & Cash sales' });
     }
     if (dept === 'tyres-office' && isManager) {
       secondary.push({ id: 'tyre-sales', title: 'Tyre Sales', icon: CircleDot, description: 'Daily tyre sales' });
     }
-
     if (isManager) {
       secondary.push(
         { id: 'daily-report', title: 'Daily Report', icon: FileText, description: 'All-in-one report' },
@@ -141,17 +235,14 @@ const Home = () => {
         { id: 'yearly-data', title: 'Yearly Data', icon: BarChart3, description: 'Annual reports' },
       );
     }
-
     secondary.push(
       { id: 'staff', title: 'Staff Management', icon: UserPlus, description: 'Add or remove staff' },
       { id: 'staff-profile', title: 'Staff Profiles', icon: User, description: 'View & share profiles' },
       ...(isManager ? [{ id: 'staff-details' as SectionType, title: 'Shift Rates', icon: UserCog, description: 'Configure shift rates' }] : []),
     );
-
     if (isManager) {
       secondary.push({ id: 'backup', title: 'Monthly Backup', icon: FolderArchive, description: 'Download reports' });
     }
-
     return [...primary, ...secondary];
   };
 
@@ -178,64 +269,221 @@ const Home = () => {
 
   const deptCategory = getDeptCategory(activeDepartment);
 
-  // Render active section
-  if (activeSection) {
-    const onBack = () => setActiveSection(null);
+  // --- Desktop Sidebar ---
+  const renderSidebar = () => (
+    <aside className={`
+      fixed inset-y-0 left-0 z-50 w-64 bg-sidebar flex flex-col border-r border-sidebar-border
+      transition-transform duration-200
+      ${isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
+      lg:static lg:translate-x-0
+    `}>
+      {/* Logo */}
+      <div className="p-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <img src={companyLogo} alt="T&T" className="h-9 w-9 object-contain rounded" />
+          <div>
+            <h1 className="text-sm font-bold text-sidebar-foreground">Tibrewal & Tibrewal</h1>
+            <p className="text-xs text-sidebar-foreground/50">Private Limited</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        <SidebarNavItem
+          icon={LayoutDashboard}
+          label="Dashboard"
+          active={!activeDepartment && !activeSection}
+          onClick={navigateHome}
+        />
+
+        <div className="pt-3 pb-1">
+          <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">Departments</p>
+        </div>
+
+        {departments.map((dept) => (
+          <SidebarNavItem
+            key={dept.id}
+            icon={dept.icon}
+            label={dept.title}
+            active={activeDepartment === dept.id || (dept.id === 'credit-parties' && activeSection === 'credit-parties') || (dept.id === 'crusher-reports' && activeSection === 'crusher-reports')}
+            onClick={() => navigateToDepartment(dept.id)}
+          />
+        ))}
+
+        {/* Crusher ERP tools */}
+        {(isManager || isCrusherAdmin) && (
+          <>
+            <div className="pt-3 pb-1">
+              <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">Crusher ERP</p>
+            </div>
+            {isManager && (
+              <>
+                <SidebarNavItem icon={Truck} label="Vehicle Management" active={activeSection === 'vehicle-management'} onClick={() => navigateToSection('vehicle-management')} />
+                <SidebarNavItem icon={FileText} label="Invoice Generator" active={activeSection === 'invoice-generator'} onClick={() => navigateToSection('invoice-generator')} />
+              </>
+            )}
+            <SidebarNavItem icon={Fuel} label="Fuel Analysis" active={activeSection === 'crusher-fuel-analysis'} onClick={() => navigateToSection('crusher-fuel-analysis')} />
+          </>
+        )}
+
+        {/* Manager tools */}
+        {isManager && (
+          <>
+            <div className="pt-3 pb-1">
+              <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">Tools</p>
+            </div>
+            <SidebarNavItem icon={Calculator} label="Calculator" active={activeSection === 'calculator'} onClick={() => navigateToSection('calculator')} />
+            <SidebarNavItem icon={Image} label="Photo Gallery" active={activeSection === 'photo-gallery'} onClick={() => navigateToSection('photo-gallery')} />
+            <SidebarNavItem icon={Bell} label="Reminders" active={activeSection === 'reminders'} onClick={() => navigateToSection('reminders')} />
+            <SidebarNavItem icon={Upload} label="Import/Export" active={activeSection === 'bulk-import'} onClick={() => navigateToSection('bulk-import')} />
+            <SidebarNavItem icon={Users} label="User Management" active={activeSection === 'user-management'} onClick={() => navigateToSection('user-management')} />
+            <SidebarNavItem icon={Settings} label="Settings" active={activeSection === 'settings'} onClick={() => navigateToSection('settings')} />
+          </>
+        )}
+      </nav>
+
+      {/* User section */}
+      <div className="p-4 border-t border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+            <span className="text-xs font-bold text-sidebar-foreground">{user?.full_name?.charAt(0)}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.full_name}</p>
+            <p className="text-[10px] text-sidebar-foreground/50 capitalize">{user?.role?.replace('_', ' ')}</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/60 hover:text-destructive">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </aside>
+  );
+
+  // --- Top Header (Desktop + Mobile) ---
+  const renderHeader = () => (
+    <header className="sticky top-0 z-40 h-14 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
+      <div className="flex items-center gap-3">
+        {isMobile && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        )}
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">
+            {activeSection ? getSectionTitle(activeSection) : activeDepartment ? getDeptTitle(activeDepartment) : 'Dashboard'}
+          </h2>
+          {!isMobile && (
+            <p className="text-[11px] text-muted-foreground">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {!isMobile && (
+          <span className="text-xs text-muted-foreground">{user?.full_name}</span>
+        )}
+        {isMobile && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={logout}>
+            <LogOut className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        )}
+      </div>
+    </header>
+  );
+
+  // Section title helper
+  const getSectionTitle = (section: SectionType): string => {
+    const titles: Record<string, string> = {
+      'attendance': 'Attendance',
+      'advance-salary': 'Advances',
+      'staff': 'Staff Management',
+      'staff-details': 'Shift Rates',
+      'monthly-calendar': 'Monthly Report',
+      'bulk-import': 'Import/Export',
+      'staff-profile': 'Staff Profiles',
+      'settings': 'Settings',
+      'daily-report': 'Daily Report',
+      'calculator': 'Calculator',
+      'photo-gallery': 'Photo Gallery',
+      'reminders': 'Reminders',
+      'mlt': 'MLT Dashboard',
+      'petroleum-sales': 'Petroleum Sales',
+      'backup': 'Monthly Backup',
+      'paid-deducted': 'Paid & Deducted',
+      'salary': 'Salary',
+      'yearly-data': 'Yearly Data',
+      'tyre-sales': 'Tyre Sales',
+      'credit-parties': 'Credit Parties',
+      'crusher-reports': 'Crusher Reports',
+      'mlt-services': 'MLT Services',
+      'mlt-fuel-report': 'MLT Fuel Report',
+      'user-management': 'User Management',
+      'vehicle-management': 'Vehicle Management',
+      'invoice-generator': 'Invoice Generator',
+      'crusher-fuel-analysis': 'Fuel Analysis',
+    };
+    return titles[section || ''] || 'Dashboard';
+  };
+
+  // Render active section content
+  const renderSectionContent = () => {
+    if (!activeSection) return null;
+    const onBack = () => {
+      if (activeDepartment) {
+        setActiveSection(null);
+      } else {
+        setActiveSection(null);
+        setActiveDepartment(null);
+      }
+    };
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-          <TopHeader deptTitle={getDeptTitle(activeDepartment)} userName={user?.full_name || ''} onLogout={logout} />
-          {activeSection === 'attendance' && <AttendanceSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'advance-salary' && <AdvanceSalarySection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'staff' && <StaffSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'staff-details' && <StaffDetailsSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'monthly-calendar' && <MonthlyCalendarSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'bulk-import' && <BulkImportSection onBack={onBack} />}
-          {activeSection === 'staff-profile' && <StaffProfileSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'settings' && <SettingsSection onBack={onBack} />}
-          {activeSection === 'daily-report' && <DailyReportSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'calculator' && <CalculatorSection onBack={onBack} />}
-          {activeSection === 'photo-gallery' && <PhotoGallerySection onBack={onBack} />}
-          {activeSection === 'reminders' && <RemindersSection onBack={onBack} />}
-          {activeSection === 'mlt' && <MLTSection onBack={onBack} />}
-          {activeSection === 'petroleum-sales' && <PetroleumSalesSection onBack={onBack} />}
-          {activeSection === 'backup' && <BackupSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'paid-deducted' && <PaymentDeductionSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'salary' && <SalarySection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'yearly-data' && <YearlyDataSection onBack={onBack} category={deptCategory} />}
-          {activeSection === 'tyre-sales' && <TyreSalesSection onBack={onBack} />}
-          {activeSection === 'credit-parties' && <CreditPartiesSection onBack={onBack} />}
-          {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
-          {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
-          {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
-          {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
-          {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
-          {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
-          {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
-        </div>
+        {activeSection === 'attendance' && <AttendanceSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'advance-salary' && <AdvanceSalarySection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'staff' && <StaffSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'staff-details' && <StaffDetailsSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'monthly-calendar' && <MonthlyCalendarSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'bulk-import' && <BulkImportSection onBack={onBack} />}
+        {activeSection === 'staff-profile' && <StaffProfileSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'settings' && <SettingsSection onBack={onBack} />}
+        {activeSection === 'daily-report' && <DailyReportSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'calculator' && <CalculatorSection onBack={onBack} />}
+        {activeSection === 'photo-gallery' && <PhotoGallerySection onBack={onBack} />}
+        {activeSection === 'reminders' && <RemindersSection onBack={onBack} />}
+        {activeSection === 'mlt' && <MLTSection onBack={onBack} />}
+        {activeSection === 'petroleum-sales' && <PetroleumSalesSection onBack={onBack} />}
+        {activeSection === 'backup' && <BackupSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'paid-deducted' && <PaymentDeductionSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'salary' && <SalarySection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'yearly-data' && <YearlyDataSection onBack={onBack} category={deptCategory} />}
+        {activeSection === 'tyre-sales' && <TyreSalesSection onBack={onBack} />}
+        {activeSection === 'credit-parties' && <CreditPartiesSection onBack={onBack} />}
+        {activeSection === 'crusher-reports' && <CrusherReportsSection onBack={onBack} />}
+        {activeSection === 'mlt-services' && <MLTServicesSection onBack={onBack} />}
+        {activeSection === 'mlt-fuel-report' && <MLTFuelReportSection onBack={onBack} />}
+        {activeSection === 'user-management' && <UserManagementSection onBack={onBack} />}
+        {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
+        {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
+        {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
       </Suspense>
     );
-  }
+  };
 
-  // Department detail view
-  if (activeDepartment) {
+  // Department detail view content
+  const renderDepartmentContent = () => {
+    if (!activeDepartment || activeSection) return null;
+
     let sections: NavItem[] = [];
-    let deptTitle = getDeptTitle(activeDepartment);
-    if (activeDepartment === 'petroleum') { sections = getDeptSections('petroleum'); }
-    else if (activeDepartment === 'crusher') { sections = getDeptSections('crusher'); }
+    if (activeDepartment === 'petroleum') sections = getDeptSections('petroleum');
+    else if (activeDepartment === 'crusher') sections = getDeptSections('crusher');
     else if (activeDepartment === 'mlt') {
       sections = mltSections;
-      // Petroleum admin only sees fuel report; MLT admin sees services + dashboard + fuel
       if (isPetroleumAdmin && !isManager) {
         sections = sections.filter(s => s.id === 'mlt-fuel-report');
       }
     }
-    else if (activeDepartment === 'tyres-office') { sections = getDeptSections('tyres-office'); }
-    else if (activeDepartment === 'credit-parties') {
-      setActiveSection('credit-parties');
-      setActiveDepartment(null);
-      return null;
-    }
+    else if (activeDepartment === 'tyres-office') sections = getDeptSections('tyres-office');
 
     if (!isManager) {
       sections = sections.filter(s => !['salary', 'daily-report', 'yearly-data', 'backup', 'petroleum-sales', 'paid-deducted', 'tyre-sales'].includes(s.id || ''));
@@ -245,98 +493,90 @@ const Home = () => {
     const secondarySections = sections.filter(s => !s.primary);
 
     return (
-      <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-        <TopHeader deptTitle={deptTitle} userName={user?.full_name || ''} onLogout={logout} />
-        <div className="p-4 max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-5">
-            <Button variant="ghost" size="icon" onClick={() => setActiveDepartment(null)} className="hover:bg-muted">
-              <ChevronRight className="h-5 w-5 rotate-180" />
-            </Button>
-            <h1 className="text-xl font-bold text-foreground">{deptTitle}</h1>
-          </div>
+      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+        {/* Primary Actions */}
+        {primarySections.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Primary Actions</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+              {primarySections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(section.id)}>
+                    <CardContent className="p-4 lg:p-5 flex flex-col items-center text-center gap-3">
+                      <div className="p-3 rounded-lg bg-primary">
+                        <Icon className="h-6 w-6 lg:h-7 lg:w-7 text-primary-foreground" />
+                      </div>
+                      <p className="text-base lg:text-lg font-bold text-foreground">{section.title}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
+        )}
 
-          {/* ZONE 1 - Primary Actions */}
-          {primarySections.length > 0 && (
-            <>
-              <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Primary Actions</p>
-              <div className="grid grid-cols-2 gap-3 mb-5">
-                {primarySections.map((section) => {
-                  const Icon = section.icon;
-                  return (
-                    <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(section.id)}>
-                      <CardContent className="p-4 flex flex-col items-center text-center gap-2" style={{ minHeight: '96px' }}>
-                        <div className="p-2.5 rounded-lg" style={{ background: '#0f172a' }}>
-                          <Icon className="h-7 w-7" style={{ color: 'white' }} />
+        {/* Management */}
+        {secondarySections.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Management</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3">
+              {secondarySections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(section.id)}>
+                    <CardContent className="p-3 lg:p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary">
+                          <Icon className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <p className="text-lg font-bold text-foreground leading-tight">{section.title}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* ZONE 2 - Management */}
-          {secondarySections.length > 0 && (
-            <>
-              <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Management</p>
-              <div className="space-y-2">
-                {secondarySections.map((section) => {
-                  const Icon = section.icon;
-                  return (
-                    <Card key={section.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(section.id)}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg" style={{ background: '#0f172a' }}>
-                            <Icon className="h-5 w-5" style={{ color: 'white' }} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-foreground">{section.title}</p>
-                            <p className="text-xs text-muted-foreground">{section.description}</p>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground">{section.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{section.description}</p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     );
-  }
+  };
 
-  // Main dashboard
-  return (
-    <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-      <TopHeader userName={user?.full_name || ''} onLogout={logout} />
-      
-      
-      <div className="p-4 max-w-md mx-auto">
-        {/* Department Cards */}
-        <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Departments</p>
-        <div className="space-y-3 mb-6">
+  // Main dashboard content
+  const renderDashboard = () => {
+    if (activeDepartment || activeSection) return null;
+
+    return (
+      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+        {/* KPI Cards */}
+        {isManager && (
+          <div className="mb-6">
+            <KpiCards />
+          </div>
+        )}
+
+        {/* Departments */}
+        <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Departments</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mb-6">
           {departments.map((dept) => {
             const Icon = dept.icon;
             return (
-              <Card key={dept.id} className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0" onClick={() => {
-                if (dept.id === 'credit-parties') setActiveSection('credit-parties');
-                else if (dept.id === 'crusher-reports') setActiveSection('crusher-reports');
-                else setActiveDepartment(dept.id);
-              }}>
+              <Card key={dept.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToDepartment(dept.id)}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl" style={{ background: '#0f172a' }}>
-                      <Icon className="h-6 w-6" style={{ color: 'white' }} />
+                    <div className="p-3 rounded-xl bg-primary">
+                      <Icon className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <div className="flex-1">
-                      <h2 className="text-lg font-semibold text-foreground">{dept.title}</h2>
-                      <p className="text-sm text-muted-foreground">{dept.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-base font-semibold text-foreground">{dept.title}</h2>
+                      <p className="text-xs text-muted-foreground">{dept.description}</p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
@@ -344,37 +584,34 @@ const Home = () => {
           })}
         </div>
 
-        {/* 🚀 Crusher ERP - Manager & Crusher Admin (Fuel Analysis) */}
-        {(isManager || isCrusherAdmin) && (
+        {/* Crusher ERP - Crusher Admin fuel analysis */}
+        {isCrusherAdmin && !isManager && (
           <>
-            {isCrusherAdmin && !isManager && (
-              <>
-                <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">⛽ Crusher Tools</p>
-                <div className="space-y-2 mb-6">
-                  <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('crusher-fuel-analysis')}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg" style={{ background: '#1e3a5f' }}>
-                          <Fuel className="h-5 w-5" style={{ color: 'white' }} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">⛽ Fuel Analysis</p>
-                          <p className="text-xs text-muted-foreground">Crusher fuel tracking</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            )}
+            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">⛽ Crusher Tools</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+              <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection('crusher-fuel-analysis')}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-secondary">
+                      <Fuel className="h-5 w-5 text-secondary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">⛽ Fuel Analysis</p>
+                      <p className="text-xs text-muted-foreground">Crusher fuel tracking</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
-        {/* 🚀 Crusher ERP - Manager Only */}
+
+        {/* Crusher ERP - Manager Only */}
         {isManager && (
           <>
-            <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">🚀 Crusher ERP</p>
-            <div className="space-y-2 mb-6">
+            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">🚀 Crusher ERP</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
               {[
                 { id: 'vehicle-management' as SectionType, title: '🚛 Vehicle Management', icon: Truck, desc: 'Trucks, maintenance & fuel' },
                 { id: 'invoice-generator' as SectionType, title: '🧾 Invoice Generator', icon: FileText, desc: 'GST invoices & PDF' },
@@ -382,11 +619,11 @@ const Home = () => {
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(item.id)}>
-                    <CardContent className="p-3">
+                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(item.id)}>
+                    <CardContent className="p-3 lg:p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg" style={{ background: '#1e3a5f' }}>
-                          <Icon className="h-5 w-5" style={{ color: 'white' }} />
+                        <div className="p-2 rounded-lg bg-secondary">
+                          <Icon className="h-5 w-5 text-secondary-foreground" />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-foreground">{item.title}</p>
@@ -399,32 +636,25 @@ const Home = () => {
                 );
               })}
             </div>
-          </>
-        )}
 
-        {/* Manager-only tools */}
-        {isManager && (
-          <>
-            <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 uppercase tracking-wider">Tools</p>
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Manager tools */}
+            <p className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Tools</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
               {[
-                { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator, desc: 'Quick calculations' },
-                { id: 'photo-gallery' as SectionType, title: 'Photo Gallery', icon: Image, desc: 'Daily photos' },
-                { id: 'reminders' as SectionType, title: 'Reminders', icon: Bell, desc: 'Notifications' },
-                { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload, desc: 'Bulk operations' },
+                { id: 'calculator' as SectionType, title: 'Calculator', icon: Calculator },
+                { id: 'photo-gallery' as SectionType, title: 'Photo Gallery', icon: Image },
+                { id: 'reminders' as SectionType, title: 'Reminders', icon: Bell },
+                { id: 'bulk-import' as SectionType, title: 'Import/Export', icon: Upload },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection(item.id)}>
-                    <CardContent className="p-3">
+                  <Card key={item.id} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection(item.id)}>
+                    <CardContent className="p-3 lg:p-4">
                       <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-2 rounded-lg" style={{ background: '#0f172a' }}>
-                          <Icon className="h-5 w-5" style={{ color: 'white' }} />
+                        <div className="p-2 rounded-lg bg-primary">
+                          <Icon className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.desc}</p>
-                        </div>
+                        <p className="text-sm font-medium text-foreground">{item.title}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -432,31 +662,32 @@ const Home = () => {
               })}
             </div>
 
-            <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('user-management')}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" style={{ background: '#0f172a' }}><Users className="h-5 w-5" style={{ color: 'white' }} /></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">User Management</p>
-                    <p className="text-xs text-muted-foreground">Add & manage user profiles</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection('user-management')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary"><Users className="h-5 w-5 text-primary-foreground" /></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">User Management</p>
+                      <p className="text-xs text-muted-foreground">Add & manage user profiles</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border-0" onClick={() => setActiveSection('settings')}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-muted"><Settings className="h-5 w-5 text-muted-foreground" /></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Settings</p>
-                    <p className="text-xs text-muted-foreground">Full Database Backup</p>
+                </CardContent>
+              </Card>
+              <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98] border" onClick={() => navigateToSection('settings')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-muted"><Settings className="h-5 w-5 text-muted-foreground" /></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">Settings</p>
+                      <p className="text-xs text-muted-foreground">Full Database Backup</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
 
@@ -465,7 +696,28 @@ const Home = () => {
           <p>Mining & Construction • Jharkhand</p>
         </div>
       </div>
-      <AIChatBot includeData={true} />
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      {renderSidebar()}
+
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div className="fixed inset-0 bg-foreground/20 z-40" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {renderHeader()}
+        <main className="flex-1 overflow-auto">
+          {activeSection ? renderSectionContent() : activeDepartment ? renderDepartmentContent() : renderDashboard()}
+        </main>
+      </div>
+
+      <AIChatBot includeData={!activeSection} />
     </div>
   );
 };
