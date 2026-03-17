@@ -184,9 +184,24 @@ const PaymentDeductionSection = ({ onBack, category }: PaymentDeductionSectionPr
 
       {/* Advances List */}
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="border">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex-1 space-y-2">
+                  <div className="animate-pulse bg-muted h-4 w-28 rounded" />
+                  <div className="animate-pulse bg-muted h-3 w-40 rounded" />
+                </div>
+                <div className="animate-pulse bg-muted h-8 w-16 rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : advances.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">No advances this month</div>
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-sm font-medium">No advances this month</p>
+          <p className="text-xs mt-1">Advances will appear here when added</p>
+        </div>
       ) : (
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {advances

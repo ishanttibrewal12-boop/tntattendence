@@ -219,9 +219,24 @@ const SalarySection = ({ onBack, category }: SalarySectionProps) => {
         {/* Staff List */}
         <div className="space-y-2">
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Card key={i} className="border">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex justify-between">
+                      <div className="animate-pulse bg-muted h-4 w-28 rounded" />
+                      <div className="animate-pulse bg-muted h-5 w-20 rounded" />
+                    </div>
+                    <div className="animate-pulse bg-muted h-16 w-full rounded" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : filteredData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No staff found</div>
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm font-medium">No staff found</p>
+              <p className="text-xs mt-1">Try adjusting your search or filters</p>
+            </div>
           ) : (
             filteredData.map((item) => (
               <Card key={`${item.staff.type}-${item.staff.id}`}>

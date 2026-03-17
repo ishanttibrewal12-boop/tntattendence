@@ -363,7 +363,18 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="space-y-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
+                  <div className="animate-pulse bg-muted h-4 w-32 rounded" />
+                  <div className="flex gap-1">
+                    <div className="animate-pulse bg-muted h-8 w-8 rounded-md" />
+                    <div className="animate-pulse bg-muted h-8 w-8 rounded-md" />
+                    <div className="animate-pulse bg-muted h-8 w-8 rounded-md" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : filteredStaff.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No staff found</div>
           ) : (
