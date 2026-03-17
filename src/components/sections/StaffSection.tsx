@@ -151,14 +151,8 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
   });
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground">{categoryTitle}Staff Management</h1>
-      </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg lg:text-xl font-bold text-foreground mb-4">{categoryTitle}Staff Management</h1>
 
       {/* Summary */}
       <Card className="mb-4">
