@@ -11,6 +11,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import PageTransition from '@/components/ui/PageTransition';
+import LogoWipeTransition from '@/components/ui/LogoWipeTransition';
+import { RevenueChart, DispatchChart } from '@/components/dashboard/DashboardCharts';
 
 // Lazy load sections for performance
 const AttendanceSection = lazy(() => import('@/components/sections/AttendanceSection'));
