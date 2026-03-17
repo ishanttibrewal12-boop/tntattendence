@@ -353,13 +353,8 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold">Monthly Backup</h1>
-      </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg lg:text-xl font-bold mb-4">Monthly Backup</h1>
 
       {/* Month/Year Selection */}
       <div className="grid grid-cols-2 gap-2 mb-4">
