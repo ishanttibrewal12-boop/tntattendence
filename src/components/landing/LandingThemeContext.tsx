@@ -28,22 +28,22 @@ const lightColors = {
 };
 
 const darkColors = {
-  pageBg: '#0a0a0a',
-  sectionBg: '#111111',
-  sectionBgAlt: '#1a1a1a',
-  heading: '#f1f5f9',
-  text: '#a1a1aa',
-  textMuted: '#71717a',
-  label: '#71717a',
-  cardBg: '#1a1a1a',
-  cardBorder: '#27272a',
-  darkBg: '#0a0f18',
-  darkBgGradient: 'linear-gradient(135deg, #0a0f18 0%, #111827 100%)',
-  darkText: '#f1f5f9',
-  darkTextMuted: 'rgba(255,255,255,0.45)',
-  darkTextSoft: 'rgba(255,255,255,0.5)',
-  darkLabel: 'rgba(255,255,255,0.35)',
-  footerBg: '#050505',
+  pageBg: '#0c0e14',
+  sectionBg: '#12151d',
+  sectionBgAlt: '#181c26',
+  heading: '#f0f2f5',
+  text: '#b0b8c4',
+  textMuted: '#8892a0',
+  label: '#8892a0',
+  cardBg: '#181c26',
+  cardBorder: '#2a2f3a',
+  darkBg: '#0a0e18',
+  darkBgGradient: 'linear-gradient(135deg, #0a0e18 0%, #141a28 100%)',
+  darkText: '#f0f2f5',
+  darkTextMuted: 'rgba(255,255,255,0.55)',
+  darkTextSoft: 'rgba(255,255,255,0.6)',
+  darkLabel: 'rgba(255,255,255,0.42)',
+  footerBg: '#070910',
 };
 
 export const LandingThemeProvider = ({ children }: { children: ReactNode }) => {
