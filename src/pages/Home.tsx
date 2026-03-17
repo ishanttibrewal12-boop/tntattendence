@@ -769,6 +769,14 @@ const Home = () => {
             </div>
           )}
 
+          {/* Charts Zone */}
+          {isManager && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+              <RevenueChart />
+              <DispatchChart />
+            </div>
+          )}
+
           {/* Departments */}
           <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Departments</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
