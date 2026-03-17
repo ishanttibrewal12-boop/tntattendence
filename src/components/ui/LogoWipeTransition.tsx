@@ -24,12 +24,11 @@ const LogoWipeTransition = ({ show, onComplete }: LogoWipeTransitionProps) => {
           {/* Wipe curtain from center */}
           <motion.div
             className="absolute inset-0"
-            style={{ background: 'hsl(210, 55%, 7%)' }}
+            style={{ background: 'hsl(210, 55%, 7%)', transformOrigin: 'center' }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             exit={{ scaleX: 0 }}
             transition={{ duration: 0.35, ease: [0.33, 1, 0.68, 1] }}
-            style={{ transformOrigin: 'center', background: 'hsl(210, 55%, 7%)' }}
           />
 
           {/* Logo */}
