@@ -281,6 +281,8 @@ const Home = () => {
   const [activeSection, setActiveSection] = useState<SectionType>(null);
   const [activeDepartment, setActiveDepartment] = useState<DepartmentType>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoWipe, setShowLogoWipe] = useState(false);
+  const [pendingBack, setPendingBack] = useState<'section' | 'department' | null>(null);
   const { user, logout } = useAppAuth();
   const isMobile = useIsMobile();
 
