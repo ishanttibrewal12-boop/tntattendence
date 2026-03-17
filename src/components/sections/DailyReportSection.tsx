@@ -350,7 +350,22 @@ const DailyReportSection = ({ onBack, category }: DailyReportSectionProps) => {
       </Card>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="border"><CardContent className="p-2 text-center space-y-2">
+                <div className="animate-pulse bg-muted h-5 w-12 mx-auto rounded" />
+                <div className="animate-pulse bg-muted h-3 w-16 mx-auto rounded" />
+              </CardContent></Card>
+            ))}
+          </div>
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="border"><CardContent className="p-3 space-y-2">
+              <div className="animate-pulse bg-muted h-3 w-20 rounded" />
+              <div className="animate-pulse bg-muted h-4 w-full rounded" />
+            </CardContent></Card>
+          ))}
+        </div>
       ) : (
         <>
           {/* Summary Cards */}

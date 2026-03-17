@@ -287,7 +287,17 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
       )}
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="border"><CardContent className="p-3 flex items-center gap-3">
+              <div className="animate-pulse bg-muted h-4 w-4 rounded" />
+              <div className="flex-1 space-y-1">
+                <div className="animate-pulse bg-muted h-4 w-24 rounded" />
+                <div className="animate-pulse bg-muted h-3 w-16 rounded" />
+              </div>
+            </CardContent></Card>
+          ))}
+        </div>
       ) : viewMode === 'list' ? (
         <>
           {/* Type Filter for List View */}
