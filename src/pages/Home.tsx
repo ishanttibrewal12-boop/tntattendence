@@ -115,11 +115,26 @@ const KpiCards = () => {
   }, []);
 
   const kpis = [
-    { label: 'Total Staff', value: loading ? '...' : stats.totalStaff.toString(), icon: Users, color: 'bg-primary/10 text-primary' },
-    { label: 'Today Attendance', value: loading ? '...' : stats.todayPresent.toString(), icon: Calendar, color: 'bg-accent/10 text-accent' },
-    { label: 'Pending Advances', value: loading ? '...' : `₹${stats.pendingAdvances.toLocaleString('en-IN')}`, icon: Wallet, color: 'bg-destructive/10 text-destructive' },
-    { label: 'Monthly Salary', value: loading ? '...' : '₹0', icon: DollarSign, color: 'bg-chart-1/10 text-chart-1' },
+    { label: 'Total Staff', value: stats.totalStaff.toString(), icon: Users, color: 'bg-primary/10 text-primary' },
+    { label: 'Today Attendance', value: stats.todayPresent.toString(), icon: Calendar, color: 'bg-accent/10 text-accent' },
+    { label: 'Pending Advances', value: `₹${stats.pendingAdvances.toLocaleString('en-IN')}`, icon: Wallet, color: 'bg-destructive/10 text-destructive' },
+    { label: 'Monthly Salary', value: '₹0', icon: DollarSign, color: 'bg-chart-1/10 text-chart-1' },
   ];
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="border shadow-sm">
+            <CardContent className="p-4 space-y-3">
+              <SkeletonPulse className="h-3 w-20" />
+              <SkeletonPulse className="h-7 w-24" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
