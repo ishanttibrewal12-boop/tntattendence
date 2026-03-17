@@ -47,19 +47,9 @@ const darkColors = {
 };
 
 export const LandingThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<LandingTheme>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('landing-theme') as LandingTheme) || 'light';
-    }
-    return 'light';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('landing-theme', theme);
-  }, [theme]);
-
-  const toggle = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  const colors = theme === 'light' ? lightColors : darkColors;
+  const theme: LandingTheme = 'dark';
+  const toggle = () => {};
+  const colors = darkColors;
 
   return (
     <LandingThemeContext.Provider value={{ theme, toggle, colors }}>
