@@ -145,15 +145,9 @@ const PhotoGallerySection = ({ onBack }: PhotoGallerySectionProps) => {
   }, {} as Record<string, DailyPhoto[]>);
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-bold text-foreground">Photo Gallery</h1>
-        </div>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg lg:text-xl font-bold text-foreground">Photo Gallery</h1>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
             <Button size="sm">
