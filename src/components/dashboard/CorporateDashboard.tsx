@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import companyLogo from '@/assets/company-logo.png';
+import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 
 // --- Timeline Data ---
 const timelineData = [
