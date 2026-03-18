@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, Users, Wallet } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import { useEffect, useState } from 'react';
