@@ -270,61 +270,6 @@ const GroupStrengthSection = () => (
   </motion.div>
 );
 
-// --- Quick ERP Access ---
-interface QuickERPAccessProps {
-  onNavigate: (section: string, dept?: string) => void;
-  isManager: boolean;
-}
-
-const QuickERPAccess = ({ onNavigate, isManager }: QuickERPAccessProps) => {
-  const actions = [
-    { label: 'Crusher Operations', icon: Calendar, section: 'crusher', isDept: true, color: 'bg-chart-1' },
-    { label: 'Petroleum Station', icon: Fuel, section: 'petroleum', isDept: true, color: 'bg-accent' },
-    { label: 'MLT Fleet', icon: Truck, section: 'mlt', isDept: true, color: 'bg-chart-4' },
-    ...(isManager ? [{ label: 'View Reports', icon: FileText, section: 'crusher-reports', isDept: true, color: 'bg-chart-3' }] : []),
-  ];
-
-  return (
-    <div>
-      <motion.p
-        className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        Quick Access
-      </motion.p>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {actions.map((action, i) => {
-          const Icon = action.icon;
-          return (
-            <motion.div
-              key={action.label}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + i * 0.06, duration: 0.3 }}
-            >
-              <Card
-                className="cursor-pointer card-hover border border-border/50 overflow-hidden"
-                onClick={() => onNavigate(action.section)}
-              >
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${action.color}`}>
-                    <Icon className="h-5 w-5 text-primary-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-bold text-foreground tracking-tight truncate">{action.label}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 // --- KPI Cards (Manager only) ---
 const KpiCards = () => {
