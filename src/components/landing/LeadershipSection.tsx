@@ -1,5 +1,6 @@
 import { useLandingTheme } from './LandingThemeContext';
 import { Phone, MapPin } from 'lucide-react';
+import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 
 const LeadershipSection = () => {
   const { colors } = useLandingTheme();
