@@ -44,7 +44,7 @@ const LogoWipeTransition = ({ show, onComplete }: LogoWipeTransitionProps) => {
               }
             }}
           >
-            <img src={companyLogo} alt="T&T" className="h-16 w-16 object-contain rounded-xl" />
+            <img src={companyLogo} alt="T&T" className="h-16 w-16 object-contain rounded-xl" loading="eager" />
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
