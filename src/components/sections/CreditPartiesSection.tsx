@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Download, Share2, User, Phone, Edit2, Calendar as CalendarIcon, FileSpreadsheet } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Plus, Trash2, Download, Share2, User, Phone, Edit2, Calendar as CalendarIcon, FileSpreadsheet, Search, CreditCard, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, MoreVertical, MapPin, StickyNote, Fuel, CircleDot, Banknote, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,17 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { addReportNotes, REPORT_FOOTER, exportToExcel } from '@/lib/exportUtils';
-import { formatFullCurrency, formatCurrencyForPDF } from '@/lib/formatUtils';
+import { formatFullCurrency, formatCurrencyForPDF, formatCompactCurrency } from '@/lib/formatUtils';
+import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedNumber from '@/components/ui/AnimatedNumber';
 
 interface CreditParty {
   id: string;
@@ -41,12 +45,20 @@ interface Transaction {
   rate_per_litre: number | null;
 }
 
+interface PartyWithBalance extends CreditParty {
+  totalDebit: number;
+  totalCredit: number;
+  pendingBalance: number;
+  lastTransactionDate: string | null;
+}
+
 interface CreditPartiesSectionProps {
   onBack: () => void;
 }
 
 const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [parties, setParties] = useState<CreditParty[]>([]);
+  const [allPartyTransactions, setAllPartyTransactions] = useState<Record<string, Transaction[]>>({});
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedParty, setSelectedParty] = useState<CreditParty | null>(null);
@@ -55,7 +67,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showDeleteTx, setShowDeleteTx] = useState<Transaction | null>(null);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [editingParty, setEditingParty] = useState<CreditParty | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'balance' | 'recent'>('balance');
 
   // New party form
   const [newName, setNewName] = useState('');
@@ -78,12 +92,12 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [viewAllTime, setViewAllTime] = useState(true);
+  const [ledgerFilter, setLedgerFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  useEffect(() => { fetchParties(); }, []);
+  useEffect(() => { fetchParties(); fetchAllPartyTransactions(); }, []);
   useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewAllTime]);
 
-  // Auto-calculate amount from litres × rate
   useEffect(() => {
     if (txType === 'petroleum' && !txManualAmount && txLitres && txRatePerLitre) {
       const calc = parseFloat(txLitres) * parseFloat(txRatePerLitre);
@@ -98,6 +112,18 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setIsLoading(false);
   };
 
+  const fetchAllPartyTransactions = async () => {
+    const { data } = await supabase.from('credit_party_transactions').select('*').order('date', { ascending: false });
+    if (data) {
+      const grouped: Record<string, Transaction[]> = {};
+      (data as Transaction[]).forEach(tx => {
+        if (!grouped[tx.party_id]) grouped[tx.party_id] = [];
+        grouped[tx.party_id].push(tx);
+      });
+      setAllPartyTransactions(grouped);
+    }
+  };
+
   const fetchTransactions = async (partyId: string) => {
     let query = supabase.from('credit_party_transactions').select('*').eq('party_id', partyId).order('date', { ascending: true });
     if (!viewAllTime) {
@@ -110,6 +136,29 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     if (data) setAllTransactions(data as Transaction[]);
   };
 
+  // Parties with balance preview
+  const partiesWithBalance: PartyWithBalance[] = useMemo(() => {
+    return parties.map(p => {
+      const txs = allPartyTransactions[p.id] || [];
+      const totalDebit = txs.filter(t => t.transaction_type !== 'payment').reduce((s, t) => s + Number(t.amount), 0);
+      const totalCredit = txs.filter(t => t.transaction_type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+      const lastTx = txs.length > 0 ? txs[0].date : null;
+      return { ...p, totalDebit, totalCredit, pendingBalance: totalDebit - totalCredit, lastTransactionDate: lastTx };
+    });
+  }, [parties, allPartyTransactions]);
+
+  const filteredParties = useMemo(() => {
+    let result = partiesWithBalance.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (sortBy === 'balance') result.sort((a, b) => b.pendingBalance - a.pendingBalance);
+    else if (sortBy === 'recent') result.sort((a, b) => (b.lastTransactionDate || '').localeCompare(a.lastTransactionDate || ''));
+    else result.sort((a, b) => a.name.localeCompare(b.name));
+    return result;
+  }, [partiesWithBalance, searchQuery, sortBy]);
+
+  const totalPortfolioDebit = partiesWithBalance.reduce((s, p) => s + p.totalDebit, 0);
+  const totalPortfolioCredit = partiesWithBalance.reduce((s, p) => s + p.totalCredit, 0);
+  const totalPortfolioPending = partiesWithBalance.reduce((s, p) => s + p.pendingBalance, 0);
+
   const addParty = async () => {
     if (!newName) { toast.error('Name is required'); return; }
     const { error } = await supabase.from('credit_parties').insert({ name: newName, phone: newPhone || null, address: newAddress || null, notes: newPartyNotes || null });
@@ -117,7 +166,20 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     toast.success('Party added');
     setShowAddParty(false);
     setNewName(''); setNewPhone(''); setNewAddress(''); setNewPartyNotes('');
+    fetchParties(); fetchAllPartyTransactions();
+  };
+
+  const updateParty = async () => {
+    if (!editingParty || !newName) return;
+    const { error } = await supabase.from('credit_parties').update({ name: newName, phone: newPhone || null, address: newAddress || null, notes: newPartyNotes || null }).eq('id', editingParty.id);
+    if (error) { toast.error('Failed to update'); return; }
+    toast.success('Party updated');
+    setEditingParty(null);
+    setNewName(''); setNewPhone(''); setNewAddress(''); setNewPartyNotes('');
     fetchParties();
+    if (selectedParty?.id === editingParty.id) {
+      setSelectedParty({ ...selectedParty, name: newName, phone: newPhone || null, address: newAddress || null, notes: newPartyNotes || null });
+    }
   };
 
   const deleteParty = async (id: string) => {
@@ -148,10 +210,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
     const { error } = await supabase.from('credit_party_transactions').insert(insertData);
     if (error) { toast.error('Failed to add'); return; }
-    toast.success(txType === 'payment' ? 'Credit (Payment) recorded' : txType === 'debit' ? 'Manual debit recorded' : 'Debit added');
+    toast.success(txType === 'payment' ? 'Payment recorded' : 'Entry added');
     setShowAddTransaction(false);
     resetTxForm();
     fetchTransactions(selectedParty.id);
+    fetchAllPartyTransactions();
   };
 
   const updateTransaction = async () => {
@@ -176,6 +239,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setEditingTx(null);
     resetTxForm();
     if (selectedParty) fetchTransactions(selectedParty.id);
+    fetchAllPartyTransactions();
   };
 
   const deleteTransaction = async () => {
@@ -185,6 +249,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     toast.success('Deleted');
     setShowDeleteTx(null);
     if (selectedParty) fetchTransactions(selectedParty.id);
+    fetchAllPartyTransactions();
   };
 
   const resetTxForm = () => {
@@ -201,64 +266,66 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setTxDate(new Date(tx.date));
     setTxNotes(tx.notes || '');
     setTxFuelType((tx.fuel_type as 'diesel' | 'petrol') || '');
-    setTxManualAmount(true); // When editing, don't auto-calc
+    setTxManualAmount(true);
   };
 
-  const filteredParties = parties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const openEditParty = (party: CreditParty) => {
+    setEditingParty(party);
+    setNewName(party.name);
+    setNewPhone(party.phone || '');
+    setNewAddress(party.address || '');
+    setNewPartyNotes(party.notes || '');
+  };
 
   const debitEntries = allTransactions.filter(t => t.transaction_type !== 'payment');
   const creditEntries = allTransactions.filter(t => t.transaction_type === 'payment');
-  
   const totalDebits = debitEntries.reduce((s, t) => s + Number(t.amount), 0);
   const totalCredits = creditEntries.reduce((s, t) => s + Number(t.amount), 0);
   const pendingBalance = totalDebits - totalCredits;
   
-  const petroTotal = allTransactions.filter(t => t.transaction_type === 'petroleum').reduce((s, t) => s + Number(t.amount), 0);
   const dieselTotal = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'diesel').reduce((s, t) => s + Number(t.amount), 0);
   const petrolTotal = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'petrol').reduce((s, t) => s + Number(t.amount), 0);
   const dieselLitres = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'diesel').reduce((s, t) => s + Number(t.litres || 0), 0);
   const petrolLitres = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'petrol').reduce((s, t) => s + Number(t.litres || 0), 0);
   const tyreTotal = allTransactions.filter(t => t.transaction_type === 'tyre').reduce((s, t) => s + Number(t.amount), 0);
-  const grandTotal = totalDebits + totalCredits;
 
   const getFuelTypeLabel = (tx: Transaction) => {
     if (tx.transaction_type !== 'petroleum') return null;
-    if (tx.fuel_type === 'diesel') return 'Diesel';
-    if (tx.fuel_type === 'petrol') return 'Petrol';
-    return 'Unspecified';
+    return tx.fuel_type === 'diesel' ? 'Diesel' : tx.fuel_type === 'petrol' ? 'Petrol' : 'Fuel';
   };
 
   const getLedgerWithBalance = () => {
     let running = 0;
     return allTransactions.map(tx => {
-      if (tx.transaction_type === 'payment') {
-        running -= Number(tx.amount);
-      } else {
-        running += Number(tx.amount);
-      }
+      if (tx.transaction_type === 'payment') running -= Number(tx.amount);
+      else running += Number(tx.amount);
       return { ...tx, runningBalance: running };
     });
   };
+
+  const filteredLedger = useMemo(() => {
+    const ledger = getLedgerWithBalance();
+    if (ledgerFilter === 'debit') return ledger.filter(t => t.transaction_type !== 'payment');
+    if (ledgerFilter === 'credit') return ledger.filter(t => t.transaction_type === 'payment');
+    return ledger;
+  }, [allTransactions, ledgerFilter]);
 
   const exportPartyPDF = () => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`Petroleum Credit Ledger: ${selectedParty.name}`, 14, 15);
+    doc.text(`Credit Ledger: ${selectedParty.name}`, 14, 15);
     doc.setFontSize(10);
     const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
     doc.text(period, 14, 22);
-    doc.text(`Debit (Pending): ${formatCurrencyForPDF(totalDebits)} | Credit (Received): ${formatCurrencyForPDF(totalCredits)} | Balance: ${formatCurrencyForPDF(pendingBalance)}`, 14, 30);
-    
-    // Fuel breakdown
+    doc.text(`Debit: ${formatCurrencyForPDF(totalDebits)} | Credit: ${formatCurrencyForPDF(totalCredits)} | Pending: ${formatCurrencyForPDF(pendingBalance)}`, 14, 30);
     let infoY = 36;
     if (dieselTotal > 0 || petrolTotal > 0) {
       doc.text(`Diesel: ${dieselLitres.toFixed(1)}L = ${formatCurrencyForPDF(dieselTotal)} | Petrol: ${petrolLitres.toFixed(1)}L = ${formatCurrencyForPDF(petrolTotal)}`, 14, infoY);
       infoY += 6;
     }
     doc.text(REPORT_FOOTER, 14, infoY);
-
     autoTable(doc, {
       head: [['Date', 'Type', 'Fuel', 'Litres', 'Rate', 'Debit', 'Credit', 'Balance', 'Notes']],
       body: ledger.map(t => [
@@ -286,7 +353,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     const ledger = getLedgerWithBalance();
     const data = ledger.map(t => [
       format(new Date(t.date), 'dd/MM/yyyy'),
-      t.transaction_type === 'payment' ? 'Credit (Received)' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
+      t.transaction_type === 'payment' ? 'Credit' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
       getFuelTypeLabel(t) || '-',
       t.litres || '',
       t.rate_per_litre || '',
@@ -296,7 +363,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       t.tyre_name || '',
       t.notes || '',
     ]);
-    exportToExcel(data, ['Date', 'Type', 'Fuel Type', 'Litres', 'Rate/L', 'Debit', 'Credit', 'Balance', 'Tyre', 'Notes'], `ledger-${selectedParty.name}`, 'Ledger', `Petroleum Credit Ledger: ${selectedParty.name}`);
+    exportToExcel(data, ['Date', 'Type', 'Fuel', 'Litres', 'Rate/L', 'Debit', 'Credit', 'Balance', 'Tyre', 'Notes'], `ledger-${selectedParty.name}`, 'Ledger', `Credit Ledger: ${selectedParty.name}`);
     toast.success('Excel downloaded');
   };
 
@@ -304,19 +371,18 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
     const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
-    let msg = `📋 *Petroleum Credit Ledger: ${selectedParty.name}*\n📅 ${period}\n\n`;
-    if (dieselTotal > 0) msg += `⛽ Diesel: ${dieselLitres.toFixed(1)}L = ₹${dieselTotal.toLocaleString()}\n`;
-    if (petrolTotal > 0) msg += `⛽ Petrol: ${petrolLitres.toFixed(1)}L = ₹${petrolTotal.toLocaleString()}\n`;
-    msg += `📊 Debit (Pending): ₹${totalDebits.toLocaleString()}\n`;
-    msg += `💰 Credit (Received): ₹${totalCredits.toLocaleString()}\n`;
-    msg += `⏳ *Balance (Pending): ₹${pendingBalance.toLocaleString()}*\n\n`;
-    msg += `📋 *Date-wise:*\n`;
+    let msg = `📋 *Credit Ledger: ${selectedParty.name}*\n📅 ${period}\n\n`;
+    if (dieselTotal > 0) msg += `⛽ Diesel: ${dieselLitres.toFixed(1)}L = ₹${dieselTotal.toLocaleString('en-IN')}\n`;
+    if (petrolTotal > 0) msg += `⛽ Petrol: ${petrolLitres.toFixed(1)}L = ₹${petrolTotal.toLocaleString('en-IN')}\n`;
+    if (tyreTotal > 0) msg += `🛞 Tyre: ₹${tyreTotal.toLocaleString('en-IN')}\n`;
+    msg += `\n📊 Debit: ₹${totalDebits.toLocaleString('en-IN')}\n`;
+    msg += `💰 Credit: ₹${totalCredits.toLocaleString('en-IN')}\n`;
+    msg += `⏳ *Pending: ₹${pendingBalance.toLocaleString('en-IN')}*\n\n`;
+    msg += `📋 *Entries:*\n`;
     ledger.forEach(t => {
       const icon = t.transaction_type === 'payment' ? '💰' : t.transaction_type === 'petroleum' ? '⛽' : t.transaction_type === 'tyre' ? '🛞' : '📤';
       const sign = t.transaction_type === 'payment' ? '-' : '+';
-      const fuelLabel = getFuelTypeLabel(t);
-      msg += `${format(new Date(t.date), 'dd MMM')}: ${icon} ${sign}₹${Number(t.amount).toLocaleString()} (Bal: ₹${t.runningBalance.toLocaleString()})`;
-      if (fuelLabel && fuelLabel !== 'Unspecified') msg += ` [${fuelLabel}]`;
+      msg += `${format(new Date(t.date), 'dd MMM')}: ${icon} ${sign}₹${Number(t.amount).toLocaleString('en-IN')} (Bal: ₹${t.runningBalance.toLocaleString('en-IN')})`;
       if (t.litres) msg += ` ${t.litres}L`;
       if (t.tyre_name) msg += ` ${t.tyre_name}`;
       msg += `\n`;
@@ -325,218 +391,476 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  // Party Ledger View
+  // ============ PARTY LEDGER VIEW ============
   if (selectedParty) {
-    const ledger = getLedgerWithBalance();
+    const ledger = filteredLedger;
     return (
-      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
-        <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => setSelectedParty(null)}><ArrowLeft className="h-5 w-5" /></Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-foreground">{selectedParty.name}</h1>
-            {selectedParty.phone && <p className="text-xs text-muted-foreground">{selectedParty.phone}</p>}
+      <div className="p-4 lg:p-6 max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setSelectedParty(null)}>
+              <ChevronRight className="h-5 w-5 rotate-180" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-foreground tracking-tight">{selectedParty.name}</h1>
+              <div className="flex items-center gap-3 mt-0.5">
+                {selectedParty.phone && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" />{selectedParty.phone}
+                  </span>
+                )}
+                {selectedParty.address && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />{selectedParty.address}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEditParty(selectedParty)}>
+                <Edit2 className="h-3.5 w-3.5 mr-2" />Edit Party
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPartyPDF}>
+                <Download className="h-3.5 w-3.5 mr-2" />Export PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPartyExcel}>
+                <FileSpreadsheet className="h-3.5 w-3.5 mr-2" />Export Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={sharePartyWhatsApp}>
+                <Share2 className="h-3.5 w-3.5 mr-2" />Share WhatsApp
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Period Selection */}
-        <div className="flex gap-2 mb-3">
-          <Button size="sm" variant={viewAllTime ? 'outline' : 'default'} onClick={() => setViewAllTime(false)} className="text-xs">Monthly</Button>
-          <Button size="sm" variant={viewAllTime ? 'default' : 'outline'} onClick={() => setViewAllTime(true)} className="text-xs">All Time</Button>
+        {/* Pending Balance Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl p-5 mb-4 ${pendingBalance > 0 ? 'bg-destructive/10 border border-destructive/20' : 'bg-green-500/10 border border-green-500/20'}`}
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Pending Balance</p>
+          <p className={`text-3xl font-extrabold tracking-tight ${pendingBalance > 0 ? 'text-destructive' : 'text-green-600'}`}>
+            {formatFullCurrency(Math.abs(pendingBalance))}
+          </p>
+          {pendingBalance < 0 && <p className="text-xs text-green-600 mt-1 font-medium">Overpaid</p>}
+        </motion.div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <Card className="border-border/50">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ArrowUpRight className="h-3.5 w-3.5 text-destructive" />
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase">Debit</span>
+              </div>
+              <p className="text-sm font-bold text-foreground">{formatCompactCurrency(totalDebits)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ArrowDownRight className="h-3.5 w-3.5 text-green-600" />
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase">Credit</span>
+              </div>
+              <p className="text-sm font-bold text-foreground">{formatCompactCurrency(totalCredits)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <CreditCard className="h-3.5 w-3.5 text-accent" />
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase">Entries</span>
+              </div>
+              <p className="text-sm font-bold text-foreground">{allTransactions.length}</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Fuel & Tyre Breakdown */}
+        {(dieselTotal > 0 || petrolTotal > 0 || tyreTotal > 0) && (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {dieselTotal > 0 && (
+              <Card className="border-blue-800/20 bg-blue-900/5">
+                <CardContent className="p-3">
+                  <p className="text-[10px] font-semibold text-blue-400 uppercase">Diesel</p>
+                  <p className="text-xs font-bold text-foreground mt-0.5">{formatCompactCurrency(dieselTotal)}</p>
+                  <p className="text-[10px] text-muted-foreground">{dieselLitres.toFixed(1)} L</p>
+                </CardContent>
+              </Card>
+            )}
+            {petrolTotal > 0 && (
+              <Card className="border-emerald-500/20 bg-emerald-500/5">
+                <CardContent className="p-3">
+                  <p className="text-[10px] font-semibold text-emerald-400 uppercase">Petrol</p>
+                  <p className="text-xs font-bold text-foreground mt-0.5">{formatCompactCurrency(petrolTotal)}</p>
+                  <p className="text-[10px] text-muted-foreground">{petrolLitres.toFixed(1)} L</p>
+                </CardContent>
+              </Card>
+            )}
+            {tyreTotal > 0 && (
+              <Card className="border-accent/20 bg-accent/5">
+                <CardContent className="p-3">
+                  <p className="text-[10px] font-semibold text-accent uppercase">Tyre</p>
+                  <p className="text-xs font-bold text-foreground mt-0.5">{formatCompactCurrency(tyreTotal)}</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Period + Filter Controls */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <Tabs value={viewAllTime ? 'all' : 'monthly'} onValueChange={(v) => setViewAllTime(v === 'all')}>
+            <TabsList className="h-8">
+              <TabsTrigger value="all" className="text-xs px-3 h-7">All Time</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-xs px-3 h-7">Monthly</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="flex-1" />
+          <Tabs value={ledgerFilter} onValueChange={(v) => setLedgerFilter(v as any)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="all" className="text-xs px-2.5 h-7">All</TabsTrigger>
+              <TabsTrigger value="debit" className="text-xs px-2.5 h-7">Debit</TabsTrigger>
+              <TabsTrigger value="credit" className="text-xs px-2.5 h-7">Credit</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
         {!viewAllTime && (
           <div className="grid grid-cols-2 gap-2 mb-3">
             <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{months.map((m, i) => <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         )}
 
-        {/* Fuel Type Summary Cards */}
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <Card className="border-blue-800/30 bg-blue-900/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">⛽ Diesel</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(dieselTotal)}</p><p className="text-xs text-muted-foreground">{dieselLitres.toFixed(1)} Litres</p></CardContent></Card>
-          <Card className="border-blue-400/30 bg-blue-400/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">⛽ Petrol</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(petrolTotal)}</p><p className="text-xs text-muted-foreground">{petrolLitres.toFixed(1)} Litres</p></CardContent></Card>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <Card className="bg-primary/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">🛞 Tyre</p><p className="text-sm font-bold text-primary">{formatFullCurrency(tyreTotal)}</p></CardContent></Card>
-          <Card className="bg-muted"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Grand Total</p><p className="text-sm font-bold text-foreground">{formatFullCurrency(grandTotal)}</p></CardContent></Card>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <Card className="bg-destructive/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Debit</p><p className="text-sm font-bold text-destructive">{formatFullCurrency(totalDebits)}</p></CardContent></Card>
-          <Card className="bg-green-500/10"><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Credit</p><p className="text-sm font-bold text-green-600">{formatFullCurrency(totalCredits)}</p></CardContent></Card>
-        </div>
-        
-        {/* Pending Balance */}
-        <Card className={`mb-3 ${pendingBalance > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-green-500/10 border-green-500/30'}`}>
-          <CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">Pending Balance</p>
-            <p className={`text-xl font-bold ${pendingBalance > 0 ? 'text-destructive' : 'text-green-600'}`}>{formatFullCurrency(pendingBalance)}</p>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          <Button size="sm" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>⛽ Petroleum</Button>
-          <Button size="sm" variant="secondary" onClick={() => { setTxType('debit'); setShowAddTransaction(true); }}>📤 Manual Debit</Button>
-          <Button size="sm" variant="secondary" onClick={() => { setTxType('payment'); setShowAddTransaction(true); }}>💰 Credit</Button>
-        </div>
-        <Button size="sm" variant="outline" className="w-full mb-3" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>📋 Add Ledger Entry</Button>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <Button variant="outline" size="sm" onClick={exportPartyPDF}><Download className="h-3 w-3 mr-1" />PDF</Button>
-          <Button variant="outline" size="sm" onClick={exportPartyExcel}><FileSpreadsheet className="h-3 w-3 mr-1" />Excel</Button>
-          <Button variant="outline" size="sm" onClick={sharePartyWhatsApp}><Share2 className="h-3 w-3 mr-1" />Share</Button>
+        {/* Quick Action Buttons */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <Button size="sm" className="h-10 text-xs" onClick={() => { setTxType('petroleum'); setShowAddTransaction(true); }}>
+            <Fuel className="h-3.5 w-3.5 mr-1" />Fuel
+          </Button>
+          <Button size="sm" variant="secondary" className="h-10 text-xs" onClick={() => { setTxType('tyre'); setShowAddTransaction(true); }}>
+            <CircleDot className="h-3.5 w-3.5 mr-1" />Tyre
+          </Button>
+          <Button size="sm" variant="secondary" className="h-10 text-xs" onClick={() => { setTxType('debit'); setShowAddTransaction(true); }}>
+            <ArrowUpRight className="h-3.5 w-3.5 mr-1" />Debit
+          </Button>
+          <Button size="sm" className="h-10 text-xs bg-green-600 hover:bg-green-700" onClick={() => { setTxType('payment'); setShowAddTransaction(true); }}>
+            <Banknote className="h-3.5 w-3.5 mr-1" />Credit
+          </Button>
         </div>
 
         {/* Ledger */}
-        <p className="text-xs font-semibold text-muted-foreground mb-2">LEDGER ({allTransactions.length} entries)</p>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+          Ledger · {filteredLedger.length} entries
+        </p>
         <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-          {ledger.map(tx => {
-            const isCredit = tx.transaction_type === 'payment';
-            const typeLabel = tx.transaction_type === 'payment' ? '💰 Credit' : tx.transaction_type === 'debit' ? '📤 Debit' : tx.transaction_type === 'petroleum' ? '⛽ Petroleum' : '🛞 Tyre';
-            const typeBg = tx.transaction_type === 'payment' ? 'bg-green-500/20 text-green-600' : tx.transaction_type === 'debit' ? 'bg-orange-500/20 text-orange-600' : tx.transaction_type === 'petroleum' ? 'bg-primary/20 text-primary' : 'bg-accent/30 text-accent-foreground';
-            const fuelLabel = getFuelTypeLabel(tx);
-            return (
-            <Card key={tx.id} className={isCredit ? 'border-green-500/30' : ''}>
-              <CardContent className="p-2.5">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${typeBg}`}>
-                        {typeLabel}
-                      </span>
-                      {fuelLabel && (
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${
-                          tx.fuel_type === 'diesel' ? 'border-blue-800/50 bg-blue-900/20 text-blue-300' :
-                          tx.fuel_type === 'petrol' ? 'border-blue-400/50 bg-blue-400/20 text-blue-400' :
-                          'border-muted-foreground/30'
-                        }`}>
-                          {fuelLabel}
-                        </Badge>
-                      )}
-                      <span className={`font-bold text-sm ${isCredit ? 'text-green-600' : 'text-destructive'}`}>
-                        {isCredit ? '-' : '+'}₹{Number(tx.amount).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {format(new Date(tx.date), 'dd MMM yyyy')}
-                      {tx.litres ? ` • ${tx.litres}L` : ''}
-                      {tx.rate_per_litre ? ` @ ₹${tx.rate_per_litre}/L` : ''}
-                      {tx.tyre_name ? ` • ${tx.tyre_name}` : ''}
-                      {tx.notes ? ` • ${tx.notes}` : ''}
-                    </p>
-                    <p className="text-xs font-mono text-muted-foreground">Bal: ₹{tx.runningBalance.toLocaleString()}</p>
-                  </div>
-                  <div className="flex gap-1 ml-2">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditTx(tx)}><Edit2 className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowDeleteTx(tx)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-          })}
-          {allTransactions.length === 0 && <p className="text-center text-muted-foreground py-8">No entries</p>}
+          <AnimatePresence>
+            {ledger.map((tx, i) => {
+              const isCredit = tx.transaction_type === 'payment';
+              const icon = tx.transaction_type === 'payment' ? <Banknote className="h-3.5 w-3.5" /> 
+                : tx.transaction_type === 'petroleum' ? <Fuel className="h-3.5 w-3.5" />
+                : tx.transaction_type === 'tyre' ? <CircleDot className="h-3.5 w-3.5" />
+                : <ArrowUpRight className="h-3.5 w-3.5" />;
+              const typeLabel = tx.transaction_type === 'payment' ? 'Credit' : tx.transaction_type === 'petroleum' ? 'Petroleum' : tx.transaction_type === 'tyre' ? 'Tyre' : 'Debit';
+              const fuelLabel = getFuelTypeLabel(tx);
+
+              return (
+                <motion.div
+                  key={tx.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.02, 0.3), duration: 0.2 }}
+                >
+                  <Card className={`border-border/40 ${isCredit ? 'border-l-2 border-l-green-500' : 'border-l-2 border-l-destructive/50'}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                              isCredit ? 'bg-green-500/15 text-green-600' : 'bg-destructive/10 text-destructive'
+                            }`}>
+                              {icon}{typeLabel}
+                            </span>
+                            {fuelLabel && (
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${
+                                tx.fuel_type === 'diesel' ? 'border-blue-500/40 text-blue-400' : 'border-emerald-500/40 text-emerald-400'
+                              }`}>
+                                {fuelLabel}
+                              </Badge>
+                            )}
+                            <span className={`font-bold text-sm ${isCredit ? 'text-green-600' : 'text-foreground'}`}>
+                              {isCredit ? '-' : '+'}₹{Number(tx.amount).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
+                            <span>{format(new Date(tx.date), 'dd MMM yyyy')}</span>
+                            {tx.litres && <span>· {tx.litres}L</span>}
+                            {tx.rate_per_litre && <span>@ ₹{tx.rate_per_litre}/L</span>}
+                            {tx.tyre_name && <span>· {tx.tyre_name}</span>}
+                          </div>
+                          {tx.notes && <p className="text-[11px] text-muted-foreground/70 mt-0.5 italic">{tx.notes}</p>}
+                          <p className="text-[11px] font-mono text-muted-foreground/60 mt-0.5">
+                            Bal: <span className={tx.runningBalance > 0 ? 'text-destructive' : 'text-green-600'}>₹{tx.runningBalance.toLocaleString('en-IN')}</span>
+                          </p>
+                        </div>
+                        <div className="flex gap-0.5 ml-2">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTx(tx)}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowDeleteTx(tx)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+          {ledger.length === 0 && (
+            <div className="text-center py-12">
+              <CreditCard className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No entries found</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Add a transaction to get started</p>
+            </div>
+          )}
         </div>
 
-        {/* Add/Edit Transaction Dialog */}
+        {/* Transaction Dialog */}
         <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editingTx ? 'Edit Entry' : txType === 'payment' ? 'Record Credit (Payment Received)' : txType === 'debit' ? 'Record Manual Debit' : 'Add Debit Entry'}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{editingTx ? 'Edit Entry' : txType === 'payment' ? 'Record Payment (Credit)' : txType === 'debit' ? 'Manual Debit Entry' : `Add ${txType === 'petroleum' ? 'Petroleum' : 'Tyre'} Debit`}</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label>Type</Label>
-                <Select value={txType} onValueChange={(v) => { setTxType(v as 'petroleum' | 'tyre' | 'payment' | 'debit'); if (v !== 'petroleum') setTxFuelType(''); }}>
+                <Select value={txType} onValueChange={(v) => { setTxType(v as any); if (v !== 'petroleum') setTxFuelType(''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="petroleum">⛽ Petroleum (Debit)</SelectItem>
                     <SelectItem value="tyre">🛞 Tyre (Debit)</SelectItem>
                     <SelectItem value="debit">📤 Manual Debit</SelectItem>
-                    <SelectItem value="payment">💰 Credit (Payment Received)</SelectItem>
+                    <SelectItem value="payment">💰 Payment (Credit)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Fuel Type - only for petroleum */}
               {txType === 'petroleum' && (
                 <div>
                   <Label>Fuel Type *</Label>
                   <Select value={txFuelType} onValueChange={(v) => setTxFuelType(v as 'diesel' | 'petrol')}>
                     <SelectTrigger><SelectValue placeholder="Select fuel type" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="diesel">⛽ Diesel</SelectItem>
-                      <SelectItem value="petrol">⛽ Petrol</SelectItem>
+                      <SelectItem value="diesel">Diesel</SelectItem>
+                      <SelectItem value="petrol">Petrol</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
-
               {txType === 'petroleum' && (
                 <>
                   <div><Label>Litres *</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="Enter litres" /></div>
-                  <div><Label>Rate per Litre (₹)</Label><Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Rate per litre (optional)" /></div>
+                  <div><Label>Rate per Litre (₹)</Label><Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Optional — auto-calculates total" /></div>
                 </>
               )}
-
               <div>
-                <Label>Amount (₹) * {txType === 'petroleum' && txLitres && txRatePerLitre && !txManualAmount ? '(Auto-calculated)' : ''}</Label>
+                <Label>Amount (₹) * {txType === 'petroleum' && txLitres && txRatePerLitre && !txManualAmount ? '(Auto)' : ''}</Label>
                 <Input type="number" value={txAmount} onChange={(e) => { setTxAmount(e.target.value); if (txType === 'petroleum') setTxManualAmount(true); }} placeholder="Amount" />
               </div>
-
               {txType === 'tyre' && <div><Label>Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="Tyre name (optional)" /></div>}
               <div>
                 <Label>Date</Label>
                 <Popover open={txCalendarOpen} onOpenChange={setTxCalendarOpen}>
-                  <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="h-4 w-4 mr-2" />{format(txDate, 'dd MMM yyyy')}</Button></PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={txDate} onSelect={(d) => { if (d) setTxDate(d); setTxCalendarOpen(false); }} initialFocus /></PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="h-4 w-4 mr-2" />{format(txDate, 'dd MMM yyyy')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={txDate} onSelect={(d) => { if (d) setTxDate(d); setTxCalendarOpen(false); }} initialFocus />
+                  </PopoverContent>
                 </Popover>
               </div>
-              <div><Label>Notes</Label><Textarea value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Notes" /></div>
+              <div><Label>Notes</Label><Textarea value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Optional notes" /></div>
             </div>
-            <DialogFooter><Button onClick={editingTx ? updateTransaction : addTransaction}>{editingTx ? 'Update' : 'Add'}</Button></DialogFooter>
+            <DialogFooter>
+              <Button onClick={editingTx ? updateTransaction : addTransaction} className="w-full">
+                {editingTx ? 'Update Entry' : 'Add Entry'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Delete Transaction Confirmation */}
         <AlertDialog open={!!showDeleteTx} onOpenChange={() => setShowDeleteTx(null)}>
           <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>Delete Entry?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this ledger entry.</AlertDialogDescription></AlertDialogHeader>
-            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={deleteTransaction}>Delete</AlertDialogAction></AlertDialogFooter>
+            <AlertDialogHeader><AlertDialogTitle>Delete Entry?</AlertDialogTitle><AlertDialogDescription>This will permanently remove this ledger entry.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={deleteTransaction} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Edit Party Dialog */}
+        <Dialog open={!!editingParty} onOpenChange={(open) => { if (!open) { setEditingParty(null); setNewName(''); setNewPhone(''); setNewAddress(''); setNewPartyNotes(''); } }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Edit Party</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div><Label>Name *</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} /></div>
+              <div><Label>Phone</Label><Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} /></div>
+              <div><Label>Address</Label><Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} /></div>
+              <div><Label>Notes</Label><Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} /></div>
+            </div>
+            <DialogFooter><Button onClick={updateParty} className="w-full">Update Party</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
 
-  // Party List
+  // ============ PARTY LIST VIEW ============
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <h1 className="text-xl font-bold text-foreground">Credit Parties</h1>
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Credit Parties</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Petroleum & Tyre credit ledger</p>
+        </div>
+        <Button size="sm" onClick={() => setShowAddParty(true)} className="h-9">
+          <Plus className="h-4 w-4 mr-1.5" />Add Party
+        </Button>
       </div>
 
-      <Button className="w-full mb-4" onClick={() => setShowAddParty(true)}><Plus className="h-4 w-4 mr-2" />Add Party</Button>
-      <Input placeholder="Search parties..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="mb-4" />
-      
-      {isLoading ? <p className="text-center text-muted-foreground py-8">Loading...</p> : (
+      {/* Portfolio Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-primary p-5 mb-5"
+      >
+        <p className="text-[10px] font-bold text-primary-foreground/50 uppercase tracking-wider mb-3">Portfolio Overview</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <p className="text-2xl font-extrabold text-primary-foreground tracking-tight">
+              <AnimatedNumber value={totalPortfolioPending} prefix="₹" />
+            </p>
+            <p className="text-[10px] text-primary-foreground/50 font-medium mt-0.5">Total Pending</p>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-primary-foreground/80">{formatCompactCurrency(totalPortfolioDebit)}</p>
+            <p className="text-[10px] text-primary-foreground/50 font-medium mt-0.5">Total Debit</p>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-primary-foreground/80">{formatCompactCurrency(totalPortfolioCredit)}</p>
+            <p className="text-[10px] text-primary-foreground/50 font-medium mt-0.5">Total Credit</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Search & Sort */}
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search parties..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-10" />
+        </div>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+          <SelectTrigger className="w-[120px] h-10">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="balance">By Balance</SelectItem>
+            <SelectItem value="name">By Name</SelectItem>
+            <SelectItem value="recent">By Recent</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Party Count */}
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-3">
+        {filteredParties.length} {filteredParties.length === 1 ? 'Party' : 'Parties'}
+      </p>
+
+      {/* Party Cards */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}
+        </div>
+      ) : (
         <div className="space-y-2">
-          {filteredParties.map(party => (
-            <Card key={party.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedParty(party)}>
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><User className="h-5 w-5 text-primary" /></div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{party.name}</p>
-                  {party.phone && <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{party.phone}</p>}
-                </div>
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(party.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </CardContent>
-            </Card>
+          {filteredParties.map((party, i) => (
+            <motion.div
+              key={party.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.25 }}
+            >
+              <Card
+                className="cursor-pointer card-hover border-border/50 overflow-hidden"
+                onClick={() => setSelectedParty(party)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-primary">{party.name.charAt(0)}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground text-sm truncate">{party.name}</p>
+                        <p className={`text-sm font-bold tabular-nums ${party.pendingBalance > 0 ? 'text-destructive' : party.pendingBalance < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {party.pendingBalance !== 0 ? formatFullCurrency(Math.abs(party.pendingBalance)) : '—'}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex items-center gap-2">
+                          {party.phone && (
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+                              <Phone className="h-2.5 w-2.5" />{party.phone}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {party.pendingBalance > 0 && (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-destructive/30 text-destructive bg-destructive/5">
+                              Pending
+                            </Badge>
+                          )}
+                          {party.pendingBalance === 0 && party.totalDebit > 0 && (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-green-500/30 text-green-600 bg-green-500/5">
+                              Settled
+                            </Badge>
+                          )}
+                          {party.lastTransactionDate && (
+                            <span className="text-[10px] text-muted-foreground/50">
+                              {format(new Date(party.lastTransactionDate), 'dd MMM')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
-          {filteredParties.length === 0 && <p className="text-center text-muted-foreground py-8">No parties found</p>}
+          {filteredParties.length === 0 && (
+            <div className="text-center py-16">
+              <CreditCard className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground font-medium">No parties found</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Add a credit party to start tracking</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -550,23 +874,15 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             <div><Label>Address</Label><Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Address" /></div>
             <div><Label>Notes</Label><Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} placeholder="Notes" /></div>
           </div>
-          <DialogFooter><Button onClick={addParty}>Add Party</Button></DialogFooter>
+          <DialogFooter><Button onClick={addParty} className="w-full">Add Party</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Party Confirmation */}
       <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Remove Party?</AlertDialogTitle><AlertDialogDescription>This will hide the party from the list. Transactions are preserved.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => showDeleteConfirm && deleteParty(showDeleteConfirm)}>Remove</AlertDialogAction></AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Transaction Confirmation */}
-      <AlertDialog open={!!showDeleteTx} onOpenChange={() => setShowDeleteTx(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Delete Entry?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this ledger entry.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={deleteTransaction}>Delete</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle>Remove Party?</AlertDialogTitle><AlertDialogDescription>This will hide the party from the list. All transactions are preserved.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => showDeleteConfirm && deleteParty(showDeleteConfirm)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
