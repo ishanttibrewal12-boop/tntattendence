@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Lock, User, MapPin, Phone, Mail } from 'lucide-react';
+import { Lock, User, MapPin, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import companyLogo from '@/assets/company-logo.png';
+import heroImg from '@/assets/hero-mining-operations.jpg';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -39,58 +41,62 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Side - Company Info */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary p-12 flex-col justify-between">
+    <div className="min-h-screen flex relative">
+      {/* Full-screen background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroImg})` }}
+      />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.85) 50%, rgba(11,31,51,0.95) 100%)' }} />
+
+      {/* Left Side - Company Info (Desktop) */}
+      <div className="hidden lg:flex lg:w-1/2 relative z-10 p-12 flex-col justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-8">
-            <Building2 className="h-10 w-10 text-primary-foreground" />
+          <div className="flex items-center gap-4 mb-10">
+            <img src={companyLogo} alt="T&T" className="h-14 w-14 object-contain rounded-xl" />
             <div>
-              <h1 className="text-2xl font-bold text-primary-foreground">Tibrewal & Tibrewal</h1>
-              <p className="text-primary-foreground/80 text-sm">Private Limited</p>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Tibrewal & Tibrewal</h1>
+              <p className="text-white/50 text-sm font-medium">Private Limited</p>
             </div>
           </div>
           
           <div className="space-y-6 mt-12">
-            <h2 className="text-3xl font-bold text-primary-foreground leading-tight">
-              Staff Management<br />& Payroll System
+            <h2 className="text-4xl font-extrabold text-white leading-tight tracking-tight">
+              Enterprise Resource<br />Management System
             </h2>
-            <p className="text-primary-foreground/80 text-lg">
-              Mining & Construction Excellence in Jharkhand
+            <div className="w-16 h-1 rounded-full" style={{ background: '#f97316' }} />
+            <p className="text-white/50 text-lg font-medium">
+              Mining · Logistics · Petroleum · Tyres
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 text-primary-foreground/90">
+        <div className="space-y-3 text-white/40">
           <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5" />
-            <span className="text-sm">Tibrewal Tyres, Gunia Mahagama, Jharkhand 814154</span>
+            <MapPin className="h-4 w-4" />
+            <span className="text-sm">Gunia Mahagama, Jharkhand 814154</span>
           </div>
           <div className="flex items-center gap-3">
-            <Phone className="h-5 w-5" />
+            <Phone className="h-4 w-4" />
             <span className="text-sm">+91 9386469006</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Mail className="h-5 w-5" />
-            <span className="text-sm">IshantTibrewal12@gmail.com</span>
           </div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4 lg:hidden">
-              <Building2 className="h-12 w-12 text-primary" />
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10">
+        <Card className="w-full max-w-md border-border/30 bg-card/80 backdrop-blur-xl shadow-2xl">
+          <CardHeader className="text-center pb-4">
+            <div className="flex justify-center mb-4">
+              <img src={companyLogo} alt="T&T" className="h-14 w-14 object-contain rounded-xl" />
             </div>
-            <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
+            <CardTitle className="text-xl font-bold">Admin Login</CardTitle>
             <CardDescription>
               Enter your credentials to access the dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <div className="relative">
@@ -127,6 +133,10 @@ const Login = () => {
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
+
+            <p className="text-center text-[11px] text-muted-foreground/50 mt-6">
+              Tibrewal & Tibrewal Pvt. Ltd. · Jharkhand
+            </p>
           </CardContent>
         </Card>
       </div>
