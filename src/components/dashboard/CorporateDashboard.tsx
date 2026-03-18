@@ -357,7 +357,7 @@ const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection
       <LeadershipSection />
       <BusinessUnitsSection />
       <GroupStrengthSection />
-      <QuickERPAccess onNavigate={handleQuickNav} isManager={isManager} />
+      
 
       <div className="text-center pt-4">
         <p className="text-[11px] text-muted-foreground/50 font-medium">Tibrewal & Tibrewal Pvt. Ltd.</p>
