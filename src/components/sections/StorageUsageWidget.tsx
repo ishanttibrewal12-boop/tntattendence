@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { HardDrive, Database, FolderOpen, RefreshCw } from 'lucide-react';
+import { HardDrive, Database, FolderOpen, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 interface TableInfo {
@@ -99,6 +100,20 @@ const StorageUsageWidget = () => {
           </div>
         ) : (
           <>
+            {/* Storage warning alert */}
+            {dbPercent >= 75 && (
+              <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="text-sm font-semibold">
+                  {dbPercent >= 90 ? 'Critical: Storage Almost Full' : 'Warning: High Storage Usage'}
+                </AlertTitle>
+                <AlertDescription className="text-xs">
+                  {dbPercent >= 90
+                    ? `Database is at ${dbPercent.toFixed(1)}% capacity. Immediate action required — consider archiving old data or cleaning up unused records.`
+                    : `Database has exceeded 75% capacity (${dbPercent.toFixed(1)}%). Consider cleaning up old backups, photos, or archiving historical data.`}
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Overall DB usage */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
