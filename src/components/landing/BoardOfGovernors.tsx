@@ -15,14 +15,6 @@ interface Governor {
 
 const governors: Governor[] = [
   {
-    name: 'Sunil Tibrewal',
-    designation: 'Director',
-    description: 'Seasoned business leader with extensive experience in mining operations, strategic planning, and corporate governance. Instrumental in driving the company\'s growth across multiple verticals.',
-    phone: '9386469006',
-    location: 'Jharkhand, India',
-    photoUrl: '',
-  },
-  {
     name: 'Trishav Tibrewal',
     designation: 'Proprietor & Managing Director',
     description: 'Visionary entrepreneur and founder, leading the company\'s diversified operations across mining, stone crushing, transportation, petroleum distribution, and tyre trading.',
