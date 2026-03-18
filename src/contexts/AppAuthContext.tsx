@@ -19,11 +19,14 @@ interface AppAuthContextType {
   logout: () => void;
   hasAccess: (section: string) => boolean;
   canEdit: (section: string) => boolean;
+  logoutWarning: boolean;
+  dismissWarning: () => void;
 }
 
 const AppAuthContext = createContext<AppAuthContextType | undefined>(undefined);
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const WARNING_BEFORE_MS = 60 * 1000; // Show warning 1 minute before logout
 const SESSION_KEY = 'tibrewal_app_user';
 const SESSION_TS_KEY = 'tibrewal_session_ts';
 
@@ -61,26 +64,49 @@ interface AppAuthProviderProps {
 export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [logoutWarning, setLogoutWarning] = useState(false);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSession = useCallback(() => {
     setUser(null);
+    setLogoutWarning(false);
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_TS_KEY);
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+      warningTimerRef.current = null;
+    }
   }, []);
 
   const resetInactivityTimer = useCallback(() => {
     if (!user) return;
+    setLogoutWarning(false);
+
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+
     sessionStorage.setItem(SESSION_TS_KEY, Date.now().toString());
+
+    // Show warning 1 min before logout
+    warningTimerRef.current = setTimeout(() => {
+      setLogoutWarning(true);
+    }, SESSION_TIMEOUT_MS - WARNING_BEFORE_MS);
+
+    // Actual logout
     inactivityTimerRef.current = setTimeout(() => {
       clearSession();
     }, SESSION_TIMEOUT_MS);
   }, [user, clearSession]);
+
+  const dismissWarning = useCallback(() => {
+    setLogoutWarning(false);
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
 
   // Set up activity listeners
   useEffect(() => {
@@ -94,6 +120,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
     return () => {
       events.forEach(e => window.removeEventListener(e, handler));
       if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     };
   }, [user, resetInactivityTimer]);
 
@@ -113,7 +140,6 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
         clearSession();
       }
     } else if (storedUser) {
-      // Legacy session without timestamp — clear
       clearSession();
     }
     setIsLoading(false);
@@ -182,6 +208,8 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
         logout,
         hasAccess,
         canEdit,
+        logoutWarning,
+        dismissWarning,
       }}
     >
       {children}
