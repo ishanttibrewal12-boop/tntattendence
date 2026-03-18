@@ -725,10 +725,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       { view: 'reports' as ViewType, title: 'Monthly Reports', icon: FileText, desc: 'Export & backup' },
     ];
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 section-enter">
         <Card className="border-primary/20">
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-3 rounded-xl" style={{ background: '#1e3a8a' }}><Truck className="h-8 w-8" style={{ color: 'white' }} /></div>
+            <div className="p-3 rounded-xl bg-primary"><Truck className="h-8 w-8 text-primary-foreground" /></div>
             <div>
               <h2 className="text-lg font-bold text-foreground">MLT Department</h2>
               <p className="text-sm text-muted-foreground">Motor Lorry Transport</p>
