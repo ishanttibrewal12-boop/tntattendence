@@ -111,7 +111,7 @@ const HeroSection = () => (
 const TimelineSection = () => (
   <div>
     <motion.p
-      className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
+      className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3 }}
