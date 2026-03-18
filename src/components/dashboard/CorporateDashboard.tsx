@@ -95,7 +95,7 @@ const HeroSection = () => (
           Tibrewal Group
         </motion.h1>
         <motion.p
-          className="text-sm lg:text-base text-primary-foreground/60 mt-1 font-medium"
+          className="text-sm lg:text-base text-primary-foreground/80 mt-1 font-medium"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.4 }}
