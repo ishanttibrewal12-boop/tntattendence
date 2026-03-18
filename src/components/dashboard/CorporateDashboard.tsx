@@ -322,7 +322,7 @@ const KpiCards = () => {
                     <div className={`p-1.5 rounded-lg ${kpi.color}`}>
                       <Icon className="h-3.5 w-3.5 text-primary-foreground" />
                     </div>
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{kpi.label}</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{kpi.label}</span>
                   </div>
                   <div className="text-xl font-bold text-foreground">
                     <AnimatedNumber value={kpi.value} prefix={kpi.prefix} />
