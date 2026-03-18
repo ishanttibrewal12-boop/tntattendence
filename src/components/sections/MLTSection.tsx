@@ -741,9 +741,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           {primaryItems.map(item => {
             const Icon = item.icon;
             return (
-              <Card key={item.view} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setView(item.view)}>
+              <Card key={item.view} className="cursor-pointer card-hover" onClick={() => setView(item.view)}>
                 <CardContent className="p-4 flex flex-col items-center text-center gap-2" style={{ minHeight: '96px' }}>
-                  <div className="p-2.5 rounded-lg" style={{ background: '#1e3a8a' }}><Icon className="h-7 w-7" style={{ color: 'white' }} /></div>
+                  <div className="p-2.5 rounded-lg bg-primary"><Icon className="h-7 w-7 text-primary-foreground" /></div>
                   <p className="text-lg font-bold text-foreground leading-tight">{item.title}</p>
                 </CardContent>
               </Card>
