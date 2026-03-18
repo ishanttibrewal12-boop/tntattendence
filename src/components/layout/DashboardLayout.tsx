@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
 import AIChatBot from '@/components/AIChatBot';
+import IdleWarningDialog from '@/components/IdleWarningDialog';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -30,6 +31,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="p-6 lg:p-8">{children}</div>
       </main>
       <AIChatBot />
+      <IdleWarningDialog />
     </div>
   );
 };
