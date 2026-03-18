@@ -360,8 +360,8 @@ const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection
       
 
       <div className="text-center pt-4">
-        <p className="text-[11px] text-muted-foreground/50 font-medium">Tibrewal & Tibrewal Pvt. Ltd.</p>
-        <p className="text-[10px] text-muted-foreground/35">Mining & Construction · Jharkhand</p>
+      <p className="text-xs text-muted-foreground/60 font-medium">Tibrewal & Tibrewal Pvt. Ltd.</p>
+        <p className="text-[11px] text-muted-foreground/50">Mining & Construction · Jharkhand</p>
       </div>
     </div>
   );
