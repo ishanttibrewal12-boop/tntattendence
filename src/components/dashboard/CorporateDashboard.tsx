@@ -187,7 +187,7 @@ const LeadershipSection = () => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: 0.3, duration: 0.5 }}
   >
-    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Leadership</p>
+    <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Leadership</p>
     <Card className="border border-border/50 overflow-hidden">
       <CardContent className="p-6 lg:p-8 flex flex-col lg:flex-row items-center gap-6">
         <motion.div
