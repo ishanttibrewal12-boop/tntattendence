@@ -1,6 +1,7 @@
 import { useLandingTheme } from './LandingThemeContext';
 import ScrollReveal from './ScrollReveal';
 import { Phone, MapPin, Briefcase, Mail } from 'lucide-react';
+import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 
 interface Governor {
   name: string;
