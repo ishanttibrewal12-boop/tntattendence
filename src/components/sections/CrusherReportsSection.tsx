@@ -637,7 +637,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
     );
   }
 
