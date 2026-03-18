@@ -609,7 +609,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
               </CardContent>
             </Card>
           )}
-        </div>
 
         {/* Edit Dispatch Dialog */}
         <Dialog open={!!editingDispatch} onOpenChange={open => { if (!open) setEditingDispatch(null); }}>
