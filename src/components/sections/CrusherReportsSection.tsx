@@ -711,7 +711,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
             </CardContent>
           </Card>
         )}
-      </div>
 
       {/* Edit Bolder Dialog */}
       <Dialog open={!!editingBolder} onOpenChange={open => { if (!open) setEditingBolder(null); }}>
