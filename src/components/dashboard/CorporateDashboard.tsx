@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Fuel, Calendar, Truck, CircleDot, FileText, Calculator, Image, Bell, Upload, Users, Settings, ChevronRight, Wallet, DollarSign, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
+import { Calendar, Users, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import { useEffect, useState } from 'react';
