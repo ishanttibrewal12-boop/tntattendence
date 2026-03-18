@@ -170,9 +170,9 @@ const TimelineSection = () => (
             <div className="w-2 h-2 rounded-full bg-accent" />
           </div>
           <div className="-mt-0.5">
-            <p className="text-xs font-bold text-foreground">{item.year}</p>
-            <p className="text-[11px] text-muted-foreground font-medium">{item.title}</p>
-            <p className="text-[10px] text-muted-foreground/60">{item.desc}</p>
+            <p className="text-sm font-bold text-foreground">{item.year}</p>
+            <p className="text-xs text-muted-foreground font-semibold">{item.title}</p>
+            <p className="text-[11px] text-muted-foreground/70">{item.desc}</p>
           </div>
         </motion.div>
       ))}
