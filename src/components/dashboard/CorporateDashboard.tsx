@@ -213,7 +213,7 @@ const LeadershipSection = () => (
 const BusinessUnitsSection = () => (
   <div>
     <motion.p
-      className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
+      className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.2 }}
@@ -231,9 +231,9 @@ const BusinessUnitsSection = () => (
           <Card className="border border-border/50 h-full card-hover group">
             <CardContent className="p-5">
               <div className="text-2xl mb-3">{company.icon}</div>
-              <h3 className="text-[13px] font-bold text-foreground tracking-tight mb-1">{company.title}</h3>
-              <p className="text-[11px] text-accent font-semibold mb-2">{company.desc}</p>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">{company.detail}</p>
+              <h3 className="text-sm font-bold text-foreground tracking-tight mb-1">{company.title}</h3>
+              <p className="text-xs text-accent font-semibold mb-2">{company.desc}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{company.detail}</p>
             </CardContent>
           </Card>
         </motion.div>
