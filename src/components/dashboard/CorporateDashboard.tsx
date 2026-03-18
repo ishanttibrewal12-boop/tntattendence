@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, Users, Wallet } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import { useEffect, useState } from 'react';
@@ -273,22 +273,19 @@ const GroupStrengthSection = () => (
 
 // --- KPI Cards (Manager only) ---
 const KpiCards = () => {
-  const [stats, setStats] = useState({ totalStaff: 0, todayPresent: 0, pendingAdvances: 0 });
+  const [stats, setStats] = useState({ totalStaff: 0, todayPresent: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
-      const [staffRes, attendanceRes, advancesRes] = await Promise.all([
+      const [staffRes, attendanceRes] = await Promise.all([
         supabase.from('staff').select('id', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).in('status', ['present', 'half_day']),
-        supabase.from('advances').select('amount').eq('is_deducted', false),
       ]);
-      const pendingAdv = (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0);
       setStats({
         totalStaff: staffRes.count || 0,
         todayPresent: attendanceRes.count || 0,
-        pendingAdvances: pendingAdv,
       });
       setLoading(false);
     };
@@ -298,15 +295,14 @@ const KpiCards = () => {
   const kpis = [
     { label: 'Active Staff', value: stats.totalStaff, icon: Users, prefix: '', color: 'bg-primary' },
     { label: 'Today Present', value: stats.todayPresent, icon: Calendar, prefix: '', color: 'bg-chart-1' },
-    { label: 'Pending Advances', value: stats.pendingAdvances, icon: Wallet, prefix: '₹', color: 'bg-accent' },
   ];
 
   if (loading) return null;
 
   return (
     <div>
-      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Live Overview</p>
-      <div className="grid grid-cols-3 gap-3">
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Live Overview</p>
+      <div className="grid grid-cols-2 gap-3">
         {kpis.map((kpi, i) => {
           const Icon = kpi.icon;
           return (

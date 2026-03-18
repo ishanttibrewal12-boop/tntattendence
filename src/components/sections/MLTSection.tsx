@@ -725,10 +725,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       { view: 'reports' as ViewType, title: 'Monthly Reports', icon: FileText, desc: 'Export & backup' },
     ];
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 section-enter">
         <Card className="border-primary/20">
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-3 rounded-xl" style={{ background: '#1e3a8a' }}><Truck className="h-8 w-8" style={{ color: 'white' }} /></div>
+            <div className="p-3 rounded-xl bg-primary"><Truck className="h-8 w-8 text-primary-foreground" /></div>
             <div>
               <h2 className="text-lg font-bold text-foreground">MLT Department</h2>
               <p className="text-sm text-muted-foreground">Motor Lorry Transport</p>
@@ -741,9 +741,9 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           {primaryItems.map(item => {
             const Icon = item.icon;
             return (
-              <Card key={item.view} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setView(item.view)}>
+              <Card key={item.view} className="cursor-pointer card-hover" onClick={() => setView(item.view)}>
                 <CardContent className="p-4 flex flex-col items-center text-center gap-2" style={{ minHeight: '96px' }}>
-                  <div className="p-2.5 rounded-lg" style={{ background: '#1e3a8a' }}><Icon className="h-7 w-7" style={{ color: 'white' }} /></div>
+                  <div className="p-2.5 rounded-lg bg-primary"><Icon className="h-7 w-7 text-primary-foreground" /></div>
                   <p className="text-lg font-bold text-foreground leading-tight">{item.title}</p>
                 </CardContent>
               </Card>
@@ -756,10 +756,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           {secondaryItems.map(item => {
             const Icon = item.icon;
             return (
-              <Card key={item.view} className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={() => setView(item.view)}>
+              <Card key={item.view} className="cursor-pointer card-hover" onClick={() => setView(item.view)}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}><Icon className="h-5 w-5" style={{ color: 'white' }} /></div>
+                    <div className="p-2 rounded-lg bg-primary"><Icon className="h-5 w-5 text-primary-foreground" /></div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-foreground">{item.title}</p>
                       <p className="text-xs text-muted-foreground">{item.desc}</p>
@@ -769,10 +769,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               </Card>
             );
           })}
-          <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={downloadMLTBackupZip}>
+          <Card className="cursor-pointer card-hover" onClick={downloadMLTBackupZip}>
             <CardContent className="p-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}><FolderArchive className="h-5 w-5" style={{ color: 'white' }} /></div>
+                <div className="p-2 rounded-lg bg-primary"><FolderArchive className="h-5 w-5 text-primary-foreground" /></div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-foreground">Monthly Backup</p>
                   <p className="text-xs text-muted-foreground">Download ZIP folder</p>

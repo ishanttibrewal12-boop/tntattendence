@@ -487,13 +487,15 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   // ===== LANDING PAGE =====
   if (activePage === 'landing') {
     return (
-      <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-        <div className="p-4 max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-5">
-            <Button variant="ghost" size="icon" onClick={onBack} className="hover:bg-muted">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold text-foreground">Crusher Reports</h1>
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 rounded-xl bg-chart-1">
+              <FileText className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">Crusher Reports</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">Dispatch & Bolder tracking</p>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -527,7 +529,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
               </CardContent>
             </Card>
           </div>
-        </div>
       </div>
     );
   }
@@ -535,13 +536,12 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   // ===== DISPATCH PAGE =====
   if (activePage === 'dispatch') {
     return (
-      <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-        <div className="p-4 max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
           <div className="flex items-center gap-3 mb-5">
             <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold text-foreground">Dispatch Report</h1>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Dispatch Report</h1>
           </div>
 
           <div className="flex gap-2 mb-4">
@@ -609,7 +609,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
               </CardContent>
             </Card>
           )}
-        </div>
 
         {/* Edit Dispatch Dialog */}
         <Dialog open={!!editingDispatch} onOpenChange={open => { if (!open) setEditingDispatch(null); }}>
@@ -643,13 +642,12 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
 
   // ===== BOLDER PAGE =====
   return (
-    <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-      <div className="p-4 max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
         <div className="flex items-center gap-3 mb-5">
           <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-foreground">Bolder Report</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Bolder Report</h1>
         </div>
 
         <div className="flex gap-2 mb-4">
@@ -713,7 +711,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
             </CardContent>
           </Card>
         )}
-      </div>
 
       {/* Edit Bolder Dialog */}
       <Dialog open={!!editingBolder} onOpenChange={open => { if (!open) setEditingBolder(null); }}>

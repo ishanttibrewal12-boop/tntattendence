@@ -258,7 +258,7 @@ const UserManagementSection = ({ onBack }: UserManagementSectionProps) => {
   // Create/Edit Form
   if (isCreating) {
     return (
-      <div className="p-4 max-w-md mx-auto">
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="icon" onClick={() => { setIsCreating(false); resetForm(); }}>
             <ArrowLeft className="h-5 w-5" />
@@ -400,12 +400,15 @@ const UserManagementSection = ({ onBack }: UserManagementSectionProps) => {
 
   // User List
   return (
-    <div className="p-4 max-w-md mx-auto">
+    <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground flex-1">User Management</h1>
+        <div className="p-2.5 rounded-xl bg-primary">
+          <Shield className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <div className="flex-1">
+          <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">User Management</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Create and manage system users</p>
+        </div>
         <Button size="sm" onClick={openCreateForm}>
           <Plus className="h-4 w-4 mr-1" />
           Add User

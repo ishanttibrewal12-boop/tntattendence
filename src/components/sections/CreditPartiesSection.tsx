@@ -329,7 +329,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   if (selectedParty) {
     const ledger = getLedgerWithBalance();
     return (
-      <div className="p-4 max-w-md mx-auto">
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
         <div className="flex items-center gap-3 mb-4">
           <Button variant="ghost" size="icon" onClick={() => setSelectedParty(null)}><ArrowLeft className="h-5 w-5" /></Button>
           <div className="flex-1">
