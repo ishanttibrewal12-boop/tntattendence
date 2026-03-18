@@ -392,6 +392,9 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
       {/* Auto Backup Section */}
       <AutoBackupSection />
 
+      {/* Storage Usage */}
+      <StorageUsageWidget />
+
       {/* Info Card */}
       <Card className="mt-4 bg-muted/50">
         <CardContent className="p-4">
