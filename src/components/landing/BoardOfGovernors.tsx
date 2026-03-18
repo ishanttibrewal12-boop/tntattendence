@@ -28,7 +28,7 @@ const governors: Governor[] = [
     description: 'Visionary entrepreneur and founder, leading the company\'s diversified operations across mining, stone crushing, transportation, petroleum distribution, and tyre trading.',
     phone: '9386469006',
     location: 'Jharkhand, India',
-    photoUrl: '',
+    photoUrl: proprietorPhoto,
   },
 ];
 
