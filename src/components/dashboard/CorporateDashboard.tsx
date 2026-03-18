@@ -142,8 +142,8 @@ const TimelineSection = () => (
               <div className="w-2.5 h-2.5 rounded-full bg-accent" />
             </div>
             <p className="mt-3 text-sm font-bold text-foreground">{item.year}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[140px] font-medium">{item.title}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5 max-w-[120px]">{item.desc}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 max-w-[140px] font-semibold">{item.title}</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5 max-w-[120px]">{item.desc}</p>
           </motion.div>
         ))}
       </div>
