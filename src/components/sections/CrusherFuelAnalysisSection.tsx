@@ -231,9 +231,15 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
   };
 
   return (
-    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-      <div className="flex items-center gap-3 mb-4">
-        <h1 className="text-lg lg:text-xl font-bold text-foreground flex-1">⛽ Fuel Analysis</h1>
+    <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 rounded-xl bg-accent">
+          <Fuel className="h-5 w-5 text-accent-foreground" />
+        </div>
+        <div className="flex-1">
+          <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">Fuel Analysis</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Consumption tracking & reporting</p>
+        </div>
         <Button variant="outline" size="icon" onClick={handleExcelExport} title="Export Excel"><Download className="h-4 w-4" /></Button>
         <Button variant="outline" size="icon" onClick={handleWhatsAppShare} title="Share on WhatsApp"><Share2 className="h-4 w-4" /></Button>
       </div>

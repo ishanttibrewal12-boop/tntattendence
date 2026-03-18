@@ -769,10 +769,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               </Card>
             );
           })}
-          <Card className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" onClick={downloadMLTBackupZip}>
+          <Card className="cursor-pointer card-hover" onClick={downloadMLTBackupZip}>
             <CardContent className="p-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg" style={{ background: '#1e3a8a' }}><FolderArchive className="h-5 w-5" style={{ color: 'white' }} /></div>
+                <div className="p-2 rounded-lg bg-primary"><FolderArchive className="h-5 w-5 text-primary-foreground" /></div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-foreground">Monthly Backup</p>
                   <p className="text-xs text-muted-foreground">Download ZIP folder</p>
