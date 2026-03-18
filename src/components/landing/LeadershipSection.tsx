@@ -1,5 +1,6 @@
 import { useLandingTheme } from './LandingThemeContext';
 import { Phone, MapPin } from 'lucide-react';
+import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 
 const LeadershipSection = () => {
   const { colors } = useLandingTheme();
@@ -9,6 +10,7 @@ const LeadershipSection = () => {
       <section className="py-16 md:py-20" style={{ background: colors.darkBg }}>
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: colors.darkLabel }}>Proprietor</p>
+          <img src={proprietorPhoto} alt="Trishav Tibrewal" className="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover mx-auto mb-4 border-4" style={{ borderColor: '#f97316' }} />
           <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ color: colors.darkText }}>Trishav Tibrewal</h2>
           <div className="w-12 h-0.5 mx-auto mb-6 rounded-full" style={{ background: '#f97316' }} />
           <p className="max-w-2xl mx-auto text-sm md:text-base leading-relaxed mb-8" style={{ color: colors.darkTextSoft }}>

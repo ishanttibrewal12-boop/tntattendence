@@ -1,6 +1,7 @@
 import { useLandingTheme } from './LandingThemeContext';
 import ScrollReveal from './ScrollReveal';
 import { Phone, MapPin, Briefcase, Mail } from 'lucide-react';
+import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 
 interface Governor {
   name: string;
@@ -27,7 +28,7 @@ const governors: Governor[] = [
     description: 'Visionary entrepreneur and founder, leading the company\'s diversified operations across mining, stone crushing, transportation, petroleum distribution, and tyre trading.',
     phone: '9386469006',
     location: 'Jharkhand, India',
-    photoUrl: '',
+    photoUrl: proprietorPhoto,
   },
 ];
 
