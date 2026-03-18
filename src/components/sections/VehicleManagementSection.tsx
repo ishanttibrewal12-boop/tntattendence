@@ -121,10 +121,15 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
   });
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-4">
-        <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
-        <h1 className="text-xl font-bold text-foreground">🚛 Vehicle Management</h1>
+    <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 rounded-xl bg-primary">
+          <Truck className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">Vehicle Management</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Fleet tracking & maintenance</p>
+        </div>
       </div>
 
       {expiryAlerts.length > 0 && (
