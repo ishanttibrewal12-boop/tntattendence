@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { HardDrive, Database, FolderOpen, RefreshCw } from 'lucide-react';
+import { HardDrive, Database, FolderOpen, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 interface TableInfo {
