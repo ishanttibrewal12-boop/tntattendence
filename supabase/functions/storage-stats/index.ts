@@ -24,11 +24,13 @@ Deno.serve(async (req) => {
     // Get total DB size
     const { data: dbSize, error: dbError } = await supabase.rpc('get_database_size')
 
+    const dbSizeRow = Array.isArray(dbSize) ? dbSize[0] : dbSize;
+
     return new Response(
       JSON.stringify({
         tables: tableSizes || [],
         storage: storageData || [],
-        database_size: dbSize || { size_pretty: '0 bytes', size_bytes: 0 },
+        database_size: dbSizeRow || { size_pretty: '0 bytes', size_bytes: 0 },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
