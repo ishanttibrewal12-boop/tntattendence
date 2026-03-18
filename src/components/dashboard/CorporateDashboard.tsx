@@ -263,7 +263,7 @@ const GroupStrengthSection = () => (
           <div className="text-2xl lg:text-3xl font-bold text-primary-foreground tracking-tight">
             <AnimatedNumber value={stat.value} />{stat.suffix}
           </div>
-          <p className="text-[11px] text-primary-foreground/50 font-medium mt-1">{stat.label}</p>
+          <p className="text-xs text-primary-foreground/70 font-medium mt-1">{stat.label}</p>
         </motion.div>
       ))}
     </div>
