@@ -529,7 +529,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
               </CardContent>
             </Card>
           </div>
-        </div>
       </div>
     );
   }
