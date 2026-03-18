@@ -191,15 +191,15 @@ const LeadershipSection = () => (
     <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Leadership</p>
     <Card className="border border-border/50 overflow-hidden">
       <CardContent className="p-6 lg:p-8 flex flex-col lg:flex-row items-center gap-6">
-        <motion.div
-          className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-primary flex items-center justify-center text-3xl lg:text-4xl shadow-lg"
+        <motion.img
+          src={proprietorPhoto}
+          alt="Trishav Tibrewal"
+          className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl object-cover shadow-lg"
           whileHover={{ scale: 1.05, boxShadow: '0 0 30px hsl(28 88% 52% / 0.2)' }}
           transition={{ duration: 0.2 }}
-        >
-          <span className="text-primary-foreground font-bold">TT</span>
-        </motion.div>
+        />
         <div className="text-center lg:text-left">
-          <h3 className="text-lg lg:text-xl font-bold text-foreground tracking-tight">Trishav Kumar Tibrewal</h3>
+          <h3 className="text-lg lg:text-xl font-bold text-foreground tracking-tight">Trishav Tibrewal</h3>
           <p className="text-sm text-accent font-semibold mt-0.5">Proprietor</p>
           <p className="text-xs text-muted-foreground mt-2 max-w-md leading-relaxed">
             Visionary leader driving the Tibrewal Group's expansion across mining, logistics, automotive, and agro-processing sectors in Jharkhand.
