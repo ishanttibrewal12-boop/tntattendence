@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Lock, Database, Download, Upload, RefreshCw } from 'lucide-react';
 import AutoBackupSection from './AutoBackupSection';
 import WhatsAppSettingsSection from './WhatsAppSettingsSection';
+import StorageUsageWidget from './StorageUsageWidget';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -390,6 +391,9 @@ const SettingsSection = ({ onBack }: SettingsSectionProps) => {
 
       {/* Auto Backup Section */}
       <AutoBackupSection />
+
+      {/* Storage Usage */}
+      <StorageUsageWidget />
 
       {/* Info Card */}
       <Card className="mt-4 bg-muted/50">

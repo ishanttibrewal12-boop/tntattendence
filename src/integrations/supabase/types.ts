@@ -1323,6 +1323,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_database_size: {
+        Args: never
+        Returns: {
+          size_bytes: number
+          size_pretty: string
+        }[]
+      }
+      get_storage_usage: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          file_count: number
+          total_bytes: number
+        }[]
+      }
+      get_table_sizes: {
+        Args: never
+        Returns: {
+          size_bytes: number
+          table_name: string
+          total_size: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
