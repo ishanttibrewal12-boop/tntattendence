@@ -536,13 +536,12 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   // ===== DISPATCH PAGE =====
   if (activePage === 'dispatch') {
     return (
-      <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-        <div className="p-4 max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
           <div className="flex items-center gap-3 mb-5">
             <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold text-foreground">Dispatch Report</h1>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Dispatch Report</h1>
           </div>
 
           <div className="flex gap-2 mb-4">
