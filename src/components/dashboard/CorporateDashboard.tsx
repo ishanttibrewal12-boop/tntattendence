@@ -250,7 +250,7 @@ const GroupStrengthSection = () => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: 0.3, duration: 0.4 }}
   >
-    <p className="text-[10px] font-bold text-primary-foreground/40 uppercase tracking-[0.15em] mb-5">Group Strength</p>
+    <p className="text-xs font-bold text-primary-foreground/60 uppercase tracking-[0.15em] mb-5">Group Strength</p>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
       {groupStrength.map((stat, i) => (
         <motion.div
