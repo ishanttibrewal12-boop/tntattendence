@@ -29,8 +29,8 @@ interface AppAuthContextType {
 
 const AppAuthContext = createContext<AppAuthContextType | undefined>(undefined);
 
-const SESSION_TIMEOUT_MS = 60 * 1000; // 1 minute idle timeout
-const WARNING_BEFORE_MS = 60 * 1000; // Show warning immediately (same as timeout)
+const IDLE_WARNING_MS = 60 * 1000; // Show warning after 1 minute of inactivity
+const AUTO_LOGOUT_MS = IDLE_WARNING_MS + 60 * 1000; // Auto logout 60s after warning
 const SESSION_KEY = 'tibrewal_app_user';
 const SESSION_TS_KEY = 'tibrewal_session_ts';
 
@@ -115,15 +115,14 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
 
     sessionStorage.setItem(SESSION_TS_KEY, Date.now().toString());
 
-    // Show warning 1 min before logout
     warningTimerRef.current = setTimeout(() => {
       setLogoutWarning(true);
-    }, SESSION_TIMEOUT_MS - WARNING_BEFORE_MS);
+    }, IDLE_WARNING_MS);
 
     // Actual logout
     inactivityTimerRef.current = setTimeout(() => {
       clearSession();
-    }, SESSION_TIMEOUT_MS);
+    }, AUTO_LOGOUT_MS);
   }, [user, clearSession]);
 
   const dismissWarning = useCallback(() => {
@@ -153,7 +152,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
     const sessionTs = sessionStorage.getItem(SESSION_TS_KEY);
     if (storedUser && sessionTs) {
       const elapsed = Date.now() - parseInt(sessionTs, 10);
-      if (elapsed < SESSION_TIMEOUT_MS) {
+      if (elapsed < AUTO_LOGOUT_MS) {
         try {
           setUser(JSON.parse(storedUser));
         } catch {
