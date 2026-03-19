@@ -126,87 +126,54 @@ const HeroPage = () => (
   </div>
 );
 
-// --- 2. TIMELINE PAGE ---
-const TimelinePage = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+// --- 2. TIMELINE PAGE (Vertical Animated) ---
+const TimelinePage = () => (
+  <div className="min-h-[85vh] flex flex-col justify-center rounded-3xl py-16 px-6 lg:px-16" style={{ background: '#080c14' }}>
+    <motion.div {...fadeUp} className="text-center mb-14">
+      <p className="text-xs font-bold uppercase tracking-[0.25em] mb-3" style={{ color: 'hsl(28, 88%, 52%)' }}>Since 2014</p>
+      <h2 className="text-3xl lg:text-5xl font-extrabold tracking-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>Our Journey</h2>
+      <p className="text-sm mt-3 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.45)' }}>A decade of growth, diversification, and relentless pursuit of industrial excellence across Jharkhand.</p>
+      <div className="w-16 h-1 mx-auto mt-5 rounded-full" style={{ background: 'hsl(28, 88%, 52%)' }} />
+    </motion.div>
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const timer = setTimeout(() => {
-      el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, []);
+    <div className="relative max-w-3xl mx-auto w-full">
+      {/* Animated vertical line */}
+      <motion.div
+        className="absolute left-5 lg:left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2"
+        style={{ background: 'rgba(255,255,255,0.08)' }}
+        initial={{ scaleY: 0 }}
+        whileInView={{ scaleY: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.2, ease: [0.33, 1, 0.68, 1] }}
+      />
 
-  return (
-    <div className="min-h-[85vh] flex flex-col justify-center">
-      <motion.div {...fadeUp}>
-        <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2">Since 2014</p>
-        <h2 className="text-2xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-2">Our Journey</h2>
-        <p className="text-sm text-muted-foreground mb-10 max-w-xl">A decade of growth, diversification, and relentless pursuit of industrial excellence across Jharkhand.</p>
-      </motion.div>
-
-      {/* Desktop horizontal */}
-      <div className="hidden lg:block overflow-x-auto pb-6 scrollbar-thin" ref={scrollRef}>
-        <div className="flex items-start gap-0 min-w-max relative py-4">
-          <motion.div
-            className="absolute top-[22px] left-[22px] right-[22px] h-[2px] bg-border"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.4, duration: 1.5, ease: [0.33, 1, 0.68, 1] }}
-            style={{ transformOrigin: 'left' }}
-          />
-          {timelineData.map((item, i) => (
-            <motion.div
-              key={i}
-              className="flex flex-col items-center text-center px-8 relative"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + i * 0.15, duration: 0.4 }}
-            >
-              <div className="relative z-10 w-11 h-11 rounded-full bg-primary border-4 border-background flex items-center justify-center shadow-lg">
-                <div className="w-3 h-3 rounded-full bg-accent" />
-              </div>
-              <p className="mt-4 text-base font-extrabold text-foreground">{item.year}</p>
-              <p className="text-sm text-foreground/80 mt-1 max-w-[160px] font-bold">{item.title}</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[150px]">{item.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile vertical */}
-      <div className="lg:hidden relative pl-8">
+      {timelineData.map((item, i) => (
         <motion.div
-          className="absolute left-[15px] top-0 bottom-0 w-[2px] bg-border"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ delay: 0.4, duration: 1, ease: [0.33, 1, 0.68, 1] }}
-          style={{ transformOrigin: 'top' }}
-        />
-        {timelineData.map((item, i) => (
-          <motion.div
-            key={i}
-            className="relative flex items-start gap-5 mb-8 last:mb-0"
-            initial={{ opacity: 0, x: -15 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 + i * 0.12, duration: 0.35 }}
-          >
-            <div className="relative z-10 w-8 h-8 rounded-full bg-primary border-4 border-background flex items-center justify-center shadow-sm flex-shrink-0 -ml-8">
-              <div className="w-2 h-2 rounded-full bg-accent" />
+          key={i}
+          className={`relative flex items-start mb-12 last:mb-0 ${i % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}
+          initial={{ opacity: 0, x: i % 2 === 0 ? -40 : 40, y: 15 }}
+          whileInView={{ opacity: 1, x: 0, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ delay: i * 0.1, duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+        >
+          {/* Dot */}
+          <div className="absolute left-5 lg:left-1/2 w-10 h-10 rounded-full -translate-x-1/2 z-10 flex items-center justify-center border-4" style={{ background: '#080c14', borderColor: 'hsl(28, 88%, 52%)' }}>
+            <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(28, 88%, 52%)' }} />
+          </div>
+
+          {/* Content card */}
+          <div className={`ml-14 lg:ml-0 lg:w-[43%] ${i % 2 === 0 ? 'lg:pr-14 lg:text-right' : 'lg:pl-14 lg:ml-auto'}`}>
+            <div className="rounded-2xl p-5 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+              <span className="inline-block text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full mb-3" style={{ background: 'rgba(234,136,37,0.12)', color: 'hsl(28, 88%, 55%)' }}>{item.year}</span>
+              <h3 className="text-base lg:text-lg font-bold mb-1" style={{ color: 'rgba(255,255,255,0.9)' }}>{item.title}</h3>
+              <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>{item.desc}</p>
             </div>
-            <div className="-mt-0.5">
-              <p className="text-base font-extrabold text-foreground">{item.year}</p>
-              <p className="text-sm text-foreground/80 font-bold">{item.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+          </div>
+        </motion.div>
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
 // --- 3. INDIVIDUAL COMPANY PAGES ---
 const CompanyPage = ({ company, index }: { company: typeof companies[0]; index: number }) => (
