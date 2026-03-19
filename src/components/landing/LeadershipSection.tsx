@@ -28,10 +28,10 @@ const LeadershipSection = () => {
       </section>
       <footer className="py-8" style={{ background: colors.footerBg }}>
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-sm font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Tibrewal & Tibrewal Pvt. Ltd.</p>
+          <p className="text-sm font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Tibrewal Group</p>
           <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>Mining | Logistics | Petroleum | Tyres</p>
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>Jharkhand, India</p>
-          <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.2)' }}>© {currentYear} Tibrewal & Tibrewal Pvt. Ltd. All rights reserved.</p>
+          <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.2)' }}>© {currentYear} Tibrewal Group. All rights reserved.</p>
         </div>
       </footer>
     </>
