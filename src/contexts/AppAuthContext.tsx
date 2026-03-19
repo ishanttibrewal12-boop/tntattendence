@@ -73,9 +73,27 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const playLogoutSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch {}
+  }, []);
+
   const clearSession = useCallback(() => {
+    playLogoutSound();
     setUser(null);
     setLogoutWarning(false);
+    setLogoutConfirm(false);
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_TS_KEY);
     if (inactivityTimerRef.current) {
@@ -86,7 +104,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
       clearTimeout(warningTimerRef.current);
       warningTimerRef.current = null;
     }
-  }, []);
+  }, [playLogoutSound]);
 
   const resetInactivityTimer = useCallback(() => {
     if (!user) return;
