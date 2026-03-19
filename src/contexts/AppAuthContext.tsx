@@ -152,7 +152,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
     const sessionTs = sessionStorage.getItem(SESSION_TS_KEY);
     if (storedUser && sessionTs) {
       const elapsed = Date.now() - parseInt(sessionTs, 10);
-      if (elapsed < SESSION_TIMEOUT_MS) {
+      if (elapsed < AUTO_LOGOUT_MS) {
         try {
           setUser(JSON.parse(storedUser));
         } catch {
