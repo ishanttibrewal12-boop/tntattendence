@@ -302,8 +302,8 @@ const Home = () => {
         <div className="flex items-center gap-3">
           <img src={companyLogo} alt="T&T" className="h-9 w-9 object-contain rounded-lg" />
           <div>
-            <h1 className="text-sm font-bold text-sidebar-foreground tracking-tight">Tibrewal & Tibrewal</h1>
-            <p className="text-[10px] text-sidebar-foreground/40 font-medium">Private Limited</p>
+            <h1 className="text-sm font-bold text-sidebar-foreground tracking-tight">Tibrewal Group</h1>
+            <p className="text-[10px] text-sidebar-foreground/40 font-medium">Industrial Business Group</p>
           </div>
         </div>
       </div>
