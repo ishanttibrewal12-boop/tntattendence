@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLandingTheme } from './LandingThemeContext';
 
 const AnimatedCounter = ({ end, suffix = '', label }: { end: number; suffix?: string; label: string }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -32,28 +31,25 @@ const AnimatedCounter = ({ end, suffix = '', label }: { end: number; suffix?: st
 
   return (
     <div ref={ref} className="text-center">
-      <p className="text-4xl md:text-5xl font-extrabold" style={{ color: 'white' }}>
+      <p className="text-4xl md:text-5xl font-extrabold text-white">
         {typeof end === 'number' && end > 0 ? count : ''}{suffix}
       </p>
-      <p className="text-xs mt-2 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.5)' }}>{label}</p>
+      <p className="text-xs mt-2 uppercase tracking-wider text-white/50">{label}</p>
     </div>
   );
 };
 
-const StatsStrip = () => {
-  const { colors } = useLandingTheme();
-  return (
-    <section className="py-14" style={{ background: colors.darkBgGradient }}>
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <AnimatedCounter end={2021} suffix="" label="Established" />
-          <AnimatedCounter end={50} suffix="+" label="Heavy Trucks" />
-          <AnimatedCounter end={200} suffix="+" label="Employees" />
-          <AnimatedCounter end={4} suffix="" label="Business Verticals" />
-        </div>
+const StatsStrip = () => (
+  <section className="py-14" style={{ background: 'linear-gradient(135deg, #080b12 0%, #121828 100%)' }}>
+    <div className="max-w-5xl mx-auto px-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <AnimatedCounter end={2021} suffix="" label="Established" />
+        <AnimatedCounter end={50} suffix="+" label="Heavy Trucks" />
+        <AnimatedCounter end={200} suffix="+" label="Employees" />
+        <AnimatedCounter end={4} suffix="" label="Business Verticals" />
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
 export default StatsStrip;
