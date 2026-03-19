@@ -374,7 +374,7 @@ const Home = () => {
             <p className="text-[10px] text-sidebar-foreground/40 capitalize font-medium">{user?.role?.replace('_', ' ')}</p>
           </div>
           <motion.div whileTap={{ scale: 0.9 }}>
-            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-destructive">
+            <Button variant="ghost" size="icon" onClick={requestLogout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-destructive">
               <LogOut className="h-4 w-4" />
             </Button>
           </motion.div>
