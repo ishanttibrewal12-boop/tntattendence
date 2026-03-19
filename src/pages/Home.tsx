@@ -166,7 +166,7 @@ const Home = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoWipe, setShowLogoWipe] = useState(false);
   const [pendingBack, setPendingBack] = useState<'section' | 'department' | null>(null);
-  const { user, logout } = useAppAuth();
+  const { user, requestLogout } = useAppAuth();
   const isMobile = useIsMobile();
 
   const isManager = user?.role === 'manager';
@@ -302,8 +302,8 @@ const Home = () => {
         <div className="flex items-center gap-3">
           <img src={companyLogo} alt="T&T" className="h-9 w-9 object-contain rounded-lg" />
           <div>
-            <h1 className="text-sm font-bold text-sidebar-foreground tracking-tight">Tibrewal & Tibrewal</h1>
-            <p className="text-[10px] text-sidebar-foreground/40 font-medium">Private Limited</p>
+            <h1 className="text-sm font-bold text-sidebar-foreground tracking-tight">Tibrewal Group</h1>
+            <p className="text-[10px] text-sidebar-foreground/40 font-medium">Industrial Business Group</p>
           </div>
         </div>
       </div>
@@ -374,7 +374,7 @@ const Home = () => {
             <p className="text-[10px] text-sidebar-foreground/40 capitalize font-medium">{user?.role?.replace('_', ' ')}</p>
           </div>
           <motion.div whileTap={{ scale: 0.9 }}>
-            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-destructive">
+            <Button variant="ghost" size="icon" onClick={requestLogout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-destructive">
               <LogOut className="h-4 w-4" />
             </Button>
           </motion.div>
@@ -412,7 +412,7 @@ const Home = () => {
           <span className="text-xs font-semibold text-foreground/70">{user?.full_name}</span>
         )}
         {isMobile && (
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={logout}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={requestLogout}>
             <LogOut className="h-4 w-4 text-muted-foreground" />
           </Button>
         )}

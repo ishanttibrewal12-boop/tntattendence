@@ -55,8 +55,8 @@ const Login = () => {
           <div className="flex items-center gap-4 mb-10">
             <img src={companyLogo} alt="T&T" className="h-14 w-14 object-contain rounded-xl" />
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Tibrewal & Tibrewal</h1>
-              <p className="text-white/50 text-sm font-medium">Private Limited</p>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Tibrewal Group</h1>
+              <p className="text-white/50 text-sm font-medium">Industrial Business Group</p>
             </div>
           </div>
           
@@ -135,7 +135,7 @@ const Login = () => {
             </form>
 
             <p className="text-center text-[11px] text-muted-foreground/50 mt-6">
-              Tibrewal & Tibrewal Pvt. Ltd. · Jharkhand
+              Tibrewal Group · Jharkhand
             </p>
           </CardContent>
         </Card>

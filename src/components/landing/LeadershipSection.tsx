@@ -14,7 +14,7 @@ const LeadershipSection = () => {
           <h2 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ color: colors.darkText }}>Trishav Tibrewal</h2>
           <div className="w-12 h-0.5 mx-auto mb-6 rounded-full" style={{ background: '#f97316' }} />
           <p className="max-w-2xl mx-auto text-sm md:text-base leading-relaxed mb-8" style={{ color: colors.darkTextSoft }}>
-            Visionary entrepreneur and founder of Tibrewal & Tibrewal Pvt. Ltd., leading the company's diversified operations across mining, stone crushing, transportation, petroleum distribution, and tyre trading in Jharkhand.
+            Graduate entrepreneur from Christ University, Ghaziabad. A visionary leader driving Tibrewal Group's expansion across mining, logistics, petroleum distribution, and tyre trading in Jharkhand.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
             <a href="tel:9386469006" className="flex items-center gap-2 text-sm hover:underline" style={{ color: colors.darkTextMuted }}>
@@ -28,10 +28,10 @@ const LeadershipSection = () => {
       </section>
       <footer className="py-8" style={{ background: colors.footerBg }}>
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-sm font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Tibrewal & Tibrewal Pvt. Ltd.</p>
+          <p className="text-sm font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Tibrewal Group</p>
           <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>Mining | Logistics | Petroleum | Tyres</p>
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>Jharkhand, India</p>
-          <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.2)' }}>© {currentYear} Tibrewal & Tibrewal Pvt. Ltd. All rights reserved.</p>
+          <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.2)' }}>© {currentYear} Tibrewal Group. All rights reserved.</p>
         </div>
       </footer>
     </>

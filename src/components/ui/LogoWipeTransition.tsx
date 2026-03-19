@@ -51,8 +51,8 @@ const LogoWipeTransition = ({ show, onComplete }: LogoWipeTransitionProps) => {
               transition={{ delay: 0.2, duration: 0.2 }}
               className="text-center"
             >
-              <p className="text-sm font-bold" style={{ color: 'hsl(210, 15%, 90%)' }}>Tibrewal & Tibrewal</p>
-              <p className="text-[10px] font-medium" style={{ color: 'hsl(210, 15%, 50%)' }}>Private Limited</p>
+              <p className="text-sm font-bold" style={{ color: 'hsl(210, 15%, 90%)' }}>Tibrewal Group</p>
+              <p className="text-[10px] font-medium" style={{ color: 'hsl(210, 15%, 50%)' }}>Industrial Business Group</p>
             </motion.div>
           </motion.div>
         </motion.div>

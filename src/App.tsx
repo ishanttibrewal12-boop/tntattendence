@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { AppAuthProvider, useAppAuth } from "@/contexts/AppAuthContext";
+import IdleWarningDialog from "@/components/IdleWarningDialog";
+import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 const LandingPage = lazy(() => import("./components/ProfileSelection").catch((err) => {
   console.error("Failed to load ProfileSelection:", err);
@@ -39,19 +41,23 @@ const AppContent = () => {
   const { isAuthenticated, isLoading } = useAppAuth();
 
   return (
-    <Suspense fallback={<LoadingScreen />}>
-      <Routes>
-        <Route path="/" element={
-          isLoading ? <LoadingScreen /> :
-          isAuthenticated ? <Navigate to="/dashboard" replace /> :
-          <LandingPage />
-        } />
-        <Route path="/dashboard" element={
-          <ProtectedRoute><Home /></ProtectedRoute>
-        } />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+    <>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/" element={
+            isLoading ? <LoadingScreen /> :
+            isAuthenticated ? <Navigate to="/dashboard" replace /> :
+            <LandingPage />
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute><Home /></ProtectedRoute>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+      <IdleWarningDialog />
+      <LogoutConfirmDialog />
+    </>
   );
 };
 

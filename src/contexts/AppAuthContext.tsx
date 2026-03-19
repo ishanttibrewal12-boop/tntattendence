@@ -17,16 +17,20 @@ interface AppAuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  requestLogout: () => void;
+  confirmLogout: () => void;
+  cancelLogout: () => void;
   hasAccess: (section: string) => boolean;
   canEdit: (section: string) => boolean;
   logoutWarning: boolean;
+  logoutConfirm: boolean;
   dismissWarning: () => void;
 }
 
 const AppAuthContext = createContext<AppAuthContextType | undefined>(undefined);
 
-const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-const WARNING_BEFORE_MS = 60 * 1000; // Show warning 1 minute before logout
+const SESSION_TIMEOUT_MS = 60 * 1000; // 1 minute idle timeout
+const WARNING_BEFORE_MS = 60 * 1000; // Show warning immediately (same as timeout)
 const SESSION_KEY = 'tibrewal_app_user';
 const SESSION_TS_KEY = 'tibrewal_session_ts';
 
@@ -65,12 +69,31 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [logoutWarning, setLogoutWarning] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const playLogoutSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch {}
+  }, []);
+
   const clearSession = useCallback(() => {
+    playLogoutSound();
     setUser(null);
     setLogoutWarning(false);
+    setLogoutConfirm(false);
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_TS_KEY);
     if (inactivityTimerRef.current) {
@@ -81,7 +104,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
       clearTimeout(warningTimerRef.current);
       warningTimerRef.current = null;
     }
-  }, []);
+  }, [playLogoutSound]);
 
   const resetInactivityTimer = useCallback(() => {
     if (!user) return;
@@ -184,6 +207,19 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
     clearSession();
   }, [clearSession]);
 
+  const requestLogout = useCallback(() => {
+    playLogoutSound();
+    setLogoutConfirm(true);
+  }, [playLogoutSound]);
+
+  const confirmLogout = useCallback(() => {
+    clearSession();
+  }, [clearSession]);
+
+  const cancelLogout = useCallback(() => {
+    setLogoutConfirm(false);
+  }, []);
+
   const hasAccess = (section: string): boolean => {
     if (!user) return false;
     const access = ROLE_ACCESS[user.role];
@@ -206,9 +242,13 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
         isLoading,
         login,
         logout,
+        requestLogout,
+        confirmLogout,
+        cancelLogout,
         hasAccess,
         canEdit,
         logoutWarning,
+        logoutConfirm,
         dismissWarning,
       }}
     >

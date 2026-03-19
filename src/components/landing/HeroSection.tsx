@@ -57,7 +57,7 @@ const HeroSection = () => {
           width={80} height={80} fetchPriority="high"
         />
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight" style={{ color: 'white' }}>
-          TIBREWAL AND TIBREWAL<br />PVT. LTD.
+          TIBREWAL GROUP
         </h1>
         <p className="text-lg md:text-xl font-medium mb-8" style={{ color: 'rgba(255,255,255,0.7)' }}>
           A Prominent Industrial Business Group
