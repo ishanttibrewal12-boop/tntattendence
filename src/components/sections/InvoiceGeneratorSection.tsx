@@ -329,12 +329,14 @@ const InvoiceGeneratorSection = ({ onBack }: InvoiceGeneratorSectionProps) => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#F4F6F8' }}>
-      <div className="p-4 max-w-2xl mx-auto">
-        <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>
+    <div className="min-h-screen bg-background">
+      <div className="p-4 max-w-2xl mx-auto pb-24 lg:pb-8">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2.5 rounded-xl bg-primary">
+            <FileText className="h-5 w-5 text-primary-foreground" />
+          </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">🧾 GST Invoice Generator</h1>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">GST Invoice Generator</h1>
             <p className="text-xs text-muted-foreground">Generate professional tax invoices from dispatch entries</p>
           </div>
         </div>
@@ -485,32 +487,30 @@ const InvoiceGeneratorSection = ({ onBack }: InvoiceGeneratorSectionProps) => {
 
         {/* Summary & Actions */}
         {selectedItems.length > 0 && (
-          <Card className="border-0 mb-4" style={{ background: '#0f172a' }}>
+          <Card className="border-0 mb-4 bg-primary text-primary-foreground">
             <CardContent className="p-4 space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>Subtotal</span>
-                <span className="text-sm font-medium" style={{ color: 'white' }}>₹{subtotal.toLocaleString('en-IN')}</span>
+                <span className="text-sm text-primary-foreground/70">Subtotal</span>
+                <span className="text-sm font-medium">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>GST ({gstRate}%)</span>
-                <span className="text-sm font-medium" style={{ color: 'white' }}>₹{Math.round(gstAmount).toLocaleString('en-IN')}</span>
+                <span className="text-sm text-primary-foreground/70">GST ({gstRate}%)</span>
+                <span className="text-sm font-medium">₹{Math.round(gstAmount).toLocaleString('en-IN')}</span>
               </div>
-              <div className="border-t border-white/20 pt-2 flex justify-between">
-                <span className="text-sm font-bold" style={{ color: 'white' }}>Grand Total</span>
-                <span className="text-lg font-bold" style={{ color: '#22c55e' }}>₹{Math.round(totalWithGst).toLocaleString('en-IN')}</span>
+              <div className="border-t border-primary-foreground/20 pt-2 flex justify-between">
+                <span className="text-sm font-bold">Grand Total</span>
+                <span className="text-lg font-bold text-emerald-300">₹{Math.round(totalWithGst).toLocaleString('en-IN')}</span>
               </div>
               <div className="flex gap-2 pt-2">
                 <Button
-                  className="flex-1"
-                  style={{ background: '#22c55e', color: 'white' }}
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
                   onClick={handleDownload}
                 >
                   <Download className="h-4 w-4 mr-1" /> Download PDF
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 border-white/20 hover:bg-white/10"
-                  style={{ color: 'white' }}
+                  className="flex-1 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
                   onClick={handleShare}
                 >
                   <Printer className="h-4 w-4 mr-1" /> Share
