@@ -207,6 +207,19 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
     clearSession();
   }, [clearSession]);
 
+  const requestLogout = useCallback(() => {
+    playLogoutSound();
+    setLogoutConfirm(true);
+  }, [playLogoutSound]);
+
+  const confirmLogout = useCallback(() => {
+    clearSession();
+  }, [clearSession]);
+
+  const cancelLogout = useCallback(() => {
+    setLogoutConfirm(false);
+  }, []);
+
   const hasAccess = (section: string): boolean => {
     if (!user) return false;
     const access = ROLE_ACCESS[user.role];
