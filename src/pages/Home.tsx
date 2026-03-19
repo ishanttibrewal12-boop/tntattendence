@@ -166,7 +166,7 @@ const Home = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoWipe, setShowLogoWipe] = useState(false);
   const [pendingBack, setPendingBack] = useState<'section' | 'department' | null>(null);
-  const { user, logout } = useAppAuth();
+  const { user, requestLogout } = useAppAuth();
   const isMobile = useIsMobile();
 
   const isManager = user?.role === 'manager';
