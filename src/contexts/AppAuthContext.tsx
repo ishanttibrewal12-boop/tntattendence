@@ -69,6 +69,7 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [logoutWarning, setLogoutWarning] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
