@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { AppAuthProvider, useAppAuth } from "@/contexts/AppAuthContext";
+import IdleWarningDialog from "@/components/IdleWarningDialog";
+import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 const LandingPage = lazy(() => import("./components/ProfileSelection").catch((err) => {
   console.error("Failed to load ProfileSelection:", err);
