@@ -67,8 +67,8 @@ const Sidebar = () => {
             <div className="flex items-center gap-3">
               <Building2 className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="font-bold text-foreground">Tibrewal & Tibrewal</h1>
-                <p className="text-xs text-muted-foreground">Private Limited</p>
+                <h1 className="font-bold text-foreground">Tibrewal Group</h1>
+                <p className="text-xs text-muted-foreground">Industrial Business Group</p>
               </div>
             </div>
           </div>

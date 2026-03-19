@@ -135,7 +135,7 @@ const Login = () => {
             </form>
 
             <p className="text-center text-[11px] text-muted-foreground/50 mt-6">
-              Tibrewal & Tibrewal Pvt. Ltd. · Jharkhand
+              Tibrewal Group · Jharkhand
             </p>
           </CardContent>
         </Card>
