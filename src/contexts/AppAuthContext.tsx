@@ -17,9 +17,13 @@ interface AppAuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  requestLogout: () => void;
+  confirmLogout: () => void;
+  cancelLogout: () => void;
   hasAccess: (section: string) => boolean;
   canEdit: (section: string) => boolean;
   logoutWarning: boolean;
+  logoutConfirm: boolean;
   dismissWarning: () => void;
 }
 
