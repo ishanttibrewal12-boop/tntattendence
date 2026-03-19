@@ -5,95 +5,134 @@ import { useEffect, useRef } from 'react';
 import companyLogo from '@/assets/company-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
-import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart } from 'lucide-react';
+import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot } from 'lucide-react';
 
-// --- Timeline Data ---
+// --- Data ---
 const timelineData = [
-  { year: '2014', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group' },
-  { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction' },
-  { year: '2023', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'Logistics & transport' },
-  { year: '2024', title: 'Tibrewal Motors Pvt. Ltd.', desc: 'Automotive solutions' },
-  { year: '2024', title: 'Tibrewal Tyres', desc: 'Tyre trading' },
-  { year: '2025', title: 'Tibrewal Agro Food Processing', desc: 'Agro processing' },
-  { year: '2025', title: 'Tibrewal Ventures', desc: 'Investments & expansion' },
+  { year: '2014', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution' },
+  { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched' },
+  { year: '2023', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'Logistics & transportation arm established' },
+  { year: '2024', title: 'Tibrewal Motors Pvt. Ltd.', desc: 'Automotive solutions & fleet management' },
+  { year: '2024', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading & distribution' },
+  { year: '2025', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing & value addition' },
+  { year: '2025', title: 'Tibrewal Ventures', desc: 'Strategic investments & new business expansion' },
 ];
 
 const companies = [
-  { title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction', detail: 'Established in 2022, operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand.', icon: '⛏️' },
-  { title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'Logistics & transport', detail: 'A key logistics and transportation company with a fleet of 50+ trucks, ensuring timely and cost-effective delivery solutions across mining and construction sectors.', icon: '🚚' },
-  { title: 'Tibrewal Motors Pvt. Ltd.', desc: 'Automotive solutions', detail: 'Operates in the automotive segment, focusing on vehicle-related services, fleet management, and mobility solutions supporting the group\'s logistics requirements.', icon: '🚗' },
-  { title: 'Tibrewal Tyres', desc: 'Tyre trading', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles, catering to transporters, fleet owners, and industrial clients.', icon: '🛞' },
-  { title: 'Tibrewal Agro Food Processing', desc: 'Agro processing', detail: 'Focuses on processing and value addition of agricultural produce, bridging the gap between raw agricultural resources and market-ready products.', icon: '🌾' },
-  { title: 'Tibrewal Ventures', desc: 'Investments & expansion', detail: 'The strategic investment and expansion arm of the group, identifying new business opportunities across infrastructure, trading, and industrial services.', icon: '📈' },
+  { title: 'Bharat Petroleum Fuel Station', year: '2014', desc: 'Petroleum Distribution', detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station, this unit provides reliable fuel supply to transporters, fleet operators, and the local community. It represents the group\'s entry into the industrial sector and remains a cornerstone of its operations.', icon: '⛽', highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'] },
+  { title: 'Tibrewal Mines & Minerals Pvt. Ltd.', year: '2022', desc: 'Mining & Mineral Extraction', detail: 'Established in 2022, this company operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand. With modern excavation equipment and a dedicated workforce, the company ensures sustainable mining practices while meeting growing infrastructure demands.', icon: '⛏️', highlights: ['Open-pit mining operations', 'Stone crushing plants', 'High-quality aggregates', 'Sustainable practices'] },
+  { title: 'Tibrewal & Tibrewal Pvt. Ltd.', year: '2023', desc: 'Logistics & Transportation', detail: 'A key logistics and transportation company with a fleet of 50+ heavy tipper trucks. The company ensures timely and cost-effective delivery solutions across mining, construction, and infrastructure sectors. Operating round-the-clock, it is the backbone of the group\'s supply chain operations.', icon: '🚚', highlights: ['50+ heavy tipper trucks', 'Round-the-clock operations', 'Mining & construction logistics', 'Pan-Jharkhand coverage'] },
+  { title: 'Tibrewal Motors Pvt. Ltd.', year: '2024', desc: 'Automotive Solutions', detail: 'Operates in the automotive segment, focusing on vehicle-related services, fleet management, and mobility solutions. The company supports the group\'s logistics requirements while also serving external clients with comprehensive automotive services and solutions.', icon: '🚗', highlights: ['Fleet management services', 'Vehicle maintenance', 'Mobility solutions', 'Automotive trading'] },
+  { title: 'Tibrewal Tyres', year: '2024', desc: 'Tyre Trading & Distribution', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients, the company provides a comprehensive range of tyres from leading manufacturers at competitive prices.', icon: '🛞', highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'] },
+  { title: 'Tibrewal Agro Food Processing', year: '2025', desc: 'Agricultural Processing', detail: 'The group\'s newest venture focusing on processing and value addition of agricultural produce. This unit bridges the gap between raw agricultural resources and market-ready products, contributing to the region\'s agricultural economy and food supply chain.', icon: '🌾', highlights: ['Value-added processing', 'Farm-to-market chain', 'Quality food products', 'Regional agricultural support'] },
+  { title: 'Tibrewal Ventures', year: '2025', desc: 'Strategic Investments', detail: 'The strategic investment and expansion arm of the group. Tibrewal Ventures identifies new business opportunities across infrastructure, trading, and industrial services, ensuring the group continues to grow and diversify into high-potential sectors.', icon: '📈', highlights: ['New sector identification', 'Strategic partnerships', 'Infrastructure investments', 'Growth acceleration'] },
 ];
 
 const groupStrength = [
   { label: 'Trucks', value: 50, suffix: '+' },
-  { label: 'Business Sectors', value: 6, suffix: '' },
+  { label: 'Business Sectors', value: 7, suffix: '' },
   { label: 'Employees', value: 200, suffix: '+' },
   { label: 'Years of Operations', value: 10, suffix: '+' },
 ];
 
 const policies = [
-  { icon: Shield, title: 'Safety First', desc: 'All operations follow strict safety protocols. Zero-tolerance policy for unsafe practices across all sites.' },
-  { icon: Scale, title: 'Fair Business Practices', desc: 'We maintain transparent and ethical dealings with all partners, vendors, and stakeholders.' },
-  { icon: FileCheck, title: 'Quality Assurance', desc: 'Every product and service undergoes rigorous quality checks before delivery.' },
-  { icon: Globe, title: 'Environmental Responsibility', desc: 'Committed to sustainable mining and operations with minimal environmental impact.' },
-  { icon: Heart, title: 'Employee Welfare', desc: 'Competitive wages, timely payments, and safe working conditions for all 200+ employees.' },
-  { icon: Award, title: 'Compliance & Governance', desc: 'Full adherence to government regulations, GST compliance, and corporate governance norms.' },
+  { icon: Shield, title: 'Safety First', desc: 'All operations follow strict safety protocols. Zero-tolerance policy for unsafe practices across mining sites, transportation, and fuel stations. Regular safety audits and mandatory PPE compliance for all workers.' },
+  { icon: Scale, title: 'Fair Business Practices', desc: 'We maintain transparent and ethical dealings with all partners, vendors, and stakeholders. All transactions are documented, GST compliant, and follow industry-standard business ethics.' },
+  { icon: FileCheck, title: 'Quality Assurance', desc: 'Every product and service undergoes rigorous quality checks before delivery. From aggregate grading to fuel purity — quality is non-negotiable across all verticals.' },
+  { icon: Globe, title: 'Environmental Responsibility', desc: 'Committed to sustainable mining and operations with minimal environmental impact. We follow all government-mandated environmental norms and actively work on land rehabilitation post-mining.' },
+  { icon: Heart, title: 'Employee Welfare', desc: 'Competitive wages, timely salary payments, advance facilities, and safe working conditions for all 200+ employees. We invest in workforce development and provide comprehensive support systems.' },
+  { icon: Award, title: 'Compliance & Governance', desc: 'Full adherence to government regulations, mining licenses, GST compliance, and corporate governance norms. Regular audits ensure complete legal and regulatory compliance across all operations.' },
+  { icon: Users, title: 'Community Development', desc: 'Active participation in local community development through employment generation, infrastructure support, and contributing to the economic growth of Jharkhand\'s industrial landscape.' },
+  { icon: Building2, title: 'Operational Excellence', desc: 'Continuous improvement in operational efficiency through modern equipment, technology adoption, and process optimization across all business units.' },
 ];
 
-// --- Hero Section ---
-const HeroSection = () => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ duration: 0.6 }}
-    className="relative overflow-hidden rounded-2xl bg-primary p-8 lg:p-12"
-  >
-    <div className="absolute inset-0 opacity-10">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-accent rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-chart-1 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4" />
-    </div>
-    <div className="relative z-10 flex items-center gap-6">
-      <motion.img
-        src={companyLogo}
-        alt="Tibrewal Group"
-        className="h-16 w-16 lg:h-20 lg:w-20 object-contain rounded-xl border border-primary-foreground/10"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-      />
-      <div>
-        <motion.h1
-          className="text-2xl lg:text-4xl font-bold text-primary-foreground tracking-tight"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.5 }}
-        >
-          Tibrewal Group
-        </motion.h1>
-        <motion.p
-          className="text-sm lg:text-base text-primary-foreground/80 mt-1 font-medium"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-        >
-          A Diversified Industrial Business Group
-        </motion.p>
+// --- Animation variants ---
+const fadeUp = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, ease: [0.33, 1, 0.68, 1] },
+};
+
+const staggerChildren = {
+  animate: { transition: { staggerChildren: 0.1 } },
+};
+
+// ============================================================
+// FULL-PAGE SECTIONS
+// ============================================================
+
+// --- 1. HERO PAGE ---
+const HeroPage = () => (
+  <div className="min-h-[85vh] flex flex-col justify-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="relative overflow-hidden rounded-3xl bg-primary p-10 lg:p-16"
+    >
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-chart-1 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4" />
       </div>
-    </div>
-  </motion.div>
+      <div className="relative z-10">
+        <motion.div
+          className="flex items-center gap-6 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          <img
+            src={companyLogo}
+            alt="Tibrewal Group"
+            className="h-20 w-20 lg:h-24 lg:w-24 object-contain rounded-2xl border border-primary-foreground/10"
+          />
+          <div>
+            <h1 className="text-3xl lg:text-5xl font-extrabold text-primary-foreground tracking-tight">
+              Tibrewal Group
+            </h1>
+            <p className="text-base lg:text-lg text-primary-foreground/70 mt-2 font-medium">
+              A Diversified Industrial Business Group
+            </p>
+          </div>
+        </motion.div>
+
+        <motion.p
+          className="text-sm lg:text-base text-primary-foreground/60 max-w-2xl leading-relaxed mb-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+        >
+          From mining and minerals to logistics, petroleum, tyres, and agro-food processing — Tibrewal Group is a prominent industrial conglomerate powering Jharkhand's infrastructure growth since 2014.
+        </motion.p>
+
+        {/* Strength Stats */}
+        <motion.div
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.5 }}
+        >
+          {groupStrength.map((stat, i) => (
+            <div key={stat.label} className="text-center lg:text-left">
+              <div className="text-3xl lg:text-4xl font-extrabold text-primary-foreground tracking-tight">
+                <AnimatedNumber value={stat.value} />{stat.suffix}
+              </div>
+              <p className="text-xs text-primary-foreground/50 font-medium mt-1 uppercase tracking-wider">{stat.label}</p>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </motion.div>
+  </div>
 );
 
-// --- Timeline with auto-scroll ---
-const TimelineSection = () => {
+// --- 2. TIMELINE PAGE ---
+const TimelinePage = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // Auto scroll to end after animation
     const timer = setTimeout(() => {
       el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
     }, 1200);
@@ -101,49 +140,46 @@ const TimelineSection = () => {
   }, []);
 
   return (
-    <div>
-      <motion.p
-        className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        Our Journey
-      </motion.p>
+    <div className="min-h-[85vh] flex flex-col justify-center">
+      <motion.div {...fadeUp}>
+        <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2">Since 2014</p>
+        <h2 className="text-2xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-2">Our Journey</h2>
+        <p className="text-sm text-muted-foreground mb-10 max-w-xl">A decade of growth, diversification, and relentless pursuit of industrial excellence across Jharkhand.</p>
+      </motion.div>
 
-      {/* Desktop: horizontal with auto-scroll */}
-      <div className="hidden lg:block overflow-x-auto pb-4 scrollbar-thin" ref={scrollRef}>
-        <div className="flex items-start gap-0 min-w-max relative">
+      {/* Desktop horizontal */}
+      <div className="hidden lg:block overflow-x-auto pb-6 scrollbar-thin" ref={scrollRef}>
+        <div className="flex items-start gap-0 min-w-max relative py-4">
           <motion.div
-            className="absolute top-[18px] left-[18px] right-[18px] h-[2px] bg-border"
+            className="absolute top-[22px] left-[22px] right-[22px] h-[2px] bg-border"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ delay: 0.4, duration: 1.2, ease: [0.33, 1, 0.68, 1] }}
+            transition={{ delay: 0.4, duration: 1.5, ease: [0.33, 1, 0.68, 1] }}
             style={{ transformOrigin: 'left' }}
           />
           {timelineData.map((item, i) => (
             <motion.div
               key={i}
-              className="flex flex-col items-center text-center px-6 relative"
+              className="flex flex-col items-center text-center px-8 relative"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + i * 0.15, duration: 0.4, ease: [0.33, 1, 0.68, 1] }}
+              transition={{ delay: 0.5 + i * 0.15, duration: 0.4 }}
             >
-              <div className="relative z-10 w-9 h-9 rounded-full bg-primary border-4 border-background flex items-center justify-center shadow-md">
-                <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+              <div className="relative z-10 w-11 h-11 rounded-full bg-primary border-4 border-background flex items-center justify-center shadow-lg">
+                <div className="w-3 h-3 rounded-full bg-accent" />
               </div>
-              <p className="mt-3 text-sm font-bold text-foreground">{item.year}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 max-w-[140px] font-semibold">{item.title}</p>
-              <p className="text-[11px] text-muted-foreground/70 mt-0.5 max-w-[120px]">{item.desc}</p>
+              <p className="mt-4 text-base font-extrabold text-foreground">{item.year}</p>
+              <p className="text-sm text-foreground/80 mt-1 max-w-[160px] font-bold">{item.title}</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[150px]">{item.desc}</p>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Mobile: vertical */}
-      <div className="lg:hidden relative pl-6">
+      {/* Mobile vertical */}
+      <div className="lg:hidden relative pl-8">
         <motion.div
-          className="absolute left-[13px] top-0 bottom-0 w-[2px] bg-border"
+          className="absolute left-[15px] top-0 bottom-0 w-[2px] bg-border"
           initial={{ scaleY: 0 }}
           animate={{ scaleY: 1 }}
           transition={{ delay: 0.4, duration: 1, ease: [0.33, 1, 0.68, 1] }}
@@ -152,18 +188,18 @@ const TimelineSection = () => {
         {timelineData.map((item, i) => (
           <motion.div
             key={i}
-            className="relative flex items-start gap-4 mb-6 last:mb-0"
+            className="relative flex items-start gap-5 mb-8 last:mb-0"
             initial={{ opacity: 0, x: -15 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 + i * 0.12, duration: 0.35 }}
           >
-            <div className="relative z-10 w-7 h-7 rounded-full bg-primary border-3 border-background flex items-center justify-center shadow-sm flex-shrink-0 -ml-6">
+            <div className="relative z-10 w-8 h-8 rounded-full bg-primary border-4 border-background flex items-center justify-center shadow-sm flex-shrink-0 -ml-8">
               <div className="w-2 h-2 rounded-full bg-accent" />
             </div>
             <div className="-mt-0.5">
-              <p className="text-sm font-bold text-foreground">{item.year}</p>
-              <p className="text-xs text-muted-foreground font-semibold">{item.title}</p>
-              <p className="text-[11px] text-muted-foreground/70">{item.desc}</p>
+              <p className="text-base font-extrabold text-foreground">{item.year}</p>
+              <p className="text-sm text-foreground/80 font-bold">{item.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
             </div>
           </motion.div>
         ))}
@@ -172,88 +208,273 @@ const TimelineSection = () => {
   );
 };
 
-// --- Founder Section ---
-const FounderSection = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.3, duration: 0.5 }}
-  >
-    <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Founder</p>
-    <Card className="border border-border/50 overflow-hidden">
-      <CardContent className="p-6 lg:p-8 flex flex-col lg:flex-row items-center gap-6">
-        <motion.img
-          src={founderPhoto}
-          alt="Sunil Tibrewal"
-          className="w-24 h-24 lg:w-28 lg:h-28 rounded-2xl object-cover object-top shadow-lg"
-          whileHover={{ scale: 1.05, boxShadow: '0 0 30px hsl(28 88% 52% / 0.2)' }}
-          transition={{ duration: 0.2 }}
-        />
-        <div className="text-center lg:text-left">
-          <h3 className="text-lg lg:text-xl font-bold text-foreground tracking-tight">Sunil Tibrewal</h3>
-          <p className="text-sm text-accent font-semibold mt-0.5">Founder & Director</p>
-          <p className="text-xs text-muted-foreground mt-2 max-w-md leading-relaxed">
-            The visionary founder of Tibrewal Group who built the group from the ground up into a prominent industrial conglomerate. His decades of experience and strategic leadership have been instrumental in establishing the group's diverse operations across Jharkhand.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
+// --- 3. INDIVIDUAL COMPANY PAGES ---
+const CompanyPage = ({ company, index }: { company: typeof companies[0]; index: number }) => (
+  <div className="min-h-[85vh] flex flex-col justify-center">
+    <motion.div {...fadeUp}>
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-xs font-bold text-accent uppercase tracking-[0.2em]">Business Unit {index + 1}/{companies.length}</span>
+        <span className="text-xs text-muted-foreground/50">•</span>
+        <span className="text-xs text-muted-foreground font-medium">Est. {company.year}</span>
+      </div>
+    </motion.div>
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, duration: 0.6 }}
+    >
+      <Card className="border border-border/50 overflow-hidden">
+        <CardContent className="p-0">
+          {/* Header band */}
+          <div className="bg-primary p-8 lg:p-12 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute top-0 right-0 w-72 h-72 bg-accent rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+            </div>
+            <div className="relative z-10">
+              <span className="text-5xl lg:text-6xl mb-4 block">{company.icon}</span>
+              <h2 className="text-2xl lg:text-3xl font-extrabold text-primary-foreground tracking-tight mb-2">
+                {company.title}
+              </h2>
+              <p className="text-sm lg:text-base text-primary-foreground/60 font-medium">{company.desc}</p>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-8 lg:p-12">
+            <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-8">
+              {company.detail}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {company.highlights.map((h, i) => (
+                <motion.div
+                  key={i}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/30"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + i * 0.08, duration: 0.3 }}
+                >
+                  <CircleDot className="h-4 w-4 text-accent flex-shrink-0" />
+                  <span className="text-sm text-foreground font-medium">{h}</span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  </div>
 );
 
-// --- Proprietor Section ---
-const ProprietorSection = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.35, duration: 0.5 }}
-  >
-    <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Proprietor</p>
-    <Card className="border border-border/50 overflow-hidden">
-      <CardContent className="p-6 lg:p-8 flex flex-col lg:flex-row items-center gap-6">
-        <motion.img
-          src={proprietorPhoto}
-          alt="Trishav Tibrewal"
-          className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl object-cover shadow-lg"
-          whileHover={{ scale: 1.05, boxShadow: '0 0 30px hsl(28 88% 52% / 0.2)' }}
-          transition={{ duration: 0.2 }}
-        />
-        <div className="text-center lg:text-left">
-          <h3 className="text-lg lg:text-xl font-bold text-foreground tracking-tight">Trishav Tibrewal</h3>
-          <p className="text-sm text-accent font-semibold mt-0.5">Proprietor & Managing Director</p>
-          <p className="text-xs text-muted-foreground mt-2 max-w-md leading-relaxed">
-            A graduate entrepreneur from Christ University, Ghaziabad. Under his dynamic leadership, the group has expanded across mining, logistics, petroleum, and tyre trading sectors. He drives innovation, operational efficiency, and strategic growth for the entire organization.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
+// --- 4. FOUNDER FULL PAGE ---
+const FounderPage = () => (
+  <div className="min-h-[85vh] flex flex-col justify-center">
+    <motion.div {...fadeUp}>
+      <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2">Founder & Director</p>
+      <h2 className="text-2xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-8">Sunil Tibrewal</h2>
+    </motion.div>
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.6 }}
+    >
+      <Card className="border border-border/50 overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-col lg:flex-row">
+            {/* Photo */}
+            <div className="lg:w-2/5 relative overflow-hidden bg-primary/5">
+              <img
+                src={founderPhoto}
+                alt="Sunil Tibrewal"
+                className="w-full h-64 lg:h-full object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-background/10" />
+            </div>
+
+            {/* Content */}
+            <div className="lg:w-3/5 p-8 lg:p-12 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold tracking-wider uppercase w-fit mb-6">
+                <Award className="h-3.5 w-3.5" />
+                Founder & Director
+              </div>
+
+              <h3 className="text-2xl lg:text-3xl font-extrabold text-foreground tracking-tight mb-4">
+                Sunil Tibrewal
+              </h3>
+
+              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-4">
+                The visionary founder of Tibrewal Group who laid the foundation of the group's diversified industrial operations. Starting with a Bharat Petroleum fuel station in 2014, his strategic vision has been instrumental in building the group from a single business into a multi-vertical industrial conglomerate.
+              </p>
+
+              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-6">
+                With decades of experience in business management and industrial operations, Sunil Tibrewal's leadership has guided the group through its formative years. His deep understanding of Jharkhand's industrial landscape and commitment to quality have established Tibrewal Group as a trusted name in the region's mining, logistics, and energy sectors.
+              </p>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 text-accent" />
+                <span>Jharkhand, India</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  </div>
 );
 
-// --- Policy Section ---
-const PolicySection = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.3, duration: 0.5 }}
-  >
-    <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Group Policies</p>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+// --- 5. PROPRIETOR FULL PAGE (page 1) ---
+const ProprietorPage1 = () => (
+  <div className="min-h-[85vh] flex flex-col justify-center">
+    <motion.div {...fadeUp}>
+      <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2">Proprietor & Managing Director</p>
+      <h2 className="text-2xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-8">Trishav Tibrewal</h2>
+    </motion.div>
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.6 }}
+    >
+      <Card className="border border-border/50 overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-col lg:flex-row">
+            {/* Photo */}
+            <div className="lg:w-2/5 relative overflow-hidden bg-primary/5">
+              <img
+                src={proprietorPhoto}
+                alt="Trishav Tibrewal"
+                className="w-full h-64 lg:h-full object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-background/10" />
+            </div>
+
+            {/* Content */}
+            <div className="lg:w-3/5 p-8 lg:p-12 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold tracking-wider uppercase w-fit mb-6">
+                <GraduationCap className="h-3.5 w-3.5" />
+                Proprietor & Managing Director
+              </div>
+
+              <h3 className="text-2xl lg:text-3xl font-extrabold text-foreground tracking-tight mb-4">
+                Trishav Tibrewal
+              </h3>
+
+              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-4">
+                A graduate entrepreneur from <span className="text-foreground font-semibold">Christ University, Ghaziabad</span>. Trishav Tibrewal is a young, dynamic leader who has brought modern management practices and entrepreneurial energy to the family's industrial legacy.
+              </p>
+
+              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-6">
+                Under his leadership, the group has rapidly expanded from traditional mining and transportation into new verticals including automotive solutions, tyre distribution, agro-food processing, and strategic investments. His vision combines the group's industrial strength with modern technology and business innovation.
+              </p>
+
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-accent" />
+                  <a href="tel:9386469006" className="hover:text-foreground transition-colors">9386469006</a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-accent" />
+                  <span>Jharkhand, India</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  </div>
+);
+
+// --- 6. PROPRIETOR FULL PAGE (page 2 — Vision & Achievements) ---
+const ProprietorPage2 = () => (
+  <div className="min-h-[85vh] flex flex-col justify-center">
+    <motion.div {...fadeUp}>
+      <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2">Vision & Leadership</p>
+      <h2 className="text-2xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-8">Driving the Future</h2>
+    </motion.div>
+
+    <div className="space-y-6">
+      {/* Vision Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        <Card className="border border-border/50">
+          <CardContent className="p-8 lg:p-12">
+            <div className="flex items-center gap-4 mb-6">
+              <img src={proprietorPhoto} alt="Trishav Tibrewal" className="w-14 h-14 rounded-full object-cover border-2 border-accent" />
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Trishav Tibrewal</h3>
+                <p className="text-xs text-accent font-semibold">Proprietor's Vision</p>
+              </div>
+            </div>
+            <blockquote className="text-base lg:text-lg text-muted-foreground leading-relaxed italic border-l-4 border-accent/30 pl-6">
+              "Our goal is to build Tibrewal Group into Jharkhand's most trusted and diversified industrial conglomerate — one that creates employment, drives infrastructure growth, and sets new standards of operational excellence in every sector we enter."
+            </blockquote>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Achievements Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.5 }}
+      >
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Key Achievements Under His Leadership</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { icon: TrendingUp, title: '7 Business Verticals', desc: 'Expanded the group from 1 to 7 diverse business units in under 4 years' },
+            { icon: Truck, title: '50+ Fleet Size', desc: 'Grew the transportation fleet from a handful of vehicles to over 50 heavy trucks' },
+            { icon: Users, title: '200+ Employees', desc: 'Created employment for over 200 people across all operations' },
+            { icon: Building2, title: 'Corporate Structure', desc: 'Transformed family business into professionally managed corporate entities' },
+          ].map((item, i) => (
+            <Card key={i} className="border border-border/50">
+              <CardContent className="p-6">
+                <div className="p-2.5 rounded-xl bg-primary/10 w-fit mb-3">
+                  <item.icon className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="text-sm font-bold text-foreground mb-1">{item.title}</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  </div>
+);
+
+// --- 7. POLICIES FULL PAGE ---
+const PoliciesPage = () => (
+  <div className="min-h-[85vh] flex flex-col justify-center">
+    <motion.div {...fadeUp}>
+      <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2">Corporate Standards</p>
+      <h2 className="text-2xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-2">Group Policies</h2>
+      <p className="text-sm text-muted-foreground mb-10 max-w-xl">
+        Our policies reflect our commitment to safety, quality, compliance, and the welfare of every stakeholder associated with Tibrewal Group.
+      </p>
+    </motion.div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {policies.map((policy, i) => {
         const Icon = policy.icon;
         return (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + i * 0.08, duration: 0.35 }}
+            transition={{ delay: 0.15 + i * 0.06, duration: 0.4 }}
           >
             <Card className="border border-border/50 h-full">
-              <CardContent className="p-5">
+              <CardContent className="p-6">
                 <div className="p-2.5 rounded-xl bg-primary/10 w-fit mb-3">
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-sm font-bold text-foreground tracking-tight mb-1">{policy.title}</h3>
+                <h3 className="text-sm font-bold text-foreground tracking-tight mb-2">{policy.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{policy.desc}</p>
               </CardContent>
             </Card>
@@ -261,71 +482,12 @@ const PolicySection = () => (
         );
       })}
     </div>
-  </motion.div>
-);
-
-// --- Business Units Grid ---
-const BusinessUnitsSection = () => (
-  <div>
-    <motion.p
-      className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.2 }}
-    >
-      Business Units
-    </motion.p>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {companies.map((company, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 + i * 0.08, duration: 0.35 }}
-        >
-          <Card className="border border-border/50 h-full card-hover group">
-            <CardContent className="p-5">
-              <div className="text-2xl mb-3">{company.icon}</div>
-              <h3 className="text-sm font-bold text-foreground tracking-tight mb-1">{company.title}</h3>
-              <p className="text-xs text-accent font-semibold mb-2">{company.desc}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{company.detail}</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
-    </div>
   </div>
 );
 
-// --- Group Strength Strip ---
-const GroupStrengthSection = () => (
-  <motion.div
-    className="rounded-2xl bg-primary p-6 lg:p-8"
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.3, duration: 0.4 }}
-  >
-    <p className="text-xs font-bold text-primary-foreground/60 uppercase tracking-[0.15em] mb-5">Group Strength</p>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-      {groupStrength.map((stat, i) => (
-        <motion.div
-          key={stat.label}
-          className="text-center"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 + i * 0.1, duration: 0.3 }}
-        >
-          <div className="text-2xl lg:text-3xl font-bold text-primary-foreground tracking-tight">
-            <AnimatedNumber value={stat.value} />{stat.suffix}
-          </div>
-          <p className="text-xs text-primary-foreground/70 font-medium mt-1">{stat.label}</p>
-        </motion.div>
-      ))}
-    </div>
-  </motion.div>
-);
-
-// --- Main Export ---
+// ============================================================
+// MAIN EXPORT
+// ============================================================
 interface CorporateDashboardProps {
   isManager: boolean;
   onNavigateDepartment: (dept: string) => void;
@@ -334,18 +496,33 @@ interface CorporateDashboardProps {
 
 const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection }: CorporateDashboardProps) => {
   return (
-    <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8 space-y-8">
-      <HeroSection />
-      <TimelineSection />
-      <FounderSection />
-      <ProprietorSection />
-      <BusinessUnitsSection />
-      <GroupStrengthSection />
-      <PolicySection />
+    <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8 space-y-16 lg:space-y-24">
+      {/* Page 1: Hero */}
+      <HeroPage />
 
-      <div className="text-center pt-4">
+      {/* Page 2: Timeline */}
+      <TimelinePage />
+
+      {/* Pages 3-9: One page per company */}
+      {companies.map((company, i) => (
+        <CompanyPage key={i} company={company} index={i} />
+      ))}
+
+      {/* Page 10: Founder */}
+      <FounderPage />
+
+      {/* Page 11-12: Proprietor (2 pages) */}
+      <ProprietorPage1 />
+      <ProprietorPage2 />
+
+      {/* Page 13: Policies */}
+      <PoliciesPage />
+
+      {/* Footer */}
+      <div className="text-center pt-8 pb-4">
         <p className="text-xs text-muted-foreground/60 font-medium">Tibrewal Group</p>
-        <p className="text-[11px] text-muted-foreground/50">Mining & Construction · Jharkhand</p>
+        <p className="text-[11px] text-muted-foreground/40 mt-1">Mining & Minerals · Logistics · Petroleum · Tyres · Agro · Ventures</p>
+        <p className="text-[11px] text-muted-foreground/30 mt-1">Jharkhand, India</p>
       </div>
     </div>
   );
