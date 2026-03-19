@@ -25,8 +25,8 @@ interface AppAuthContextType {
 
 const AppAuthContext = createContext<AppAuthContextType | undefined>(undefined);
 
-const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-const WARNING_BEFORE_MS = 60 * 1000; // Show warning 1 minute before logout
+const SESSION_TIMEOUT_MS = 60 * 1000; // 1 minute idle timeout
+const WARNING_BEFORE_MS = 60 * 1000; // Show warning immediately (same as timeout)
 const SESSION_KEY = 'tibrewal_app_user';
 const SESSION_TS_KEY = 'tibrewal_session_ts';
 
