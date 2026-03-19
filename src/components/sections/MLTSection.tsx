@@ -527,9 +527,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
 
   // === Enhanced Home Dashboard ===
   const renderHome = () => {
-    const todayShifts = attendance.filter(a => a.status === 'present').reduce((sum, a) => sum + (a.shift_count || 1), 0);
-    const todayAbsent = attendance.filter(a => a.status === 'absent').length;
-    const monthAdvances = advances.reduce((sum, a) => sum + Number(a.amount), 0);
     const driverCount = staffList.filter(s => s.category === 'driver').length;
     const khalCount = staffList.filter(s => s.category === 'khalasi').length;
 
@@ -545,77 +542,43 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-primary-foreground">MLT Department</h2>
-              <p className="text-sm text-primary-foreground/80">Motor Lorry Transport</p>
+              <p className="text-sm text-primary-foreground/80">{driverCount} Drivers · {khalCount} Khalasi</p>
             </div>
           </div>
         </div>
 
-        {/* Live KPI Strip */}
-        <div className="grid grid-cols-3 gap-2.5">
-          <Card className="border-0 shadow-sm bg-emerald-500/10">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                <AnimatedNumber value={todayShifts} />
-              </div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Today Shifts</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-destructive/10">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-destructive">
-                <AnimatedNumber value={todayAbsent} />
-              </div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Absent</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-primary/10">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-primary">
-                <AnimatedNumber value={staffList.length} />
-              </div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Staff</p>
-            </CardContent>
-          </Card>
+        {/* Shift Rate Configuration */}
+        <div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] mb-3">Staff Shift Rates</p>
+          <div className="space-y-2 max-h-[40vh] overflow-y-auto smooth-scroll">
+            {staffList.map(staff => {
+              const rate28 = staff.shift_rate_28 || 0;
+              const rate30 = staff.shift_rate_30 || 0;
+              const rate31 = staff.shift_rate_31 || 0;
+              return (
+                <Card key={staff.id} className="border-0 shadow-sm">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                        {staff.photo_url ? <img src={staff.photo_url} alt="" className="w-full h-full object-cover" /> : <User className="h-4 w-4 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate text-foreground">{staff.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{staff.category}</p>
+                      </div>
+                      <div className="text-right text-xs space-y-0.5">
+                        <p className="text-muted-foreground">28d: <span className="font-semibold text-foreground">₹{rate28.toLocaleString()}</span></p>
+                        <p className="text-muted-foreground">30d: <span className="font-semibold text-foreground">₹{rate30.toLocaleString()}</span></p>
+                        <p className="text-muted-foreground">31d: <span className="font-semibold text-foreground">₹{rate31.toLocaleString()}</span></p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {staffList.length === 0 && <p className="text-center text-sm text-muted-foreground py-6">No staff added yet</p>}
+          </div>
         </div>
-
-        {/* Staff Breakdown */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Truck className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold text-foreground">{driverCount}</p>
-                <p className="text-xs text-muted-foreground">Drivers</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold text-foreground">{khalCount}</p>
-                <p className="text-xs text-muted-foreground">Khalasi</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Month Advances Summary */}
-        <Card className="border-0 shadow-sm border-l-4 border-l-destructive/60">
-          <CardContent className="p-3.5 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">{months[reportMonth - 1]} Advances</p>
-              <p className="text-lg font-bold text-foreground">
-                <AnimatedNumber value={monthAdvances} prefix="₹" />
-              </p>
-            </div>
-            <Wallet className="h-5 w-5 text-muted-foreground" />
-          </CardContent>
-        </Card>
 
         {/* Primary Actions */}
         <div className="grid grid-cols-3 gap-2.5">

@@ -486,49 +486,89 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
 
   // ===== LANDING PAGE =====
   if (activePage === 'landing') {
+    const totalDispatches = dispatches.length;
+    const totalBolders = bolders.length;
+    const totalDispatchAmt = dispatches.reduce((s, d) => s + d.amount, 0);
+    const totalDispatchQty = dispatches.reduce((s, d) => s + d.quantity, 0);
+
     return (
       <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl bg-chart-1">
-              <FileText className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">Crusher Reports</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Dispatch & Bolder tracking</p>
-            </div>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-primary">
+            <FileText className="h-5 w-5 text-primary-foreground" />
           </div>
-
-          <div className="space-y-3">
-            <Card className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0" onClick={() => { setActivePage('dispatch'); setSubView('add'); }}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl" style={{ background: '#0f172a' }}>
-                    <Truck className="h-6 w-6" style={{ color: 'white' }} />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-foreground">Dispatch Report</h2>
-                    <p className="text-sm text-muted-foreground">Add, view & export dispatch entries</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0" onClick={() => { setActivePage('bolder'); setSubView('add'); }}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl" style={{ background: '#0f172a' }}>
-                    <FileText className="h-6 w-6" style={{ color: 'white' }} />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-foreground">Bolder Report</h2>
-                    <p className="text-sm text-muted-foreground">Add, view & export bolder entries</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">Crusher Reports</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Dispatch & Bolder tracking</p>
           </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          <Card className="border-0 shadow-sm bg-primary/10">
+            <CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-primary">{totalDispatches}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase">Dispatches</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-emerald-500/10">
+            <CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-600">{totalBolders}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase">Bolders</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-accent/10">
+            <CardContent className="p-3 text-center">
+              <p className="text-lg font-bold text-accent">₹{totalDispatchAmt.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase">Total Amount</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-blue-500/10">
+            <CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-blue-600">{totalDispatchQty}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase">Total Qty</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-3">
+          <Card className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0 border-l-4 border-l-primary" onClick={() => { setActivePage('dispatch'); setSubView('add'); }}>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
+                  <Truck className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold text-foreground">Dispatch Report</h2>
+                  <p className="text-sm text-muted-foreground">Add, view & export dispatch entries</p>
+                  <div className="flex gap-3 mt-2">
+                    <Badge variant="secondary" className="text-xs">{totalDispatches} entries</Badge>
+                    <Badge variant="outline" className="text-xs">₹{totalDispatchAmt.toLocaleString('en-IN')}</Badge>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0 border-l-4 border-l-emerald-500" onClick={() => { setActivePage('bolder'); setSubView('add'); }}>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold text-foreground">Bolder Report</h2>
+                  <p className="text-sm text-muted-foreground">Add, view & export bolder entries</p>
+                  <div className="flex gap-3 mt-2">
+                    <Badge variant="secondary" className="text-xs">{totalBolders} entries</Badge>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
