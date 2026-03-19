@@ -115,15 +115,14 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
 
     sessionStorage.setItem(SESSION_TS_KEY, Date.now().toString());
 
-    // Show warning 1 min before logout
     warningTimerRef.current = setTimeout(() => {
       setLogoutWarning(true);
-    }, SESSION_TIMEOUT_MS - WARNING_BEFORE_MS);
+    }, IDLE_WARNING_MS);
 
     // Actual logout
     inactivityTimerRef.current = setTimeout(() => {
       clearSession();
-    }, SESSION_TIMEOUT_MS);
+    }, AUTO_LOGOUT_MS);
   }, [user, clearSession]);
 
   const dismissWarning = useCallback(() => {
