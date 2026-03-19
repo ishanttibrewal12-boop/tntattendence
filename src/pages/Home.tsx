@@ -412,7 +412,7 @@ const Home = () => {
           <span className="text-xs font-semibold text-foreground/70">{user?.full_name}</span>
         )}
         {isMobile && (
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={logout}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={requestLogout}>
             <LogOut className="h-4 w-4 text-muted-foreground" />
           </Button>
         )}

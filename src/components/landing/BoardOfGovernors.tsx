@@ -1,23 +1,30 @@
 import { useLandingTheme } from './LandingThemeContext';
 import ScrollReveal from './ScrollReveal';
-import { Phone, MapPin, Briefcase, Mail } from 'lucide-react';
+import { Phone, MapPin } from 'lucide-react';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
+import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
 
 interface Governor {
   name: string;
   designation: string;
   description: string;
   phone?: string;
-  email?: string;
   location?: string;
   photoUrl?: string;
 }
 
 const governors: Governor[] = [
   {
+    name: 'Sunil Tibrewal',
+    designation: 'Founder & Director',
+    description: 'The visionary founder of Tibrewal Group who laid the foundation of the group\'s diversified industrial operations. His decades of experience and leadership have been instrumental in building the group from the ground up into a prominent business conglomerate in Jharkhand.',
+    location: 'Jharkhand, India',
+    photoUrl: founderPhoto,
+  },
+  {
     name: 'Trishav Tibrewal',
     designation: 'Proprietor & Managing Director',
-    description: 'Visionary entrepreneur and founder, leading the company\'s diversified operations across mining, stone crushing, transportation, petroleum distribution, and tyre trading.',
+    description: 'A graduate entrepreneur from Christ University, Ghaziabad. Under his dynamic leadership, Tibrewal Group has expanded across mining, stone crushing, transportation, petroleum distribution, and tyre trading, driving the group towards new heights of excellence.',
     phone: '9386469006',
     location: 'Jharkhand, India',
     photoUrl: proprietorPhoto,
@@ -36,7 +43,7 @@ const BoardOfGovernors = () => {
             <h2 className="text-3xl md:text-4xl font-extrabold mb-3" style={{ color: colors.heading }}>Board of Governors</h2>
             <div className="w-14 h-0.5 mx-auto rounded-full" style={{ background: '#f97316' }} />
             <p className="mt-4 max-w-xl mx-auto text-sm md:text-base" style={{ color: colors.textMuted }}>
-              The strategic minds steering Tibrewal & Tibrewal Pvt. Ltd. towards excellence and sustainable growth.
+              The strategic minds steering Tibrewal Group towards excellence and sustainable growth.
             </p>
           </div>
         </ScrollReveal>
@@ -52,35 +59,25 @@ const BoardOfGovernors = () => {
                   transition: 'background 0.6s, border-color 0.6s',
                 }}
               >
-                {/* Photo area */}
-                <div className="relative h-56 flex items-center justify-center overflow-hidden" style={{ background: colors.darkBg }}>
+                <div className="relative h-64 flex items-center justify-center overflow-hidden" style={{ background: colors.darkBg }}>
                   {gov.photoUrl ? (
-                    <img src={gov.photoUrl} alt={gov.name} className="w-full h-full object-cover" />
+                    <img src={gov.photoUrl} alt={gov.name} className="w-full h-full object-cover object-top" loading="lazy" />
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold" style={{ background: 'rgba(249,115,22,0.15)', color: '#f97316' }}>
                         {gov.name.split(' ').map(n => n[0]).join('')}
                       </div>
-                      <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Photo coming soon</span>
                     </div>
                   )}
                 </div>
-
-                {/* Details */}
                 <div className="p-6">
                   <p className="text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: '#f97316' }}>{gov.designation}</p>
                   <h3 className="text-xl font-bold mb-2" style={{ color: colors.heading }}>{gov.name}</h3>
                   <p className="text-sm leading-relaxed mb-5" style={{ color: colors.textMuted }}>{gov.description}</p>
-
                   <div className="flex flex-wrap gap-4">
                     {gov.phone && (
                       <a href={`tel:${gov.phone}`} className="flex items-center gap-1.5 text-xs hover:underline" style={{ color: colors.text }}>
                         <Phone className="h-3.5 w-3.5" /> {gov.phone}
-                      </a>
-                    )}
-                    {gov.email && (
-                      <a href={`mailto:${gov.email}`} className="flex items-center gap-1.5 text-xs hover:underline" style={{ color: colors.text }}>
-                        <Mail className="h-3.5 w-3.5" /> {gov.email}
                       </a>
                     )}
                     {gov.location && (

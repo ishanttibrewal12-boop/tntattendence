@@ -242,9 +242,13 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
         isLoading,
         login,
         logout,
+        requestLogout,
+        confirmLogout,
+        cancelLogout,
         hasAccess,
         canEdit,
         logoutWarning,
+        logoutConfirm,
         dismissWarning,
       }}
     >
