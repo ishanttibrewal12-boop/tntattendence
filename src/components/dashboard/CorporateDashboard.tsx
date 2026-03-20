@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/company-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
