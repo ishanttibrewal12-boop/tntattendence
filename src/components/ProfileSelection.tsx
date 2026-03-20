@@ -85,7 +85,7 @@ const LandingContent = () => {
       <PhotoGallery />
       <CTABanner />
       <BoardOfGovernors />
-      <LeadershipSection />
+      
       <WhatsAppButton />
 
       {/* Login Dialog */}
