@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { ArrowLeft, Plus, FileText, Calendar, Download, Share2, Trash2, Filter, ChevronRight, Pencil, Truck } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Calendar, Download, Share2, Trash2, Filter, ChevronRight, Pencil, Truck, Mountain, Package, IndianRupee, Hash, TrendingUp } from 'lucide-react';
 import { exportToExcel, REPORT_NOTE_ENGLISH, REPORT_NOTE_HINDI, REPORT_FOOTER } from '@/lib/exportUtils';
+import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -47,6 +47,12 @@ interface BolderEntry {
 
 type ActivePage = 'landing' | 'dispatch' | 'bolder';
 type SubView = 'add' | 'daily' | 'monthly';
+
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.4, ease: [0.33, 1, 0.68, 1] as [number, number, number, number] },
+};
 
 const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   const { toast } = useToast();
@@ -100,14 +106,9 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   useEffect(() => {
     fetchDispatches();
     fetchBolders();
-    // Fetch WhatsApp numbers from settings
     const fetchWANumbers = async () => {
       try {
-        const { data } = await supabase
-          .from('app_settings')
-          .select('setting_value')
-          .eq('setting_key', 'whatsapp_numbers')
-          .single();
+        const { data } = await supabase.from('app_settings').select('setting_value').eq('setting_key', 'whatsapp_numbers').single();
         if (data?.setting_value) {
           const parsed = JSON.parse(data.setting_value);
           if (Array.isArray(parsed) && parsed.length > 0) setWhatsappNumbers(parsed);
@@ -120,7 +121,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [fetchDispatches, fetchBolders]);
 
-  // Add Dispatch
   const sendWhatsAppNotification = (type: 'dispatch' | 'bolder', entry: Record<string, string>) => {
     let msg = '';
     if (type === 'dispatch') {
@@ -129,10 +129,8 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       msg = `🪨 *New Bolder Entry*\n\n📅 Date: ${entry.date}\n🏢 Company: ${entry.company}\n⭐ Quality: ${entry.quality}\n🚚 Truck: ${entry.truck}\n${entry.challan ? `📄 Challan: ${entry.challan}\n` : ''}${entry.rst ? `🔢 RST: ${entry.rst}\n` : ''}\n_Sent from Tibrewal ERP_`;
     }
     const encoded = encodeURIComponent(msg);
-    // Open WhatsApp with pre-filled message to first configured number
     const primaryNumber = whatsappNumbers[0]?.replace(/[^0-9]/g, '') || '916203229118';
     window.open(`https://wa.me/${primaryNumber}?text=${encoded}`, '_blank');
-    // Also try Twilio auto-send via edge function
     sendTwilioWhatsApp(msg);
   };
 
@@ -146,7 +144,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
         body: JSON.stringify({ message }),
       });
       if (res.ok) console.log('Twilio WhatsApp sent');
-      else console.log('Twilio not configured or failed, manual WhatsApp opened');
+      else console.log('Twilio not configured or failed');
     } catch { console.log('Twilio edge function not available'); }
   };
 
@@ -165,14 +163,12 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       toast({ title: 'Success', description: 'Dispatch entry added! Opening WhatsApp...' });
       sendWhatsAppNotification('dispatch', {
         party: dpParty.trim(), truck: dpTruck.trim(), product: dpProduct.trim(),
-        qty: dpQuantity, amount: dpAmount, date: dpDate,
-        challan: dpChallan.trim(), rst: dpRst.trim(),
+        qty: dpQuantity, amount: dpAmount, date: dpDate, challan: dpChallan.trim(), rst: dpRst.trim(),
       });
       setDpParty(''); setDpTruck(''); setDpAmount(''); setDpQuantity(''); setDpProduct(''); setDpChallan(''); setDpRst(''); setDpNotes('');
     }
   };
 
-  // Add Bolder
   const handleAddBolder = async () => {
     if (!blCompany || !blQuality || !blTruck) {
       toast({ title: 'Error', description: 'Company, Quality & Truck are required', variant: 'destructive' });
@@ -194,7 +190,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     }
   };
 
-  // Edit Dispatch
   const handleEditDispatch = async () => {
     if (!editingDispatch) return;
     const { error } = await supabase.from('dispatch_reports').update({
@@ -207,7 +202,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     else { toast({ title: 'Updated', description: 'Dispatch entry updated' }); setEditingDispatch(null); }
   };
 
-  // Edit Bolder
   const handleEditBolder = async () => {
     if (!editingBolder) return;
     const { error } = await supabase.from('bolder_reports').update({
@@ -231,7 +225,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     else toast({ title: 'Deleted', description: 'Bolder entry removed' });
   };
 
-  // Filtered data
   const getFilteredDispatches = (mode: 'daily' | 'monthly') => {
     let filtered = dispatches;
     if (mode === 'daily') { filtered = filtered.filter(d => d.date === filterDate); }
@@ -256,7 +249,6 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     return filtered;
   };
 
-  // Export helpers
   const exportDispatchWhatsApp = (data: DispatchEntry[], title: string) => {
     const totalQty = data.reduce((s, d) => s + d.quantity, 0);
     const totalAmt = data.reduce((s, d) => s + d.amount, 0);
@@ -334,154 +326,218 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: format(new Date(2024, i), 'MMMM') }));
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
+  // --- STAT CARD ---
+  const StatCard = ({ icon: Icon, label, value, accent }: { icon: typeof Truck; label: string; value: string; accent: string }) => (
+    <motion.div {...fadeUp}>
+      <Card className="border border-border/50 shadow-md overflow-hidden">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className={`h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 ${accent}`}>
+            <Icon className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
+            <p className="text-xl font-bold text-foreground tracking-tight tabular-nums">{value}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+
+  // --- FILTERS ---
   const renderFilters = (mode: 'daily' | 'monthly') => (
-    <div className="flex flex-wrap gap-3 mb-4">
+    <motion.div {...fadeUp} className="flex flex-wrap gap-3 mb-5 p-4 rounded-xl bg-muted/30 border border-border/40">
       {mode === 'daily' ? (
         <div className="flex-1 min-w-[140px]">
-          <Label className="text-xs">Date</Label>
-          <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Date</Label>
+          <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="h-10" />
         </div>
       ) : (
         <>
-          <div className="min-w-[120px]">
-            <Label className="text-xs">Month</Label>
+          <div className="min-w-[130px]">
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Month</Label>
             <Select value={String(filterMonth)} onValueChange={v => setFilterMonth(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="min-w-[90px]">
-            <Label className="text-xs">Year</Label>
+          <div className="min-w-[100px]">
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Year</Label>
             <Select value={String(filterYear)} onValueChange={v => setFilterYear(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </>
       )}
       <div className="flex-1 min-w-[140px]">
-        <Label className="text-xs"><Filter className="h-3 w-3 inline mr-1" />Company</Label>
-        <Input placeholder="Filter by name..." value={filterCompany} onChange={e => setFilterCompany(e.target.value)} />
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+          <Filter className="h-3 w-3 inline mr-1" />Company
+        </Label>
+        <Input placeholder="Filter by name..." value={filterCompany} onChange={e => setFilterCompany(e.target.value)} className="h-10" />
       </div>
-    </div>
+    </motion.div>
   );
 
+  // --- EXPORT BUTTONS ---
   const renderExportButtons = (onWhatsApp: () => void, onPDF: () => void, onExcel: () => void) => (
-    <div className="flex gap-2 flex-wrap mb-4">
-      <Button size="sm" variant="outline" onClick={onWhatsApp}><Share2 className="h-3 w-3 mr-1" />WhatsApp</Button>
-      <Button size="sm" variant="outline" onClick={onPDF}><Download className="h-3 w-3 mr-1" />PDF</Button>
-      <Button size="sm" variant="outline" onClick={onExcel}><FileText className="h-3 w-3 mr-1" />Excel</Button>
+    <div className="flex gap-2 flex-wrap mb-5">
+      <Button size="sm" variant="outline" onClick={onWhatsApp} className="gap-1.5 h-9 rounded-lg shadow-xs hover:shadow-sm transition-shadow">
+        <Share2 className="h-3.5 w-3.5" />WhatsApp
+      </Button>
+      <Button size="sm" variant="outline" onClick={onPDF} className="gap-1.5 h-9 rounded-lg shadow-xs hover:shadow-sm transition-shadow">
+        <Download className="h-3.5 w-3.5" />PDF
+      </Button>
+      <Button size="sm" variant="outline" onClick={onExcel} className="gap-1.5 h-9 rounded-lg shadow-xs hover:shadow-sm transition-shadow">
+        <FileText className="h-3.5 w-3.5" />Excel
+      </Button>
     </div>
   );
 
-  // Dispatch table with edit
+  // --- DISPATCH TABLE ---
   const renderDispatchTable = (data: DispatchEntry[], showActions = false) => {
     const totalQty = data.reduce((s, d) => s + d.quantity, 0);
     const totalAmt = data.reduce((s, d) => s + d.amount, 0);
     return (
-      <>
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <Card className="border-0"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Entries</p><p className="text-xl font-bold text-foreground">{data.length}</p></CardContent></Card>
-          <Card className="border-0"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Total Qty</p><p className="text-xl font-bold text-foreground">{totalQty}</p></CardContent></Card>
-          <Card className="border-0"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Total Amt</p><p className="text-xl font-bold text-foreground">₹{totalAmt.toLocaleString('en-IN')}</p></CardContent></Card>
+      <motion.div {...fadeUp}>
+        {/* Summary strip */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <StatCard icon={Hash} label="Entries" value={String(data.length)} accent="bg-primary" />
+          <StatCard icon={Package} label="Total Qty" value={totalQty.toLocaleString('en-IN')} accent="bg-chart-1" />
+          <StatCard icon={IndianRupee} label="Total Amt" value={`₹${totalAmt.toLocaleString('en-IN')}`} accent="bg-accent" />
         </div>
-        <div className="overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Date</TableHead>
-                <TableHead className="text-xs">Party</TableHead>
-                <TableHead className="text-xs">Product</TableHead>
-                <TableHead className="text-xs">Truck</TableHead>
-                <TableHead className="text-xs">Challan</TableHead>
-                <TableHead className="text-xs">RST</TableHead>
-                <TableHead className="text-xs text-right">Qty</TableHead>
-                <TableHead className="text-xs text-right">Amount</TableHead>
-                {showActions && <TableHead className="text-xs"></TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.length === 0 ? (
-                <TableRow><TableCell colSpan={showActions ? 9 : 8} className="text-center text-muted-foreground text-sm py-8">No entries found</TableCell></TableRow>
-              ) : data.map(d => (
-                <TableRow key={d.id}>
-                  <TableCell className="text-xs">{format(new Date(d.date), 'dd/MM/yy')}</TableCell>
-                  <TableCell className="text-xs font-medium">{d.party_name}</TableCell>
-                  <TableCell className="text-xs"><Badge variant="secondary" className="text-xs">{d.product_name}</Badge></TableCell>
-                  <TableCell className="text-xs">{d.truck_number}</TableCell>
-                  <TableCell className="text-xs">{d.challan_number || '-'}</TableCell>
-                  <TableCell className="text-xs">{d.rst_number || '-'}</TableCell>
-                  <TableCell className="text-xs text-right">{d.quantity}</TableCell>
-                  <TableCell className="text-xs text-right font-medium">₹{d.amount.toLocaleString('en-IN')}</TableCell>
-                  {showActions && (
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingDispatch(d); setEditForm({ ...d, amount: String(d.amount), quantity: String(d.quantity) }); }}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteDispatch(d.id)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+
+        {/* Table */}
+        <div className="rounded-xl border border-border/50 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="premium-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Party</th>
+                  <th>Product</th>
+                  <th>Truck</th>
+                  <th>Challan</th>
+                  <th>RST</th>
+                  <th className="text-right">Qty</th>
+                  <th className="text-right">Amount</th>
+                  {showActions && <th className="w-20"></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {data.length === 0 ? (
+                  <tr>
+                    <td colSpan={showActions ? 9 : 8} className="text-center text-muted-foreground py-12">
+                      <div className="flex flex-col items-center gap-2">
+                        <Truck className="h-8 w-8 text-muted-foreground/30" />
+                        <p className="text-sm">No dispatch entries found</p>
                       </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </td>
+                  </tr>
+                ) : data.map(d => (
+                  <tr key={d.id} className="group">
+                    <td className="text-xs whitespace-nowrap">{format(new Date(d.date), 'dd MMM yy')}</td>
+                    <td className="text-sm font-medium text-foreground">{d.party_name}</td>
+                    <td><Badge variant="secondary" className="text-[10px] font-semibold">{d.product_name}</Badge></td>
+                    <td className="text-xs font-mono">{d.truck_number}</td>
+                    <td className="text-xs text-muted-foreground">{d.challan_number || '—'}</td>
+                    <td className="text-xs text-muted-foreground">{d.rst_number || '—'}</td>
+                    <td className="text-sm text-right tabular-nums font-medium">{d.quantity}</td>
+                    <td className="text-sm text-right tabular-nums font-bold text-foreground">₹{d.amount.toLocaleString('en-IN')}</td>
+                    {showActions && (
+                      <td>
+                        <div className="flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingDispatch(d); setEditForm({ ...d, amount: String(d.amount), quantity: String(d.quantity) }); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteDispatch(d.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </>
+      </motion.div>
     );
   };
 
-  // Bolder table with edit
+  // --- BOLDER TABLE ---
   const renderBolderTable = (data: BolderEntry[], showActions = false) => (
-    <>
-      <div className="grid grid-cols-1 gap-3 mb-4">
-        <Card className="border-0"><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Total Entries</p><p className="text-xl font-bold text-foreground">{data.length}</p></CardContent></Card>
+    <motion.div {...fadeUp}>
+      <div className="grid grid-cols-1 gap-3 mb-5">
+        <StatCard icon={Mountain} label="Total Entries" value={String(data.length)} accent="bg-emerald-600" />
       </div>
-      <div className="overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-xs">Date</TableHead>
-              <TableHead className="text-xs">Company</TableHead>
-              <TableHead className="text-xs">Quality</TableHead>
-              <TableHead className="text-xs">Truck</TableHead>
-              <TableHead className="text-xs">Challan</TableHead>
-              <TableHead className="text-xs">RST</TableHead>
-              {showActions && <TableHead className="text-xs"></TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.length === 0 ? (
-              <TableRow><TableCell colSpan={showActions ? 7 : 6} className="text-center text-muted-foreground text-sm py-8">No entries found</TableCell></TableRow>
-            ) : data.map(b => (
-              <TableRow key={b.id}>
-                <TableCell className="text-xs">{format(new Date(b.date), 'dd/MM/yy')}</TableCell>
-                <TableCell className="text-xs font-medium">{b.company_name}</TableCell>
-                <TableCell className="text-xs"><Badge variant="outline" className="text-xs">{b.quality}</Badge></TableCell>
-                <TableCell className="text-xs">{b.truck_number}</TableCell>
-                <TableCell className="text-xs">{b.challan_number || '-'}</TableCell>
-                <TableCell className="text-xs">{b.rst_number || '-'}</TableCell>
-                {showActions && (
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingBolder(b); setEditForm({ ...b }); }}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteBolder(b.id)}>
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
+
+      <div className="rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="premium-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Company</th>
+                <th>Quality</th>
+                <th>Truck</th>
+                <th>Challan</th>
+                <th>RST</th>
+                {showActions && <th className="w-20"></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {data.length === 0 ? (
+                <tr>
+                  <td colSpan={showActions ? 7 : 6} className="text-center text-muted-foreground py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <Mountain className="h-8 w-8 text-muted-foreground/30" />
+                      <p className="text-sm">No bolder entries found</p>
                     </div>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  </td>
+                </tr>
+              ) : data.map(b => (
+                <tr key={b.id} className="group">
+                  <td className="text-xs whitespace-nowrap">{format(new Date(b.date), 'dd MMM yy')}</td>
+                  <td className="text-sm font-medium text-foreground">{b.company_name}</td>
+                  <td><Badge variant="outline" className="text-[10px] font-semibold">{b.quality}</Badge></td>
+                  <td className="text-xs font-mono">{b.truck_number}</td>
+                  <td className="text-xs text-muted-foreground">{b.challan_number || '—'}</td>
+                  <td className="text-xs text-muted-foreground">{b.rst_number || '—'}</td>
+                  {showActions && (
+                    <td>
+                      <div className="flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingBolder(b); setEditForm({ ...b }); }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteBolder(b.id)}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </>
+    </motion.div>
+  );
+
+  // --- SUB-VIEW TABS ---
+  const TabButton = ({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Plus; label: string }) => (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+        active
+          ? 'bg-primary text-primary-foreground shadow-md'
+          : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
   );
 
   // ===== LANDING PAGE =====
@@ -492,82 +548,85 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     const totalDispatchQty = dispatches.reduce((s, d) => s + d.quantity, 0);
 
     return (
-      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-primary">
-            <FileText className="h-5 w-5 text-primary-foreground" />
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8">
+        {/* Hero Header */}
+        <motion.div {...fadeUp} className="relative overflow-hidden rounded-2xl bg-primary p-6 lg:p-10 mb-6">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" style={{ background: 'radial-gradient(circle, hsla(28,88%,52%,0.15) 0%, transparent 70%)' }} />
           </div>
-          <div>
-            <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">Crusher Reports</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Dispatch & Bolder tracking</p>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center border border-primary-foreground/10">
+              <FileText className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl lg:text-2xl font-bold text-primary-foreground tracking-tight">Crusher Reports</h1>
+              <p className="text-sm text-primary-foreground/60 mt-0.5">Dispatch & Bolder tracking system</p>
+            </div>
           </div>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <StatCard icon={Truck} label="Dispatches" value={String(totalDispatches)} accent="bg-primary" />
+          <StatCard icon={Mountain} label="Bolders" value={String(totalBolders)} accent="bg-emerald-600" />
+          <StatCard icon={IndianRupee} label="Total Amount" value={`₹${totalDispatchAmt.toLocaleString('en-IN')}`} accent="bg-accent" />
+          <StatCard icon={Package} label="Total Qty" value={totalDispatchQty.toLocaleString('en-IN')} accent="bg-chart-1" />
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <Card className="border-0 shadow-sm bg-primary/10">
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-primary">{totalDispatches}</p>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase">Dispatches</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-emerald-500/10">
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-600">{totalBolders}</p>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase">Bolders</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-accent/10">
-            <CardContent className="p-3 text-center">
-              <p className="text-lg font-bold text-accent">₹{totalDispatchAmt.toLocaleString('en-IN')}</p>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase">Total Amount</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm bg-blue-500/10">
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-blue-600">{totalDispatchQty}</p>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase">Total Qty</p>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* Action Cards */}
         <div className="space-y-3">
-          <Card className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0 border-l-4 border-l-primary" onClick={() => { setActivePage('dispatch'); setSubView('add'); }}>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                  <Truck className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-bold text-foreground">Dispatch Report</h2>
-                  <p className="text-sm text-muted-foreground">Add, view & export dispatch entries</p>
-                  <div className="flex gap-3 mt-2">
-                    <Badge variant="secondary" className="text-xs">{totalDispatches} entries</Badge>
-                    <Badge variant="outline" className="text-xs">₹{totalDispatchAmt.toLocaleString('en-IN')}</Badge>
+          <motion.div {...fadeUp}>
+            <Card
+              className="cursor-pointer transition-all duration-200 hover:shadow-lg active:scale-[0.98] border border-border/50 overflow-hidden group"
+              onClick={() => { setActivePage('dispatch'); setSubView('add'); }}
+            >
+              <CardContent className="p-0">
+                <div className="flex items-center">
+                  <div className="w-1.5 self-stretch bg-primary rounded-l-xl" />
+                  <div className="flex items-center gap-4 p-5 flex-1">
+                    <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                      <Truck className="h-7 w-7 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg font-bold text-foreground">Dispatch Report</h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">Add, view & export dispatch entries</p>
+                      <div className="flex gap-2 mt-2.5">
+                        <Badge variant="secondary" className="text-[10px] font-bold px-2">{totalDispatches} entries</Badge>
+                        <Badge variant="outline" className="text-[10px] font-bold px-2 tabular-nums">₹{totalDispatchAmt.toLocaleString('en-IN')}</Badge>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="cursor-pointer transition-all hover:shadow-lg active:scale-[0.98] border-0 border-l-4 border-l-emerald-500" onClick={() => { setActivePage('bolder'); setSubView('add'); }}>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-bold text-foreground">Bolder Report</h2>
-                  <p className="text-sm text-muted-foreground">Add, view & export bolder entries</p>
-                  <div className="flex gap-3 mt-2">
-                    <Badge variant="secondary" className="text-xs">{totalBolders} entries</Badge>
+          <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }}>
+            <Card
+              className="cursor-pointer transition-all duration-200 hover:shadow-lg active:scale-[0.98] border border-border/50 overflow-hidden group"
+              onClick={() => { setActivePage('bolder'); setSubView('add'); }}
+            >
+              <CardContent className="p-0">
+                <div className="flex items-center">
+                  <div className="w-1.5 self-stretch bg-emerald-500 rounded-l-xl" />
+                  <div className="flex items-center gap-4 p-5 flex-1">
+                    <div className="h-14 w-14 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-500/20 transition-colors">
+                      <Mountain className="h-7 w-7 text-emerald-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg font-bold text-foreground">Bolder Report</h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">Add, view & export bolder entries</p>
+                      <div className="flex gap-2 mt-2.5">
+                        <Badge variant="secondary" className="text-[10px] font-bold px-2">{totalBolders} entries</Badge>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     );
@@ -576,103 +635,146 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
   // ===== DISPATCH PAGE =====
   if (activePage === 'dispatch') {
     return (
-      <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
-          <div className="flex items-center gap-3 mb-5">
-            <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+      <div className="max-w-5xl mx-auto pb-24 lg:pb-8">
+        <motion.div {...fadeUp} className="flex items-center gap-3 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted rounded-xl h-10 w-10">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Dispatch Report</h1>
+            <p className="text-xs text-muted-foreground">Manage dispatch entries</p>
           </div>
+        </motion.div>
 
-          <div className="flex gap-2 mb-4">
-            <Button size="sm" variant={subView === 'add' ? 'default' : 'outline'} onClick={() => setSubView('add')}><Plus className="h-3 w-3 mr-1" />Add</Button>
-            <Button size="sm" variant={subView === 'daily' ? 'default' : 'outline'} onClick={() => setSubView('daily')}><Calendar className="h-3 w-3 mr-1" />Daily</Button>
-            <Button size="sm" variant={subView === 'monthly' ? 'default' : 'outline'} onClick={() => setSubView('monthly')}><FileText className="h-3 w-3 mr-1" />Monthly</Button>
-          </div>
+        <div className="flex gap-2 mb-5">
+          <TabButton active={subView === 'add'} onClick={() => setSubView('add')} icon={Plus} label="Add" />
+          <TabButton active={subView === 'daily'} onClick={() => setSubView('daily')} icon={Calendar} label="Daily" />
+          <TabButton active={subView === 'monthly'} onClick={() => setSubView('monthly')} icon={TrendingUp} label="Monthly" />
+        </div>
 
-          {subView === 'add' && (
-            <>
-              <Card className="border-0">
-                <CardHeader className="pb-3"><CardTitle className="text-base">Add Dispatch Entry</CardTitle></CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Party Name *</Label><Input value={dpParty} onChange={e => setDpParty(e.target.value)} placeholder="Enter party name" /></div>
-                    <div><Label className="text-xs">Date *</Label><Input type="date" value={dpDate} onChange={e => setDpDate(e.target.value)} /></div>
+        {subView === 'add' && (
+          <>
+            <motion.div {...fadeUp}>
+              <Card className="border border-border/50 shadow-md mb-6">
+                <CardHeader className="pb-4 border-b border-border/40">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-primary" />
+                    Add Dispatch Entry
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Party Name *</Label>
+                      <Input value={dpParty} onChange={e => setDpParty(e.target.value)} placeholder="Enter party name" className="h-10" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Date *</Label>
+                      <Input type="date" value={dpDate} onChange={e => setDpDate(e.target.value)} className="h-10" />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Truck Number *</Label><Input value={dpTruck} onChange={e => setDpTruck(e.target.value)} placeholder="e.g. JH05AB1234" /></div>
-                    <div><Label className="text-xs">Challan Number</Label><Input value={dpChallan} onChange={e => setDpChallan(e.target.value)} placeholder="Optional" /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Truck Number *</Label>
+                      <Input value={dpTruck} onChange={e => setDpTruck(e.target.value)} placeholder="JH05AB1234" className="h-10 font-mono" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Product Name *</Label>
+                      <Input value={dpProduct} onChange={e => setDpProduct(e.target.value)} placeholder="Product" className="h-10" />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">RST Number</Label><Input value={dpRst} onChange={e => setDpRst(e.target.value)} placeholder="Optional" /></div>
-                    <div><Label className="text-xs">Product Name *</Label><Input value={dpProduct} onChange={e => setDpProduct(e.target.value)} placeholder="Product" /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Quantity *</Label>
+                      <Input type="number" value={dpQuantity} onChange={e => setDpQuantity(e.target.value)} placeholder="0" className="h-10 tabular-nums" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Amount *</Label>
+                      <Input type="number" value={dpAmount} onChange={e => setDpAmount(e.target.value)} placeholder="₹0" className="h-10 tabular-nums" />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Quantity *</Label><Input type="number" value={dpQuantity} onChange={e => setDpQuantity(e.target.value)} placeholder="0" /></div>
-                    <div><Label className="text-xs">Amount *</Label><Input type="number" value={dpAmount} onChange={e => setDpAmount(e.target.value)} placeholder="₹0" /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Challan Number</Label>
+                      <Input value={dpChallan} onChange={e => setDpChallan(e.target.value)} placeholder="Optional" className="h-10" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">RST Number</Label>
+                      <Input value={dpRst} onChange={e => setDpRst(e.target.value)} placeholder="Optional" className="h-10" />
+                    </div>
                   </div>
-                  <div><Label className="text-xs">Notes (Optional)</Label><Input value={dpNotes} onChange={e => setDpNotes(e.target.value)} placeholder="Any notes..." /></div>
-                  <Button className="w-full" onClick={handleAddDispatch}><Plus className="h-4 w-4 mr-1" />Add Dispatch</Button>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Notes</Label>
+                    <Input value={dpNotes} onChange={e => setDpNotes(e.target.value)} placeholder="Optional notes..." className="h-10" />
+                  </div>
+                  <Button className="w-full h-11 text-sm font-bold shadow-md" onClick={handleAddDispatch}>
+                    <Plus className="h-4 w-4 mr-1.5" />Add Dispatch Entry
+                  </Button>
                 </CardContent>
               </Card>
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Recent Dispatches</p>
-                {renderDispatchTable(dispatches.slice(0, 20), true)}
-              </div>
-            </>
-          )}
+            </motion.div>
+            <div>
+              <p className="text-[11px] font-bold text-muted-foreground mb-3 uppercase tracking-wider">Recent Dispatches</p>
+              {renderDispatchTable(dispatches.slice(0, 20), true)}
+            </div>
+          </>
+        )}
 
-          {subView === 'daily' && (
-            <Card className="border-0">
-              <CardHeader className="pb-3"><CardTitle className="text-base">Daily Dispatch Report</CardTitle></CardHeader>
-              <CardContent>
-                {renderFilters('daily')}
-                {(() => {
-                  const data = getFilteredDispatches('daily');
-                  const title = `Dispatch Daily Report - ${format(new Date(filterDate), 'dd MMM yyyy')}`;
-                  return (<>{renderExportButtons(() => exportDispatchWhatsApp(data, title), () => exportDispatchPDF(data, title), () => exportDispatchExcel(data, title))}{renderDispatchTable(data, true)}</>);
-                })()}
-              </CardContent>
-            </Card>
-          )}
+        {subView === 'daily' && (
+          <Card className="border border-border/50 shadow-md">
+            <CardHeader className="pb-4 border-b border-border/40">
+              <CardTitle className="text-base font-bold">Daily Dispatch Report</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-5">
+              {renderFilters('daily')}
+              {(() => {
+                const data = getFilteredDispatches('daily');
+                const title = `Dispatch Daily Report - ${format(new Date(filterDate), 'dd MMM yyyy')}`;
+                return (<>{renderExportButtons(() => exportDispatchWhatsApp(data, title), () => exportDispatchPDF(data, title), () => exportDispatchExcel(data, title))}{renderDispatchTable(data, true)}</>);
+              })()}
+            </CardContent>
+          </Card>
+        )}
 
-          {subView === 'monthly' && (
-            <Card className="border-0">
-              <CardHeader className="pb-3"><CardTitle className="text-base">Monthly Dispatch Report</CardTitle></CardHeader>
-              <CardContent>
-                {renderFilters('monthly')}
-                {(() => {
-                  const data = getFilteredDispatches('monthly');
-                  const title = `Dispatch Monthly Report - ${months[filterMonth - 1].label} ${filterYear}`;
-                  return (<>{renderExportButtons(() => exportDispatchWhatsApp(data, title), () => exportDispatchPDF(data, title), () => exportDispatchExcel(data, title))}{renderDispatchTable(data, true)}</>);
-                })()}
-              </CardContent>
-            </Card>
-          )}
+        {subView === 'monthly' && (
+          <Card className="border border-border/50 shadow-md">
+            <CardHeader className="pb-4 border-b border-border/40">
+              <CardTitle className="text-base font-bold">Monthly Dispatch Report</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-5">
+              {renderFilters('monthly')}
+              {(() => {
+                const data = getFilteredDispatches('monthly');
+                const title = `Dispatch Monthly Report - ${months[filterMonth - 1].label} ${filterYear}`;
+                return (<>{renderExportButtons(() => exportDispatchWhatsApp(data, title), () => exportDispatchPDF(data, title), () => exportDispatchExcel(data, title))}{renderDispatchTable(data, true)}</>);
+              })()}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Edit Dispatch Dialog */}
         <Dialog open={!!editingDispatch} onOpenChange={open => { if (!open) setEditingDispatch(null); }}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Edit Dispatch Entry</DialogTitle></DialogHeader>
-            <div className="space-y-3">
+            <DialogHeader><DialogTitle className="text-lg font-bold">Edit Dispatch Entry</DialogTitle></DialogHeader>
+            <div className="space-y-4 pt-2">
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs">Party Name</Label><Input value={editForm.party_name || ''} onChange={e => setEditForm({ ...editForm, party_name: e.target.value })} /></div>
-                <div><Label className="text-xs">Date</Label><Input type="date" value={editForm.date || ''} onChange={e => setEditForm({ ...editForm, date: e.target.value })} /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Party Name</Label><Input value={editForm.party_name || ''} onChange={e => setEditForm({ ...editForm, party_name: e.target.value })} className="h-10" /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Date</Label><Input type="date" value={editForm.date || ''} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className="h-10" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs">Truck Number</Label><Input value={editForm.truck_number || ''} onChange={e => setEditForm({ ...editForm, truck_number: e.target.value })} /></div>
-                <div><Label className="text-xs">Challan Number</Label><Input value={editForm.challan_number || ''} onChange={e => setEditForm({ ...editForm, challan_number: e.target.value })} /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Truck Number</Label><Input value={editForm.truck_number || ''} onChange={e => setEditForm({ ...editForm, truck_number: e.target.value })} className="h-10 font-mono" /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Product</Label><Input value={editForm.product_name || ''} onChange={e => setEditForm({ ...editForm, product_name: e.target.value })} className="h-10" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs">RST Number</Label><Input value={editForm.rst_number || ''} onChange={e => setEditForm({ ...editForm, rst_number: e.target.value })} /></div>
-                <div><Label className="text-xs">Product Name</Label><Input value={editForm.product_name || ''} onChange={e => setEditForm({ ...editForm, product_name: e.target.value })} /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Quantity</Label><Input type="number" value={editForm.quantity || ''} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} className="h-10 tabular-nums" /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</Label><Input type="number" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="h-10 tabular-nums" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs">Quantity</Label><Input type="number" value={editForm.quantity || ''} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} /></div>
-                <div><Label className="text-xs">Amount</Label><Input type="number" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Challan</Label><Input value={editForm.challan_number || ''} onChange={e => setEditForm({ ...editForm, challan_number: e.target.value })} className="h-10" /></div>
+                <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">RST</Label><Input value={editForm.rst_number || ''} onChange={e => setEditForm({ ...editForm, rst_number: e.target.value })} className="h-10" /></div>
               </div>
-              <div><Label className="text-xs">Notes</Label><Input value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} /></div>
-              <Button className="w-full" onClick={handleEditDispatch}>Save Changes</Button>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Notes</Label><Input value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} className="h-10" /></div>
+              <Button className="w-full h-11 font-bold shadow-md" onClick={handleEditDispatch}>Save Changes</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -682,95 +784,132 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
 
   // ===== BOLDER PAGE =====
   return (
-    <div className="max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
-        <div className="flex items-center gap-3 mb-5">
-          <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+    <div className="max-w-5xl mx-auto pb-24 lg:pb-8">
+      <motion.div {...fadeUp} className="flex items-center gap-3 mb-6">
+        <Button variant="ghost" size="icon" onClick={() => setActivePage('landing')} className="hover:bg-muted rounded-xl h-10 w-10">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">Bolder Report</h1>
+          <p className="text-xs text-muted-foreground">Manage bolder entries</p>
         </div>
+      </motion.div>
 
-        <div className="flex gap-2 mb-4">
-          <Button size="sm" variant={subView === 'add' ? 'default' : 'outline'} onClick={() => setSubView('add')}><Plus className="h-3 w-3 mr-1" />Add</Button>
-          <Button size="sm" variant={subView === 'daily' ? 'default' : 'outline'} onClick={() => setSubView('daily')}><Calendar className="h-3 w-3 mr-1" />Daily</Button>
-          <Button size="sm" variant={subView === 'monthly' ? 'default' : 'outline'} onClick={() => setSubView('monthly')}><FileText className="h-3 w-3 mr-1" />Monthly</Button>
-        </div>
+      <div className="flex gap-2 mb-5">
+        <TabButton active={subView === 'add'} onClick={() => setSubView('add')} icon={Plus} label="Add" />
+        <TabButton active={subView === 'daily'} onClick={() => setSubView('daily')} icon={Calendar} label="Daily" />
+        <TabButton active={subView === 'monthly'} onClick={() => setSubView('monthly')} icon={TrendingUp} label="Monthly" />
+      </div>
 
-        {subView === 'add' && (
-          <>
-            <Card className="border-0">
-              <CardHeader className="pb-3"><CardTitle className="text-base">Add Bolder Entry</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Company Name *</Label><Input value={blCompany} onChange={e => setBlCompany(e.target.value)} placeholder="Source company" /></div>
-                  <div><Label className="text-xs">Date *</Label><Input type="date" value={blDate} onChange={e => setBlDate(e.target.value)} /></div>
+      {subView === 'add' && (
+        <>
+          <motion.div {...fadeUp}>
+            <Card className="border border-border/50 shadow-md mb-6">
+              <CardHeader className="pb-4 border-b border-border/40">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-emerald-500" />
+                  Add Bolder Entry
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Company Name *</Label>
+                    <Input value={blCompany} onChange={e => setBlCompany(e.target.value)} placeholder="Source company" className="h-10" />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Date *</Label>
+                    <Input type="date" value={blDate} onChange={e => setBlDate(e.target.value)} className="h-10" />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Quality *</Label><Input value={blQuality} onChange={e => setBlQuality(e.target.value)} placeholder="Quality type" /></div>
-                  <div><Label className="text-xs">Truck Number *</Label><Input value={blTruck} onChange={e => setBlTruck(e.target.value)} placeholder="e.g. JH05AB1234" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Quality *</Label>
+                    <Input value={blQuality} onChange={e => setBlQuality(e.target.value)} placeholder="Quality type" className="h-10" />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Truck Number *</Label>
+                    <Input value={blTruck} onChange={e => setBlTruck(e.target.value)} placeholder="JH05AB1234" className="h-10 font-mono" />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Challan Number</Label><Input value={blChallan} onChange={e => setBlChallan(e.target.value)} placeholder="Optional" /></div>
-                  <div><Label className="text-xs">RST Number</Label><Input value={blRst} onChange={e => setBlRst(e.target.value)} placeholder="Optional" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Challan Number</Label>
+                    <Input value={blChallan} onChange={e => setBlChallan(e.target.value)} placeholder="Optional" className="h-10" />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">RST Number</Label>
+                    <Input value={blRst} onChange={e => setBlRst(e.target.value)} placeholder="Optional" className="h-10" />
+                  </div>
                 </div>
-                <div><Label className="text-xs">Notes (Optional)</Label><Input value={blNotes} onChange={e => setBlNotes(e.target.value)} placeholder="Any notes..." /></div>
-                <Button className="w-full" onClick={handleAddBolder}><Plus className="h-4 w-4 mr-1" />Add Bolder Entry</Button>
+                <div>
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Notes</Label>
+                  <Input value={blNotes} onChange={e => setBlNotes(e.target.value)} placeholder="Optional notes..." className="h-10" />
+                </div>
+                <Button className="w-full h-11 text-sm font-bold shadow-md bg-emerald-600 hover:bg-emerald-700" onClick={handleAddBolder}>
+                  <Plus className="h-4 w-4 mr-1.5" />Add Bolder Entry
+                </Button>
               </CardContent>
             </Card>
-            <div className="mt-4">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Recent Bolder Entries</p>
-              {renderBolderTable(bolders.slice(0, 20), true)}
-            </div>
-          </>
-        )}
+          </motion.div>
+          <div>
+            <p className="text-[11px] font-bold text-muted-foreground mb-3 uppercase tracking-wider">Recent Bolder Entries</p>
+            {renderBolderTable(bolders.slice(0, 20), true)}
+          </div>
+        </>
+      )}
 
-        {subView === 'daily' && (
-          <Card className="border-0">
-            <CardHeader className="pb-3"><CardTitle className="text-base">Daily Bolder Report</CardTitle></CardHeader>
-            <CardContent>
-              {renderFilters('daily')}
-              {(() => {
-                const data = getFilteredBolders('daily');
-                const title = `Bolder Daily Report - ${format(new Date(filterDate), 'dd MMM yyyy')}`;
-                return (<>{renderExportButtons(() => exportBolderWhatsApp(data, title), () => exportBolderPDF(data, title), () => exportBolderExcel(data, title))}{renderBolderTable(data, true)}</>);
-              })()}
-            </CardContent>
-          </Card>
-        )}
+      {subView === 'daily' && (
+        <Card className="border border-border/50 shadow-md">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <CardTitle className="text-base font-bold">Daily Bolder Report</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-5">
+            {renderFilters('daily')}
+            {(() => {
+              const data = getFilteredBolders('daily');
+              const title = `Bolder Daily Report - ${format(new Date(filterDate), 'dd MMM yyyy')}`;
+              return (<>{renderExportButtons(() => exportBolderWhatsApp(data, title), () => exportBolderPDF(data, title), () => exportBolderExcel(data, title))}{renderBolderTable(data, true)}</>);
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
-        {subView === 'monthly' && (
-          <Card className="border-0">
-            <CardHeader className="pb-3"><CardTitle className="text-base">Monthly Bolder Report</CardTitle></CardHeader>
-            <CardContent>
-              {renderFilters('monthly')}
-              {(() => {
-                const data = getFilteredBolders('monthly');
-                const title = `Bolder Monthly Report - ${months[filterMonth - 1].label} ${filterYear}`;
-                return (<>{renderExportButtons(() => exportBolderWhatsApp(data, title), () => exportBolderPDF(data, title), () => exportBolderExcel(data, title))}{renderBolderTable(data, true)}</>);
-              })()}
-            </CardContent>
-          </Card>
-        )}
+      {subView === 'monthly' && (
+        <Card className="border border-border/50 shadow-md">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <CardTitle className="text-base font-bold">Monthly Bolder Report</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-5">
+            {renderFilters('monthly')}
+            {(() => {
+              const data = getFilteredBolders('monthly');
+              const title = `Bolder Monthly Report - ${months[filterMonth - 1].label} ${filterYear}`;
+              return (<>{renderExportButtons(() => exportBolderWhatsApp(data, title), () => exportBolderPDF(data, title), () => exportBolderExcel(data, title))}{renderBolderTable(data, true)}</>);
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit Bolder Dialog */}
       <Dialog open={!!editingBolder} onOpenChange={open => { if (!open) setEditingBolder(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Edit Bolder Entry</DialogTitle></DialogHeader>
-          <div className="space-y-3">
+          <DialogHeader><DialogTitle className="text-lg font-bold">Edit Bolder Entry</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Company Name</Label><Input value={editForm.company_name || ''} onChange={e => setEditForm({ ...editForm, company_name: e.target.value })} /></div>
-              <div><Label className="text-xs">Date</Label><Input type="date" value={editForm.date || ''} onChange={e => setEditForm({ ...editForm, date: e.target.value })} /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Company Name</Label><Input value={editForm.company_name || ''} onChange={e => setEditForm({ ...editForm, company_name: e.target.value })} className="h-10" /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Date</Label><Input type="date" value={editForm.date || ''} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className="h-10" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Quality</Label><Input value={editForm.quality || ''} onChange={e => setEditForm({ ...editForm, quality: e.target.value })} /></div>
-              <div><Label className="text-xs">Truck Number</Label><Input value={editForm.truck_number || ''} onChange={e => setEditForm({ ...editForm, truck_number: e.target.value })} /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Quality</Label><Input value={editForm.quality || ''} onChange={e => setEditForm({ ...editForm, quality: e.target.value })} className="h-10" /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Truck Number</Label><Input value={editForm.truck_number || ''} onChange={e => setEditForm({ ...editForm, truck_number: e.target.value })} className="h-10 font-mono" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Challan Number</Label><Input value={editForm.challan_number || ''} onChange={e => setEditForm({ ...editForm, challan_number: e.target.value })} /></div>
-              <div><Label className="text-xs">RST Number</Label><Input value={editForm.rst_number || ''} onChange={e => setEditForm({ ...editForm, rst_number: e.target.value })} /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Challan</Label><Input value={editForm.challan_number || ''} onChange={e => setEditForm({ ...editForm, challan_number: e.target.value })} className="h-10" /></div>
+              <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">RST</Label><Input value={editForm.rst_number || ''} onChange={e => setEditForm({ ...editForm, rst_number: e.target.value })} className="h-10" /></div>
             </div>
-            <div><Label className="text-xs">Notes</Label><Input value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} /></div>
-            <Button className="w-full" onClick={handleEditBolder}>Save Changes</Button>
+            <div><Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Notes</Label><Input value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} className="h-10" /></div>
+            <Button className="w-full h-11 font-bold shadow-md" onClick={handleEditBolder}>Save Changes</Button>
           </div>
         </DialogContent>
       </Dialog>
