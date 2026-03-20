@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/company-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
@@ -61,6 +61,85 @@ const staggerChildren = {
 // FULL-PAGE SECTIONS
 // ============================================================
 
+// --- Particle Canvas for Hero ---
+const ParticleCanvas = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Create particles once
+    if (!(canvas as any)._particles) {
+      const pts: { x: number; y: number; vx: number; vy: number; r: number }[] = [];
+      const count = Math.min(60, Math.floor((w * h) / 8000));
+      for (let i = 0; i < count; i++) {
+        pts.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          r: Math.random() * 1.5 + 0.5,
+        });
+      }
+      (canvas as any)._particles = pts;
+    }
+
+    const pts = (canvas as any)._particles as { x: number; y: number; vx: number; vy: number; r: number }[];
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw connections
+    const maxDist = 120;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < maxDist) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `rgba(234,160,60,${0.08 * (1 - dist / maxDist)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw & move particles
+    for (const p of pts) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fill();
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+    }
+
+    animRef.current = requestAnimationFrame(draw);
+  }, []);
+
+  useEffect(() => {
+    animRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [draw]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />;
+};
+
 // --- 1. HERO PAGE ---
 const HeroPage = () => (
   <div className="min-h-[85vh] flex flex-col justify-center">
@@ -70,9 +149,14 @@ const HeroPage = () => (
       transition={{ duration: 0.8 }}
       className="relative overflow-hidden rounded-3xl bg-primary p-10 lg:p-16"
     >
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-chart-1 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4" />
+      {/* Particle network */}
+      <ParticleCanvas />
+
+      {/* Glow orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[180px] -translate-y-1/2 translate-x-1/3 animate-pulse" style={{ background: 'radial-gradient(circle, hsla(28,88%,52%,0.18) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[150px] translate-y-1/3 -translate-x-1/4" style={{ background: 'radial-gradient(circle, hsla(210,60%,40%,0.12) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" style={{ background: 'radial-gradient(circle, hsla(28,88%,52%,0.06) 0%, transparent 60%)' }} />
       </div>
       <div className="relative z-10">
         <motion.div

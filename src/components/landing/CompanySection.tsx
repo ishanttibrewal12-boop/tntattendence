@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import heroVideo from '@/assets/hero-mining-video.mp4';
 import heroImg from '@/assets/hero-mining-operations.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -26,13 +25,13 @@ const CompanySection = () => {
         },
       });
 
-      gsap.from('.about-video', {
+      gsap.from('.about-image', {
         opacity: 0,
         scale: 0.92,
         duration: 0.8,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.about-video',
+          trigger: '.about-image',
           start: 'top 85%',
           toggleActions: 'play none none none',
         },
@@ -52,15 +51,14 @@ const CompanySection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-10 items-center">
-          {/* Video showcase */}
-          <div className="about-video rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-            <video
-              autoPlay muted loop playsInline
-              poster={heroImg}
+          {/* Image showcase (video removed) */}
+          <div className="about-image rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <img
+              src={heroImg}
+              alt="Mining Operations"
               className="w-full aspect-video object-cover"
-            >
-              <source src={heroVideo} type="video/mp4" />
-            </video>
+              loading="lazy"
+            />
           </div>
 
           {/* Text */}

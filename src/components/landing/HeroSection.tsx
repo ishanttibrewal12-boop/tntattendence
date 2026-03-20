@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import companyLogo from '@/assets/company-logo.png';
-import heroVideo from '@/assets/hero-mining-video.mp4';
 import heroImg from '@/assets/hero-mining-operations.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -18,7 +17,6 @@ const HeroSection = () => {
     if (!section || !content) return;
 
     const ctx = gsap.context(() => {
-      // Entrance animation
       const tl = gsap.timeline();
       tl.from('.hero-logo', { opacity: 0, scale: 0.7, duration: 0.8, ease: 'back.out(1.7)' })
         .from('.hero-title', { opacity: 0, y: 40, duration: 0.7, ease: 'power3.out' }, '-=0.3')
@@ -26,7 +24,6 @@ const HeroSection = () => {
         .from('.hero-line', { scaleX: 0, duration: 0.5, ease: 'power2.out' }, '-=0.2')
         .from('.hero-desc', { opacity: 0, y: 20, duration: 0.5, ease: 'power3.out' }, '-=0.2');
 
-      // Parallax on video/image
       gsap.to('.hero-media', {
         y: 150,
         scale: 1.12,
@@ -39,7 +36,6 @@ const HeroSection = () => {
         },
       });
 
-      // Content fades out on scroll
       gsap.to(content, {
         y: 80,
         opacity: 0,
@@ -52,7 +48,6 @@ const HeroSection = () => {
         },
       });
 
-      // Overlay darkens on scroll
       if (overlayRef.current) {
         gsap.to(overlayRef.current, {
           opacity: 1,
@@ -72,19 +67,9 @@ const HeroSection = () => {
 
   return (
     <section ref={sectionRef} className="relative min-h-[100svh] flex items-center overflow-hidden">
-      {/* Video background */}
-      <video
-        autoPlay muted loop playsInline
-        poster={heroImg}
-        className="hero-media absolute inset-0 w-full h-full object-cover will-change-transform"
-        style={{ transform: 'scale(1.05)' }}
-      >
-        <source src={heroVideo} type="video/mp4" />
-      </video>
-
-      {/* Fallback image behind video */}
+      {/* Image background (no video) */}
       <div
-        className="hero-media absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform -z-[1]"
+        className="hero-media absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
         style={{ backgroundImage: `url(${heroImg})`, transform: 'scale(1.05)' }}
       />
 
@@ -113,7 +98,6 @@ const HeroSection = () => {
           Established 2021 — Jharkhand, India
         </p>
 
-        {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
           <span className="text-xs tracking-widest uppercase text-white/40">Scroll</span>
           <div className="w-5 h-8 rounded-full border-2 border-white/30 flex justify-center pt-1">
