@@ -25,9 +25,9 @@ const companies = [
 ];
 
 const groupStrength = [
-  { label: 'Trucks', value: 50, suffix: '+', icon: Truck },
-  { label: 'Business Sectors', value: 7, suffix: '', icon: Building2 },
-  { label: 'Employees', value: 200, suffix: '+', icon: Users },
+  { label: 'Fleet Strength', value: 'Ample', isText: true, icon: Truck },
+  { label: 'Business Sectors', value: 5, suffix: '', icon: Building2 },
+  { label: 'Workforce', value: 'Large Team', isText: true, icon: Users },
   { label: 'Years of Operations', value: 10, suffix: '+', icon: Star },
 ];
 
