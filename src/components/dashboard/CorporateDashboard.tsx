@@ -11,8 +11,6 @@ import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Ph
 const timelineData = [
   { year: '2014', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution' },
   { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched' },
-  { year: '2023', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'Logistics & transportation arm established' },
-  { year: '2024', title: 'Tibrewal Motors Pvt. Ltd.', desc: 'Automotive solutions & fleet management' },
   { year: '2024', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading & distribution' },
   { year: '2025', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing & value addition' },
   { year: '2025', title: 'Tibrewal Ventures', desc: 'Strategic investments & new business expansion' },
