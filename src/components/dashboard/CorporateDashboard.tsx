@@ -621,9 +621,9 @@ const ProprietorPage2 = () => (
           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Key Achievements Under His Leadership</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { icon: TrendingUp, title: '7 Business Verticals', desc: 'Expanded the group from 1 to 7 diverse business units in under 4 years' },
-              { icon: Truck, title: '50+ Fleet Size', desc: 'Grew the transportation fleet from a handful of vehicles to over 50 heavy trucks' },
-              { icon: Users, title: '200+ Employees', desc: 'Created employment for over 200 people across all operations' },
+              { icon: TrendingUp, title: 'Multiple Business Verticals', desc: 'Expanded the group into diverse business units across multiple sectors' },
+              { icon: Truck, title: 'Ample Fleet', desc: 'Built a robust transportation fleet of heavy trucks for industrial logistics' },
+              { icon: Users, title: 'Strong Workforce', desc: 'Created large-scale employment across all operational verticals' },
               { icon: Building2, title: 'Corporate Structure', desc: 'Transformed family business into professionally managed corporate entities' },
             ].map((item, i) => (
               <motion.div
