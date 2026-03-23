@@ -1,52 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
+import { Shield, Truck, Users, Building2 } from 'lucide-react';
 
-const AnimatedCounter = ({ end, suffix = '', label }: { end: number; suffix?: string; label: string }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started) { setStarted(true); observer.unobserve(el); }
-    }, { threshold: 0.5 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [started]);
-
-  useEffect(() => {
-    if (!started) return;
-    const duration = 2000;
-    const steps = 60;
-    const increment = end / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= end) { setCount(end); clearInterval(timer); }
-      else setCount(Math.floor(current));
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [started, end]);
-
-  return (
-    <div ref={ref} className="text-center">
-      <p className="text-4xl md:text-5xl font-extrabold text-white">
-        {typeof end === 'number' && end > 0 ? count : ''}{suffix}
-      </p>
-      <p className="text-xs mt-2 uppercase tracking-wider text-white/50">{label}</p>
-    </div>
-  );
-};
+const stats = [
+  { icon: Building2, label: 'Diversified Verticals', value: 'Multi-Sector' },
+  { icon: Truck, label: 'Fleet Strength', value: 'Ample Fleet' },
+  { icon: Users, label: 'Workforce', value: 'Large Team' },
+  { icon: Shield, label: 'Operations', value: 'Since 2014' },
+];
 
 const StatsStrip = () => (
   <section className="py-14" style={{ background: 'linear-gradient(135deg, #080b12 0%, #121828 100%)' }}>
     <div className="max-w-5xl mx-auto px-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-        <AnimatedCounter end={2021} suffix="" label="Established" />
-        <AnimatedCounter end={50} suffix="+" label="Heavy Trucks" />
-        <AnimatedCounter end={200} suffix="+" label="Employees" />
-        <AnimatedCounter end={4} suffix="" label="Business Verticals" />
+        {stats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className="text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center bg-orange-500/10">
+                <Icon className="h-6 w-6 text-orange-400" />
+              </div>
+              <p className="text-xl md:text-2xl font-extrabold text-white">{stat.value}</p>
+              <p className="text-xs mt-1 uppercase tracking-wider text-white/50">{stat.label}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   </section>

@@ -10,7 +10,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const operations = [
   { img: crusherImg, title: 'Stone Crushing & Aggregates', desc: 'Large-scale stone crushing plants producing high-quality aggregates for construction and infrastructure projects across Jharkhand.' },
-  { img: truckImg, title: 'Transportation (50+ Trucks)', desc: 'A fleet of over 50 heavy tipper trucks serving mining, construction, and logistics needs across the region.' },
+  { img: truckImg, title: 'Transportation & Logistics', desc: 'An extensive fleet of heavy tipper trucks serving mining, construction, and logistics needs across the region.' },
   { img: petroleumImg, title: 'Petroleum Services', desc: 'Own Bharat Petroleum fuel station providing reliable fuel supply to the region\'s growing transportation network.' },
   { img: tyresImg, title: 'Tibrewal Tyres', desc: 'Comprehensive tyre trading and distribution for commercial vehicles supporting the mining and transport sectors.' },
 ];
@@ -25,15 +25,8 @@ const ImageGallery = () => {
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>('.op-card').forEach((el, i) => {
         gsap.from(el, {
-          opacity: 0,
-          y: 60,
-          duration: 0.6,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: el,
-            start: 'top 88%',
-            toggleActions: 'play none none none',
-          },
+          opacity: 0, y: 60, duration: 0.6, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
           delay: i * 0.1,
         });
       });
@@ -52,18 +45,9 @@ const ImageGallery = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {operations.map((op, i) => (
-            <div
-              key={i}
-              className="op-card rounded-xl overflow-hidden border border-white/10 group"
-              style={{ background: '#161b26' }}
-            >
+            <div key={i} className="op-card rounded-xl overflow-hidden border border-white/10 group" style={{ background: '#161b26' }}>
               <div className="relative overflow-hidden">
-                <img
-                  src={op.img}
-                  alt={op.title}
-                  className="w-full h-48 md:h-56 object-cover transition-transform duration-700 group-hover:scale-110"
-                  loading="lazy"
-                />
+                <img src={op.img} alt={op.title} className="w-full h-48 md:h-56 object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
               </div>
               <div className="p-5">
                 <h3 className="text-lg font-bold mb-1 text-white/90">{op.title}</h3>
