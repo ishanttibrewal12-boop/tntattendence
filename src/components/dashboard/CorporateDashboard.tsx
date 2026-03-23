@@ -729,7 +729,7 @@ const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection
             className="h-10 w-10 object-contain mx-auto mb-3 opacity-30"
           />
           <p className="text-xs text-muted-foreground/50 font-medium">Tibrewal Group</p>
-          <p className="text-[11px] text-muted-foreground/30 mt-1">Mining & Minerals · Logistics · Petroleum · Tyres · Agro · Ventures</p>
+          <p className="text-[11px] text-muted-foreground/30 mt-1">Mining & Minerals · Petroleum · Tyres · Agro · Ventures</p>
           <p className="text-[11px] text-muted-foreground/20 mt-1">Jharkhand, India</p>
         </div>
       </RevealSection>
