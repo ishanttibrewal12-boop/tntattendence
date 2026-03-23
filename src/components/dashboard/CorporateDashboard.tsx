@@ -245,7 +245,7 @@ const HeroPage = () => (
                 >
                   <Icon className="h-4 w-4 text-primary-foreground/25 mb-2" />
                   <div className="text-2xl lg:text-3xl font-extrabold text-primary-foreground tracking-tight tabular-nums">
-                    <AnimatedNumber value={stat.value} />{stat.suffix}
+                    {(stat as any).isText ? String(stat.value) : <><AnimatedNumber value={stat.value as number} />{stat.suffix}</>}
                   </div>
                   <p className="text-[10px] text-primary-foreground/40 font-semibold mt-1 uppercase tracking-[0.15em]">{stat.label}</p>
                 </motion.div>
