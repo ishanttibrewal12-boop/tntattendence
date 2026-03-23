@@ -8,17 +8,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LandingThemeProvider, useLandingTheme } from '@/components/landing/LandingThemeContext';
-import ThemeToggle from '@/components/landing/ThemeToggle';
 import HeroSection from '@/components/landing/HeroSection';
 import ImageGallery from '@/components/landing/ImageGallery';
 import WhyChooseUs from '@/components/landing/WhyChooseUs';
 import StatsStrip from '@/components/landing/StatsStrip';
 import CompanySection from '@/components/landing/CompanySection';
 import Timeline from '@/components/landing/Timeline';
+import CompanyShowcase from '@/components/landing/CompanyShowcase';
+import LeadershipShowcase from '@/components/landing/LeadershipShowcase';
+import PoliciesSection from '@/components/landing/PoliciesSection';
 import PhotoGallery from '@/components/landing/PhotoGallery';
 import CTABanner from '@/components/landing/CTABanner';
-import BoardOfGovernors from '@/components/landing/BoardOfGovernors';
-
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 import AIChatBot from '@/components/AIChatBot';
 
@@ -55,10 +55,10 @@ const LandingContent = () => {
     }
   };
 
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="min-h-screen" style={{ background: '#0a0d14' }}>
-      
-
       {/* Top-right 3-dot menu */}
       <div className="fixed top-4 right-4 z-50">
         <DropdownMenu>
@@ -82,10 +82,22 @@ const LandingContent = () => {
       <StatsStrip />
       <CompanySection />
       <Timeline />
+      <CompanyShowcase />
+      <LeadershipShowcase />
       <PhotoGallery />
+      <PoliciesSection />
       <CTABanner />
-      <BoardOfGovernors />
-      
+
+      {/* Footer */}
+      <footer className="py-8" style={{ background: '#060810' }}>
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <p className="text-sm font-semibold mb-1 text-white/50">Tibrewal Group</p>
+          <p className="text-xs mb-3 text-white/30">Mining | Petroleum | Tyres | Agro | Ventures</p>
+          <p className="text-xs text-white/20">Jharkhand, India</p>
+          <p className="text-xs mt-4 text-white/20">© {currentYear} Tibrewal Group. All rights reserved.</p>
+        </div>
+      </footer>
+
       <WhatsAppButton />
 
       {/* Login Dialog */}

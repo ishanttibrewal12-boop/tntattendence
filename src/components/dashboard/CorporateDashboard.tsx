@@ -11,27 +11,23 @@ import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Ph
 const timelineData = [
   { year: '2014', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution' },
   { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched' },
-  { year: '2023', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'Logistics & transportation arm established' },
-  { year: '2024', title: 'Tibrewal Motors Pvt. Ltd.', desc: 'Automotive solutions & fleet management' },
   { year: '2024', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading & distribution' },
   { year: '2025', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing & value addition' },
   { year: '2025', title: 'Tibrewal Ventures', desc: 'Strategic investments & new business expansion' },
 ];
 
 const companies = [
-  { title: 'Bharat Petroleum Fuel Station', year: '2014', desc: 'Petroleum Distribution', detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station, this unit provides reliable fuel supply to transporters, fleet operators, and the local community. It represents the group\'s entry into the industrial sector and remains a cornerstone of its operations.', icon: '⛽', highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'], color: 'hsla(28,88%,52%,0.12)' },
-  { title: 'Tibrewal Mines & Minerals Pvt. Ltd.', year: '2022', desc: 'Mining & Mineral Extraction', detail: 'Established in 2022, this company operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand. With modern excavation equipment and a dedicated workforce, the company ensures sustainable mining practices while meeting growing infrastructure demands.', icon: '⛏️', highlights: ['Open-pit mining operations', 'Stone crushing plants', 'High-quality aggregates', 'Sustainable practices'], color: 'hsla(210,60%,40%,0.12)' },
-  { title: 'Tibrewal & Tibrewal Pvt. Ltd.', year: '2023', desc: 'Logistics & Transportation', detail: 'A key logistics and transportation company with a fleet of 50+ heavy tipper trucks. The company ensures timely and cost-effective delivery solutions across mining, construction, and infrastructure sectors. Operating round-the-clock, it is the backbone of the group\'s supply chain operations.', icon: '🚚', highlights: ['50+ heavy tipper trucks', 'Round-the-clock operations', 'Mining & construction logistics', 'Pan-Jharkhand coverage'], color: 'hsla(160,50%,40%,0.10)' },
-  { title: 'Tibrewal Motors Pvt. Ltd.', year: '2024', desc: 'Automotive Solutions', detail: 'Operates in the automotive segment, focusing on vehicle-related services, fleet management, and mobility solutions. The company supports the group\'s logistics requirements while also serving external clients with comprehensive automotive services and solutions.', icon: '🚗', highlights: ['Fleet management services', 'Vehicle maintenance', 'Mobility solutions', 'Automotive trading'], color: 'hsla(240,50%,50%,0.08)' },
-  { title: 'Tibrewal Tyres', year: '2024', desc: 'Tyre Trading & Distribution', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients, the company provides a comprehensive range of tyres from leading manufacturers at competitive prices.', icon: '🛞', highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'], color: 'hsla(0,60%,50%,0.08)' },
-  { title: 'Tibrewal Agro Food Processing', year: '2025', desc: 'Agricultural Processing', detail: 'The group\'s newest venture focusing on processing and value addition of agricultural produce. This unit bridges the gap between raw agricultural resources and market-ready products, contributing to the region\'s agricultural economy and food supply chain.', icon: '🌾', highlights: ['Value-added processing', 'Farm-to-market chain', 'Quality food products', 'Regional agricultural support'], color: 'hsla(90,50%,40%,0.10)' },
-  { title: 'Tibrewal Ventures', year: '2025', desc: 'Strategic Investments', detail: 'The strategic investment and expansion arm of the group. Tibrewal Ventures identifies new business opportunities across infrastructure, trading, and industrial services, ensuring the group continues to grow and diversify into high-potential sectors.', icon: '📈', highlights: ['New sector identification', 'Strategic partnerships', 'Infrastructure investments', 'Growth acceleration'], color: 'hsla(45,80%,50%,0.08)' },
+  { title: 'Bharat Petroleum Fuel Station', year: '2014', desc: 'Petroleum Distribution', detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station, this unit provides reliable fuel supply to transporters, fleet operators, and the local community.', icon: '⛽', highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'], color: 'hsla(28,88%,52%,0.12)' },
+  { title: 'Tibrewal Mines & Minerals Pvt. Ltd.', year: '2022', desc: 'Mining & Mineral Extraction', detail: 'Operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand. Modern excavation equipment and sustainable mining practices.', icon: '⛏️', highlights: ['Open-pit mining operations', 'Stone crushing plants', 'High-quality aggregates', 'Sustainable practices'], color: 'hsla(210,60%,40%,0.12)' },
+  { title: 'Tibrewal Tyres', year: '2024', desc: 'Tyre Trading & Distribution', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients with a comprehensive range from leading manufacturers.', icon: '🛞', highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'], color: 'hsla(0,60%,50%,0.08)' },
+  { title: 'Tibrewal Agro Food Processing', year: '2025', desc: 'Agricultural Processing', detail: 'Focusing on processing and value addition of agricultural produce. Bridging the gap between raw agricultural resources and market-ready products for the region\'s agricultural economy.', icon: '🌾', highlights: ['Value-added processing', 'Farm-to-market chain', 'Quality food products', 'Regional agricultural support'], color: 'hsla(90,50%,40%,0.10)' },
+  { title: 'Tibrewal Ventures', year: '2025', desc: 'Strategic Investments', detail: 'The strategic investment and expansion arm. Identifies new business opportunities across infrastructure, trading, and industrial services for continued growth and diversification.', icon: '📈', highlights: ['New sector identification', 'Strategic partnerships', 'Infrastructure investments', 'Growth acceleration'], color: 'hsla(45,80%,50%,0.08)' },
 ];
 
 const groupStrength = [
-  { label: 'Trucks', value: 50, suffix: '+', icon: Truck },
-  { label: 'Business Sectors', value: 7, suffix: '', icon: Building2 },
-  { label: 'Employees', value: 200, suffix: '+', icon: Users },
+  { label: 'Fleet Strength', value: 'Ample', isText: true, icon: Truck },
+  { label: 'Business Sectors', value: 5, suffix: '', icon: Building2 },
+  { label: 'Workforce', value: 'Large Team', isText: true, icon: Users },
   { label: 'Years of Operations', value: 10, suffix: '+', icon: Star },
 ];
 
@@ -40,7 +36,7 @@ const policies = [
   { icon: Scale, title: 'Fair Business Practices', desc: 'We maintain transparent and ethical dealings with all partners, vendors, and stakeholders. All transactions are documented, GST compliant, and follow industry-standard business ethics.' },
   { icon: FileCheck, title: 'Quality Assurance', desc: 'Every product and service undergoes rigorous quality checks before delivery. From aggregate grading to fuel purity — quality is non-negotiable across all verticals.' },
   { icon: Globe, title: 'Environmental Responsibility', desc: 'Committed to sustainable mining and operations with minimal environmental impact. We follow all government-mandated environmental norms and actively work on land rehabilitation post-mining.' },
-  { icon: Heart, title: 'Employee Welfare', desc: 'Competitive wages, timely salary payments, advance facilities, and safe working conditions for all 200+ employees. We invest in workforce development and provide comprehensive support systems.' },
+  { icon: Heart, title: 'Employee Welfare', desc: 'Competitive wages, timely salary payments, advance facilities, and safe working conditions for our entire workforce. We invest in workforce development and provide comprehensive support systems.' },
   { icon: Award, title: 'Compliance & Governance', desc: 'Full adherence to government regulations, mining licenses, GST compliance, and corporate governance norms. Regular audits ensure complete legal and regulatory compliance across all operations.' },
   { icon: Users, title: 'Community Development', desc: 'Active participation in local community development through employment generation, infrastructure support, and contributing to the economic growth of Jharkhand\'s industrial landscape.' },
   { icon: Building2, title: 'Operational Excellence', desc: 'Continuous improvement in operational efficiency through modern equipment, technology adoption, and process optimization across all business units.' },
@@ -249,7 +245,7 @@ const HeroPage = () => (
                 >
                   <Icon className="h-4 w-4 text-primary-foreground/25 mb-2" />
                   <div className="text-2xl lg:text-3xl font-extrabold text-primary-foreground tracking-tight tabular-nums">
-                    <AnimatedNumber value={stat.value} />{stat.suffix}
+                    {(stat as any).isText ? String(stat.value) : <><AnimatedNumber value={stat.value as number} />{stat.suffix}</>}
                   </div>
                   <p className="text-[10px] text-primary-foreground/40 font-semibold mt-1 uppercase tracking-[0.15em]">{stat.label}</p>
                 </motion.div>
@@ -625,9 +621,9 @@ const ProprietorPage2 = () => (
           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Key Achievements Under His Leadership</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { icon: TrendingUp, title: '7 Business Verticals', desc: 'Expanded the group from 1 to 7 diverse business units in under 4 years' },
-              { icon: Truck, title: '50+ Fleet Size', desc: 'Grew the transportation fleet from a handful of vehicles to over 50 heavy trucks' },
-              { icon: Users, title: '200+ Employees', desc: 'Created employment for over 200 people across all operations' },
+              { icon: TrendingUp, title: 'Multiple Business Verticals', desc: 'Expanded the group into diverse business units across multiple sectors' },
+              { icon: Truck, title: 'Ample Fleet', desc: 'Built a robust transportation fleet of heavy trucks for industrial logistics' },
+              { icon: Users, title: 'Strong Workforce', desc: 'Created large-scale employment across all operational verticals' },
               { icon: Building2, title: 'Corporate Structure', desc: 'Transformed family business into professionally managed corporate entities' },
             ].map((item, i) => (
               <motion.div
@@ -733,7 +729,7 @@ const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection
             className="h-10 w-10 object-contain mx-auto mb-3 opacity-30"
           />
           <p className="text-xs text-muted-foreground/50 font-medium">Tibrewal Group</p>
-          <p className="text-[11px] text-muted-foreground/30 mt-1">Mining & Minerals · Logistics · Petroleum · Tyres · Agro · Ventures</p>
+          <p className="text-[11px] text-muted-foreground/30 mt-1">Mining & Minerals · Petroleum · Tyres · Agro · Ventures</p>
           <p className="text-[11px] text-muted-foreground/20 mt-1">Jharkhand, India</p>
         </div>
       </RevealSection>
