@@ -2,33 +2,33 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import { useEffect, useRef, useCallback } from 'react';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
 import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star } from 'lucide-react';
 
 // --- Data ---
 const timelineData = [
-  { year: '2014', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution' },
+  { year: '2013', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution' },
+  { year: '2014', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading & distribution' },
   { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched' },
-  { year: '2024', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading & distribution' },
-  { year: '2025', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing & value addition' },
+  { year: '2022', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing & value addition' },
   { year: '2025', title: 'Tibrewal Ventures', desc: 'Strategic investments & new business expansion' },
 ];
 
 const companies = [
-  { title: 'Bharat Petroleum Fuel Station', year: '2014', desc: 'Petroleum Distribution', detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station, this unit provides reliable fuel supply to transporters, fleet operators, and the local community.', icon: '⛽', highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'], color: 'hsla(28,88%,52%,0.12)' },
+  { title: 'Tibrewal Ventures', year: '2025', desc: 'Strategic Investments', detail: 'The flagship strategic investment and expansion arm of Tibrewal Group. Identifies and capitalizes on high-potential business opportunities across infrastructure, trading, and industrial services.', icon: '📈', highlights: ['New sector identification', 'Strategic partnerships', 'Infrastructure investments', 'Growth acceleration'], color: 'hsla(45,80%,50%,0.12)' },
+  { title: 'Bharat Petroleum Fuel Station', year: '2013', desc: 'Petroleum Distribution', detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station since 2013, providing reliable fuel supply to transporters, fleet operators, and the local community.', icon: '⛽', highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'], color: 'hsla(28,88%,52%,0.12)' },
   { title: 'Tibrewal Mines & Minerals Pvt. Ltd.', year: '2022', desc: 'Mining & Mineral Extraction', detail: 'Operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand. Modern excavation equipment and sustainable mining practices.', icon: '⛏️', highlights: ['Open-pit mining operations', 'Stone crushing plants', 'High-quality aggregates', 'Sustainable practices'], color: 'hsla(210,60%,40%,0.12)' },
-  { title: 'Tibrewal Tyres', year: '2024', desc: 'Tyre Trading & Distribution', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients with a comprehensive range from leading manufacturers.', icon: '🛞', highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'], color: 'hsla(0,60%,50%,0.08)' },
-  { title: 'Tibrewal Agro Food Processing', year: '2025', desc: 'Agricultural Processing', detail: 'Focusing on processing and value addition of agricultural produce. Bridging the gap between raw agricultural resources and market-ready products for the region\'s agricultural economy.', icon: '🌾', highlights: ['Value-added processing', 'Farm-to-market chain', 'Quality food products', 'Regional agricultural support'], color: 'hsla(90,50%,40%,0.10)' },
-  { title: 'Tibrewal Ventures', year: '2025', desc: 'Strategic Investments', detail: 'The strategic investment and expansion arm. Identifies new business opportunities across infrastructure, trading, and industrial services for continued growth and diversification.', icon: '📈', highlights: ['New sector identification', 'Strategic partnerships', 'Infrastructure investments', 'Growth acceleration'], color: 'hsla(45,80%,50%,0.08)' },
+  { title: 'Tibrewal Tyres', year: '2014', desc: 'Tyre Trading & Distribution', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients with a comprehensive range from leading manufacturers.', icon: '🛞', highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'], color: 'hsla(0,60%,50%,0.08)' },
+  { title: 'Tibrewal Agro Food Processing', year: '2022', desc: 'Agricultural Processing', detail: 'Focusing on processing and value addition of agricultural produce. Bridging the gap between raw agricultural resources and market-ready products for the region\'s agricultural economy.', icon: '🌾', highlights: ['Value-added processing', 'Farm-to-market chain', 'Quality food products', 'Regional agricultural support'], color: 'hsla(90,50%,40%,0.10)' },
 ];
 
 const groupStrength = [
   { label: 'Fleet Strength', value: 'Ample', isText: true, icon: Truck },
   { label: 'Business Sectors', value: 5, suffix: '', icon: Building2 },
   { label: 'Workforce', value: 'Large Team', isText: true, icon: Users },
-  { label: 'Years of Operations', value: 10, suffix: '+', icon: Star },
+  { label: 'Years of Operations', value: 12, suffix: '+', icon: Star },
 ];
 
 const policies = [
@@ -223,7 +223,7 @@ const HeroPage = () => (
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
           >
-            From mining and minerals to logistics, petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2014.
+            From mining and minerals to petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2013.
           </motion.p>
 
           {/* Stats with icons */}
@@ -275,7 +275,7 @@ const TimelinePage = () => (
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4" style={{ background: 'rgba(234,136,37,0.1)', border: '1px solid rgba(234,136,37,0.15)' }}>
             <Sparkles className="h-3 w-3" style={{ color: 'hsl(28, 88%, 52%)' }} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'hsl(28, 88%, 55%)' }}>Since 2014</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'hsl(28, 88%, 55%)' }}>Since 2013</span>
           </div>
           <h2 className="text-3xl lg:text-5xl font-extrabold tracking-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>Our Journey</h2>
           <p className="text-sm mt-3 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>A decade of growth, diversification, and relentless pursuit of industrial excellence.</p>
@@ -469,7 +469,7 @@ const FounderPage = () => (
                 </h3>
 
                 <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-4">
-                  The visionary founder of Tibrewal Group who laid the foundation of the group's diversified industrial operations. Starting with a Bharat Petroleum fuel station in 2014, his strategic vision has been instrumental in building the group from a single business into a multi-vertical industrial conglomerate.
+                  The visionary founder of Tibrewal Group who laid the foundation of the group's diversified industrial operations. Starting with a Bharat Petroleum fuel station in 2013, his strategic vision has been instrumental in building the group from a single business into a multi-vertical industrial conglomerate.
                 </p>
 
                 <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-6">
@@ -548,6 +548,10 @@ const ProprietorPage1 = () => (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-accent" />
                     <a href="tel:9386469006" className="hover:text-foreground transition-colors">9386469006</a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-accent" />
+                    <a href="mailto:trishavkumar992@gmail.com" className="hover:text-foreground transition-colors">trishavkumar992@gmail.com</a>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-accent" />
