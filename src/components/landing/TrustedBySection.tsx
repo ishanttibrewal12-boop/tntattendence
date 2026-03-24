@@ -60,32 +60,42 @@ const TrustedBySection = () => {
     return () => ctx.revert();
   }, []);
 
-  // Infinite marquee via GSAP
   useEffect(() => {
+    // Row 1: scroll left
     const el = marqueeRef.current;
-    if (!el) return;
-    const inner = el.querySelector('.marquee-track') as HTMLElement;
-    if (!inner) return;
+    if (el) {
+      const inner = el.querySelector('.marquee-track') as HTMLElement;
+      if (inner) {
+        inner.innerHTML += inner.innerHTML;
+        const totalWidth = inner.scrollWidth / 2;
+        const tween = gsap.to(inner, {
+          x: -totalWidth, duration: 30, ease: 'none', repeat: -1,
+          modifiers: { x: gsap.utils.unitize((x: number) => x % totalWidth) },
+        });
+        el.addEventListener('mouseenter', () => tween.timeScale(0.3));
+        el.addEventListener('mouseleave', () => tween.timeScale(1));
+      }
+    }
 
-    // Duplicate content for seamless loop
-    inner.innerHTML += inner.innerHTML;
-
-    const totalWidth = inner.scrollWidth / 2;
-    const tween = gsap.to(inner, {
-      x: -totalWidth,
-      duration: 30,
-      ease: 'none',
-      repeat: -1,
-      modifiers: {
-        x: gsap.utils.unitize((x: number) => x % totalWidth),
-      },
-    });
-
-    // Pause on hover
-    el.addEventListener('mouseenter', () => tween.timeScale(0.3));
-    el.addEventListener('mouseleave', () => tween.timeScale(1));
-
-    return () => { tween.kill(); };
+    // Row 2: scroll right (reverse)
+    const el2 = marqueeReverseRef.current;
+    if (el2) {
+      const inner2 = el2.querySelector('.marquee-track-reverse') as HTMLElement;
+      if (inner2) {
+        inner2.innerHTML += inner2.innerHTML;
+        const totalWidth2 = inner2.scrollWidth / 2;
+        gsap.set(inner2, { x: -totalWidth2 });
+        const tween2 = gsap.to(inner2, {
+          x: 0, duration: 35, ease: 'none', repeat: -1,
+          modifiers: { x: gsap.utils.unitize((x: number) => {
+            const mod = x % totalWidth2;
+            return mod > 0 ? mod - totalWidth2 : mod;
+          }) },
+        });
+        el2.addEventListener('mouseenter', () => tween2.timeScale(0.3));
+        el2.addEventListener('mouseleave', () => tween2.timeScale(1));
+      }
+    }
   }, []);
 
   return (
