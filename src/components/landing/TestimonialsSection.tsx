@@ -32,7 +32,7 @@ const testimonials = [
     company: 'Montecarlo',
   },
   {
-    quote: 'Tibrewal Group's commitment to quality and timely delivery has made them an indispensable partner in our construction projects across the region.',
+    quote: "Tibrewal Group's commitment to quality and timely delivery has made them an indispensable partner in our construction projects across the region.",
     author: 'Project Director',
     company: 'S.P. Singla Constructions',
   },
