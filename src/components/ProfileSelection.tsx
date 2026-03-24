@@ -20,6 +20,7 @@ import PoliciesSection from '@/components/landing/PoliciesSection';
 import PhotoGallery from '@/components/landing/PhotoGallery';
 import CTABanner from '@/components/landing/CTABanner';
 import TrustedBySection from '@/components/landing/TrustedBySection';
+import TestimonialsSection from '@/components/landing/TestimonialsSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 import AIChatBot from '@/components/AIChatBot';
 
@@ -85,6 +86,7 @@ const LandingContent = () => {
       <Timeline />
       <CompanyShowcase />
       <TrustedBySection />
+      <TestimonialsSection />
       <LeadershipShowcase />
       <PhotoGallery />
       <PoliciesSection />
