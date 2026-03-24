@@ -223,7 +223,7 @@ const HeroPage = () => (
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
           >
-            From mining and minerals to logistics, petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2014.
+            From mining and minerals to petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2013.
           </motion.p>
 
           {/* Stats with icons */}
