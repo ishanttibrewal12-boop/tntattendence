@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ForgotPinProps {
   onBack: () => void;
   onSuccess: () => void;
 }
+
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const ForgotPin = ({ onBack, onSuccess }: ForgotPinProps) => {
   const [step, setStep] = useState<'phone' | 'otp' | 'success'>('phone');
@@ -16,17 +20,53 @@ const ForgotPin = ({ onBack, onSuccess }: ForgotPinProps) => {
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const CORRECT_PHONE = '6203229118';
-  const CORRECT_OTP = '8465';
+  const checkRateLimit = (): boolean => {
+    const lockoutKey = 'forgot_pin_lockout';
+    const attemptKey = 'forgot_pin_attempts';
+    
+    const lockoutUntil = sessionStorage.getItem(lockoutKey);
+    if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+      const remaining = Math.ceil((parseInt(lockoutUntil) - Date.now()) / 60000);
+      toast.error(`Too many attempts. Try again in ${remaining} minutes.`);
+      return false;
+    }
+
+    const attempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
+    if (attempts >= MAX_ATTEMPTS) {
+      sessionStorage.setItem(lockoutKey, (Date.now() + LOCKOUT_DURATION).toString());
+      sessionStorage.removeItem(attemptKey);
+      toast.error('Too many failed attempts. Locked for 5 minutes.');
+      return false;
+    }
+    return true;
+  };
+
+  const incrementAttempts = () => {
+    const attemptKey = 'forgot_pin_attempts';
+    const attempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
+    sessionStorage.setItem(attemptKey, (attempts + 1).toString());
+  };
 
   const handleSendOtp = async () => {
-    if (phone !== CORRECT_PHONE) {
+    if (!checkRateLimit()) return;
+
+    setIsVerifying(true);
+    
+    // Verify phone number against database
+    const { data } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('setting_key', 'recovery_phone')
+      .single();
+
+    if (!data || phone !== data.setting_value) {
+      incrementAttempts();
       toast.error('Phone number not registered');
+      setIsVerifying(false);
       return;
     }
 
-    setIsVerifying(true);
-    // Simulate sending OTP
+    // Simulate sending OTP (in production, use an edge function to send real OTP)
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     toast.success(`OTP sent to ${phone.slice(0, 4)}****${phone.slice(-2)}`);
@@ -35,14 +75,28 @@ const ForgotPin = ({ onBack, onSuccess }: ForgotPinProps) => {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp !== CORRECT_OTP) {
+    if (!checkRateLimit()) return;
+
+    setIsVerifying(true);
+    
+    // Verify OTP against database
+    const { data } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('setting_key', 'recovery_otp')
+      .single();
+
+    if (!data || otp !== data.setting_value) {
+      incrementAttempts();
       toast.error('Incorrect OTP');
       setOtp('');
+      setIsVerifying(false);
       return;
     }
 
-    setIsVerifying(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Clear attempts on success
+    sessionStorage.removeItem('forgot_pin_attempts');
+    sessionStorage.removeItem('forgot_pin_lockout');
     
     // Store unlock in session
     sessionStorage.setItem('app_unlocked', 'true');
