@@ -11,6 +11,7 @@ import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Ph
 const timelineData = [
   { year: '2013', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution' },
   { year: '2014', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading & distribution' },
+  { year: '2021', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'Transport & logistics — freight transport by road' },
   { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched' },
   { year: '2022', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing & value addition' },
   { year: '2025', title: 'Tibrewal Ventures', desc: 'Strategic investments & new business expansion' },
@@ -18,6 +19,7 @@ const timelineData = [
 
 const companies = [
   { title: 'Tibrewal Ventures', year: '2025', desc: 'Strategic Investments', detail: 'The flagship strategic investment and expansion arm of Tibrewal Group. Identifies and capitalizes on high-potential business opportunities across infrastructure, trading, and industrial services.', icon: '📈', highlights: ['New sector identification', 'Strategic partnerships', 'Infrastructure investments', 'Growth acceleration'], color: 'hsla(45,80%,50%,0.12)' },
+  { title: 'Tibrewal & Tibrewal Pvt. Ltd.', year: '2021', desc: 'Transport & Logistics', detail: 'A Private Limited Company specializing in freight transport by road. Directed by Trishav Tibrewal, this active entity handles the group\'s transport and logistics operations — ensuring reliable movement of materials, aggregates, and goods across Jharkhand and beyond.', icon: '🚛', highlights: ['Freight transport by road', 'Fleet management', 'Material logistics', 'Pan-regional operations'], color: 'hsla(200,60%,45%,0.12)' },
   { title: 'Bharat Petroleum Fuel Station', year: '2013', desc: 'Petroleum Distribution', detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station since 2013, providing reliable fuel supply to transporters, fleet operators, and the local community.', icon: '⛽', highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'], color: 'hsla(28,88%,52%,0.12)' },
   { title: 'Tibrewal Mines & Minerals Pvt. Ltd.', year: '2022', desc: 'Mining & Mineral Extraction', detail: 'Operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand. Modern excavation equipment and sustainable mining practices.', icon: '⛏️', highlights: ['Open-pit mining operations', 'Stone crushing plants', 'High-quality aggregates', 'Sustainable practices'], color: 'hsla(210,60%,40%,0.12)' },
   { title: 'Tibrewal Tyres', year: '2014', desc: 'Tyre Trading & Distribution', detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients with a comprehensive range from leading manufacturers.', icon: '🛞', highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'], color: 'hsla(0,60%,50%,0.08)' },
@@ -26,7 +28,7 @@ const companies = [
 
 const groupStrength = [
   { label: 'Fleet Strength', value: 'Ample', isText: true, icon: Truck },
-  { label: 'Business Sectors', value: 5, suffix: '', icon: Building2 },
+  { label: 'Business Sectors', value: 6, suffix: '', icon: Building2 },
   { label: 'Workforce', value: 'Large Team', isText: true, icon: Users },
   { label: 'Years of Operations', value: 12, suffix: '+', icon: Star },
 ];
@@ -447,11 +449,12 @@ const FounderPage = () => (
         <Card className="border border-border/50 overflow-hidden shadow-lg">
           <CardContent className="p-0">
             <div className="flex flex-col lg:flex-row">
-              <div className="lg:w-2/5 relative overflow-hidden bg-primary/5">
+              <div className="lg:w-2/5 relative overflow-hidden bg-primary/5" style={{ minHeight: '320px' }}>
                 <motion.img
                   src={founderPhoto}
                   alt="Sunil Tibrewal"
-                  className="w-full h-64 lg:h-full object-cover object-top"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: '50% 15%', minHeight: '320px' }}
                   whileHover={{ scale: 1.03 }}
                   transition={{ duration: 0.4 }}
                 />
@@ -515,11 +518,12 @@ const ProprietorPage1 = () => (
         <Card className="border border-border/50 overflow-hidden shadow-lg">
           <CardContent className="p-0">
             <div className="flex flex-col lg:flex-row">
-              <div className="lg:w-2/5 relative overflow-hidden bg-primary/5">
+              <div className="lg:w-2/5 relative overflow-hidden bg-primary/5" style={{ minHeight: '320px' }}>
                 <motion.img
                   src={proprietorPhoto}
                   alt="Trishav Tibrewal"
-                  className="w-full h-64 lg:h-full object-cover object-top"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: '50% 15%', minHeight: '320px' }}
                   whileHover={{ scale: 1.03 }}
                   transition={{ duration: 0.4 }}
                 />
@@ -733,7 +737,7 @@ const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection
             className="h-10 w-10 object-contain mx-auto mb-3 opacity-30"
           />
           <p className="text-xs text-muted-foreground/50 font-medium">Tibrewal Group</p>
-          <p className="text-[11px] text-muted-foreground/30 mt-1">Mining & Minerals · Petroleum · Tyres · Agro · Ventures</p>
+          <p className="text-[11px] text-muted-foreground/30 mt-1">Mining & Minerals · Petroleum · Tyres · Transport & Logistics · Agro · Ventures</p>
           <p className="text-[11px] text-muted-foreground/20 mt-1">Jharkhand, India</p>
         </div>
       </RevealSection>
