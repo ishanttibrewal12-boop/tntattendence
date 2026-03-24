@@ -275,7 +275,7 @@ const TimelinePage = () => (
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4" style={{ background: 'rgba(234,136,37,0.1)', border: '1px solid rgba(234,136,37,0.15)' }}>
             <Sparkles className="h-3 w-3" style={{ color: 'hsl(28, 88%, 52%)' }} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'hsl(28, 88%, 55%)' }}>Since 2014</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'hsl(28, 88%, 55%)' }}>Since 2013</span>
           </div>
           <h2 className="text-3xl lg:text-5xl font-extrabold tracking-tight" style={{ color: 'rgba(255,255,255,0.95)' }}>Our Journey</h2>
           <p className="text-sm mt-3 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>A decade of growth, diversification, and relentless pursuit of industrial excellence.</p>
