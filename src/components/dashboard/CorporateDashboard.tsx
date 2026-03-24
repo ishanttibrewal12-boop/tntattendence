@@ -28,7 +28,7 @@ const groupStrength = [
   { label: 'Fleet Strength', value: 'Ample', isText: true, icon: Truck },
   { label: 'Business Sectors', value: 5, suffix: '', icon: Building2 },
   { label: 'Workforce', value: 'Large Team', isText: true, icon: Users },
-  { label: 'Years of Operations', value: 10, suffix: '+', icon: Star },
+  { label: 'Years of Operations', value: 12, suffix: '+', icon: Star },
 ];
 
 const policies = [
