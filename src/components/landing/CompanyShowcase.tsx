@@ -15,6 +15,15 @@ const companies = [
     featured: true,
   },
   {
+    title: 'Tibrewal & Tibrewal Pvt. Ltd.',
+    year: '2013',
+    desc: 'Parent Entity & Corporate Foundation',
+    detail: 'The founding corporate entity of Tibrewal Group. Tibrewal & Tibrewal Pvt. Ltd. serves as the parent company and the backbone of all group operations — providing the corporate governance, strategic oversight, and business infrastructure that enables the group\'s diversified industrial ventures across Jharkhand.',
+    icon: '🏢',
+    highlights: ['Group parent company', 'Corporate governance', 'Strategic oversight', 'Business infrastructure'],
+    featured: false,
+  },
+  {
     title: 'Tibrewal Mines & Minerals Pvt. Ltd.',
     year: '2022',
     desc: 'Mining & Mineral Extraction',

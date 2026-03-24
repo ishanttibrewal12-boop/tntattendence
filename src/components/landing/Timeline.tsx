@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const milestones = [
+  { year: '2013', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'The inception of the group\'s parent entity — laying the corporate foundation for all future business expansions and industrial operations.' },
   { year: '2013', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution — the first step into industrial operations.' },
   { year: '2014', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading and distribution launched, serving transporters and fleet operators across Jharkhand.' },
   { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched, marking entry into large-scale industrial operations.' },
