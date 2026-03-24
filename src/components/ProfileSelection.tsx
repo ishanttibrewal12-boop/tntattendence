@@ -21,6 +21,7 @@ import PhotoGallery from '@/components/landing/PhotoGallery';
 import CTABanner from '@/components/landing/CTABanner';
 import TrustedBySection from '@/components/landing/TrustedBySection';
 import TestimonialsSection from '@/components/landing/TestimonialsSection';
+import ContactSection from '@/components/landing/ContactSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 import AIChatBot from '@/components/AIChatBot';
 
