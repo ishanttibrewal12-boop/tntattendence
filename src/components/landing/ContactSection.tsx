@@ -51,7 +51,7 @@ const ContactSection = () => {
     const whatsappText = encodeURIComponent(
       `Hello, I'm ${trimmedName}${email.trim() ? ` (${email.trim()})` : ''}.\n\n${trimmedMessage}`
     );
-    window.open(`https://wa.me/916203229118?text=${whatsappText}`, '_blank');
+    window.open(`https://wa.me/919386469006?text=${whatsappText}`, '_blank');
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

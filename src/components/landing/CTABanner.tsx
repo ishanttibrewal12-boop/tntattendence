@@ -51,7 +51,7 @@ const CTABanner = () => {
             Email Proprietor
           </a>
           <a
-            href="https://wa.me/916203229118"
+            href="https://wa.me/919386469006"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-bold text-sm border-2 border-white/50 text-white transition-transform hover:scale-105"
