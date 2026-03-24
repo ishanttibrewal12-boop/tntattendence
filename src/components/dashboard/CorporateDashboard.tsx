@@ -449,11 +449,12 @@ const FounderPage = () => (
         <Card className="border border-border/50 overflow-hidden shadow-lg">
           <CardContent className="p-0">
             <div className="flex flex-col lg:flex-row">
-              <div className="lg:w-2/5 relative overflow-hidden bg-primary/5">
+              <div className="lg:w-2/5 relative overflow-hidden bg-primary/5" style={{ minHeight: '320px' }}>
                 <motion.img
                   src={founderPhoto}
                   alt="Sunil Tibrewal"
-                  className="w-full h-64 lg:h-full object-cover object-top"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: '50% 15%', minHeight: '320px' }}
                   whileHover={{ scale: 1.03 }}
                   transition={{ duration: 0.4 }}
                 />
