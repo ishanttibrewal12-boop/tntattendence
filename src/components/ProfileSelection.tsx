@@ -84,6 +84,7 @@ const LandingContent = () => {
       <CompanySection />
       <Timeline />
       <CompanyShowcase />
+      <TrustedBySection />
       <LeadershipShowcase />
       <PhotoGallery />
       <PoliciesSection />
