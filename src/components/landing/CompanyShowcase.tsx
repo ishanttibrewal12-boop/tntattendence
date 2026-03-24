@@ -16,11 +16,11 @@ const companies = [
   },
   {
     title: 'Tibrewal & Tibrewal Pvt. Ltd.',
-    year: '2013',
-    desc: 'Parent Entity & Corporate Foundation',
-    detail: 'The founding corporate entity of Tibrewal Group. Tibrewal & Tibrewal Pvt. Ltd. serves as the parent company and the backbone of all group operations — providing the corporate governance, strategic oversight, and business infrastructure that enables the group\'s diversified industrial ventures across Jharkhand.',
-    icon: '🏢',
-    highlights: ['Group parent company', 'Corporate governance', 'Strategic oversight', 'Business infrastructure'],
+    year: '2021',
+    desc: 'Transport & Logistics',
+    detail: 'A Private Limited Company specializing in freight transport by road. Directed by Trishav Tibrewal, this active entity handles the group\'s transport and logistics operations — ensuring reliable movement of materials, aggregates, and goods across Jharkhand and beyond.',
+    icon: '🚛',
+    highlights: ['Freight transport by road', 'Fleet management', 'Material logistics', 'Pan-regional operations'],
     featured: false,
   },
   {
