@@ -86,9 +86,9 @@ const ContactSection = () => {
     {
       icon: MapPin,
       label: 'Address',
-      value: 'Jharkhand, India',
-      sub: 'Registered Office',
-      href: undefined,
+      value: 'Mahagama, Godda, Jharkhand',
+      sub: 'Tibrewal Tyres — Registered Office',
+      href: 'https://www.google.com/maps/search/Mahagama+Godda+Jharkhand',
     },
     {
       icon: Clock,
