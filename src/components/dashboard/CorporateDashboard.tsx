@@ -550,6 +550,10 @@ const ProprietorPage1 = () => (
                     <a href="tel:9386469006" className="hover:text-foreground transition-colors">9386469006</a>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-accent" />
+                    <a href="mailto:trishavkumar992@gmail.com" className="hover:text-foreground transition-colors">trishavkumar992@gmail.com</a>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-accent" />
                     <span>Jharkhand, India</span>
                   </div>
