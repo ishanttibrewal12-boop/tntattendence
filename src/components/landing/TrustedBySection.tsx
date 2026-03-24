@@ -29,6 +29,7 @@ const clients = [
 const TrustedBySection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const marqueeRef = useRef<HTMLDivElement>(null);
+  const marqueeReverseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -59,32 +60,42 @@ const TrustedBySection = () => {
     return () => ctx.revert();
   }, []);
 
-  // Infinite marquee via GSAP
   useEffect(() => {
+    // Row 1: scroll left
     const el = marqueeRef.current;
-    if (!el) return;
-    const inner = el.querySelector('.marquee-track') as HTMLElement;
-    if (!inner) return;
+    if (el) {
+      const inner = el.querySelector('.marquee-track') as HTMLElement;
+      if (inner) {
+        inner.innerHTML += inner.innerHTML;
+        const totalWidth = inner.scrollWidth / 2;
+        const tween = gsap.to(inner, {
+          x: -totalWidth, duration: 30, ease: 'none', repeat: -1,
+          modifiers: { x: gsap.utils.unitize((x: number) => x % totalWidth) },
+        });
+        el.addEventListener('mouseenter', () => tween.timeScale(0.3));
+        el.addEventListener('mouseleave', () => tween.timeScale(1));
+      }
+    }
 
-    // Duplicate content for seamless loop
-    inner.innerHTML += inner.innerHTML;
-
-    const totalWidth = inner.scrollWidth / 2;
-    const tween = gsap.to(inner, {
-      x: -totalWidth,
-      duration: 30,
-      ease: 'none',
-      repeat: -1,
-      modifiers: {
-        x: gsap.utils.unitize((x: number) => x % totalWidth),
-      },
-    });
-
-    // Pause on hover
-    el.addEventListener('mouseenter', () => tween.timeScale(0.3));
-    el.addEventListener('mouseleave', () => tween.timeScale(1));
-
-    return () => { tween.kill(); };
+    // Row 2: scroll right (reverse)
+    const el2 = marqueeReverseRef.current;
+    if (el2) {
+      const inner2 = el2.querySelector('.marquee-track-reverse') as HTMLElement;
+      if (inner2) {
+        inner2.innerHTML += inner2.innerHTML;
+        const totalWidth2 = inner2.scrollWidth / 2;
+        gsap.set(inner2, { x: -totalWidth2 });
+        const tween2 = gsap.to(inner2, {
+          x: 0, duration: 35, ease: 'none', repeat: -1,
+          modifiers: { x: gsap.utils.unitize((x: number) => {
+            const mod = x % totalWidth2;
+            return mod > 0 ? mod - totalWidth2 : mod;
+          }) },
+        });
+        el2.addEventListener('mouseenter', () => tween2.timeScale(0.3));
+        el2.addEventListener('mouseleave', () => tween2.timeScale(1));
+      }
+    }
   }, []);
 
   return (
@@ -108,8 +119,8 @@ const TrustedBySection = () => {
           </div>
         </div>
 
-        {/* Infinite Marquee */}
-        <div ref={marqueeRef} className="relative w-full overflow-hidden py-8 mb-20 md:mb-28 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
+        {/* Infinite Marquee Row 1 */}
+        <div ref={marqueeRef} className="relative w-full overflow-hidden py-6 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
           <div className="marquee-track flex items-center gap-12 w-max">
             {clients.map((client, i) => (
               <div
@@ -125,7 +136,30 @@ const TrustedBySection = () => {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-500" loading="lazy" />
+                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain transition-all duration-500" loading="lazy" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Infinite Marquee Row 2 (Reverse) */}
+        <div ref={marqueeReverseRef} className="relative w-full overflow-hidden py-6 mb-20 md:mb-28 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
+          <div className="marquee-track-reverse flex items-center gap-12 w-max">
+            {[...clients].reverse().map((client, i) => (
+              <div
+                key={i}
+                className="group flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-500"
+                style={{ background: '#fafafa', borderColor: '#e5e7eb', width: '220px', height: '120px' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#f97316';
+                  e.currentTarget.style.boxShadow = '0 8px 40px -8px rgba(249,115,22,0.18)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain transition-all duration-500" loading="lazy" />
               </div>
             ))}
           </div>
