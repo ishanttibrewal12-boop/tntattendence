@@ -29,6 +29,7 @@ const clients = [
 const TrustedBySection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const marqueeRef = useRef<HTMLDivElement>(null);
+  const marqueeReverseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
