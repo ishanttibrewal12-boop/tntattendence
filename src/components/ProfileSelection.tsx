@@ -21,6 +21,7 @@ import PhotoGallery from '@/components/landing/PhotoGallery';
 import CTABanner from '@/components/landing/CTABanner';
 import TrustedBySection from '@/components/landing/TrustedBySection';
 import TestimonialsSection from '@/components/landing/TestimonialsSection';
+import ContactSection from '@/components/landing/ContactSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 import AIChatBot from '@/components/AIChatBot';
 
@@ -80,17 +81,18 @@ const LandingContent = () => {
 
       <HeroSection />
       <ImageGallery />
-      <WhyChooseUs />
+      <div id="about"><WhyChooseUs /></div>
       <StatsStrip />
       <CompanySection />
       <Timeline />
-      <CompanyShowcase />
-      <TrustedBySection />
+      <div id="companies"><CompanyShowcase /></div>
+      <div id="clients"><TrustedBySection /></div>
       <TestimonialsSection />
-      <LeadershipShowcase />
-      <PhotoGallery />
+      <div id="leadership"><LeadershipShowcase /></div>
+      <div id="gallery"><PhotoGallery /></div>
       <PoliciesSection />
       <CTABanner />
+      <ContactSection />
 
       {/* Footer */}
       <footer className="py-8" style={{ background: '#060810' }}>

@@ -56,10 +56,33 @@ const HeroSection = () => {
         <h1 className="hero-title text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight text-white">TIBREWAL GROUP</h1>
         <p className="hero-subtitle text-lg md:text-xl font-medium mb-8 text-white/70">A Prominent Industrial Business Group</p>
         <div className="hero-line w-16 h-1 rounded-full mb-10 origin-left bg-orange-500" />
-        <p className="hero-desc text-sm max-w-lg leading-relaxed mb-10 text-white/50">
+        <p className="hero-desc text-sm max-w-lg leading-relaxed mb-8 text-white/50">
           Mining • Stone Crushing • Petroleum • Tyres • Agro Processing<br />
           Established 2013 — Jharkhand, India
         </p>
+
+        {/* Navigation Links */}
+        <div className="hero-desc flex flex-wrap gap-3 mb-10">
+          {[
+            { label: 'About', id: 'about' },
+            { label: 'Companies', id: 'companies' },
+            { label: 'Clients', id: 'clients' },
+            { label: 'Leadership', id: 'leadership' },
+            { label: 'Gallery', id: 'gallery' },
+            { label: 'Contact', id: 'contact' },
+          ].map((link) => (
+            <button
+              key={link.id}
+              onClick={() => document.getElementById(link.id)?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider border transition-all duration-300 hover:scale-105"
+              style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.color = '#f97316'; e.currentTarget.style.background = 'rgba(249,115,22,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
           <span className="text-xs tracking-widest uppercase text-white/40">Scroll</span>
