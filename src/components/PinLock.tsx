@@ -11,6 +11,9 @@ interface PinLockProps {
   onUnlock: () => void;
 }
 
+const MAX_PIN_ATTEMPTS = 5;
+const PIN_LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const PinLock = ({ onUnlock }: PinLockProps) => {
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -19,14 +22,11 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
   const [showForgotPin, setShowForgotPin] = useState(false);
 
   useEffect(() => {
-    // Check if already unlocked in this session
     const unlocked = sessionStorage.getItem('app_unlocked');
     if (unlocked === 'true') {
       onUnlock();
       return;
     }
-
-    // Fetch PIN from database
     fetchPin();
   }, []);
 
@@ -43,7 +43,6 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
   };
 
   const handlePinChange = (value: string) => {
-    // Only allow digits
     const numericValue = value.replace(/\D/g, '');
     if (numericValue.length <= 6) {
       setPin(numericValue);
@@ -56,17 +55,40 @@ const PinLock = ({ onUnlock }: PinLockProps) => {
       return;
     }
 
+    // Rate limiting check
+    const attemptKey = 'pin_attempts';
+    const lockoutKey = 'pin_lockout';
+
+    const lockoutUntil = sessionStorage.getItem(lockoutKey);
+    if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+      const remaining = Math.ceil((parseInt(lockoutUntil) - Date.now()) / 60000);
+      toast.error(`Too many attempts. Try again in ${remaining} minutes.`);
+      return;
+    }
+
+    const attempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
+    if (attempts >= MAX_PIN_ATTEMPTS) {
+      sessionStorage.setItem(lockoutKey, (Date.now() + PIN_LOCKOUT_DURATION).toString());
+      sessionStorage.removeItem(attemptKey);
+      toast.error('Too many failed attempts. Locked for 5 minutes.');
+      return;
+    }
+
     setIsVerifying(true);
     
-    // Small delay to prevent brute force
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Delay to slow down brute force
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (pin === correctPin) {
+      sessionStorage.removeItem(attemptKey);
+      sessionStorage.removeItem(lockoutKey);
       sessionStorage.setItem('app_unlocked', 'true');
       toast.success('Access granted');
       onUnlock();
     } else {
-      toast.error('Incorrect PIN');
+      sessionStorage.setItem(attemptKey, (attempts + 1).toString());
+      const remaining = MAX_PIN_ATTEMPTS - attempts - 1;
+      toast.error(`Incorrect PIN. ${remaining} attempts remaining.`);
       setPin('');
     }
 

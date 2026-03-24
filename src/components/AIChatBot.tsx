@@ -85,12 +85,19 @@ export default function AIChatBot({ includeData = true }: AIChatBotProps) {
     let assistantSoFar = '';
 
     try {
+      // Get app user from session for auth
+      const appUserStr = sessionStorage.getItem('tibrewal_app_user');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      };
+      if (appUserStr) {
+        headers['x-app-user'] = appUserStr;
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers,
         body: JSON.stringify({ messages: allMessages, includeData, sessionId }),
       });
 

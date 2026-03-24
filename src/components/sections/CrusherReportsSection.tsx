@@ -138,9 +138,14 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const appUserStr = sessionStorage.getItem('tibrewal_app_user') || '';
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/send-whatsapp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${anonKey}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'x-app-user': appUserStr,
+        },
         body: JSON.stringify({ message }),
       });
       if (res.ok) console.log('Twilio WhatsApp sent');

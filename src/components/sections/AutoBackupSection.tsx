@@ -84,6 +84,7 @@ const AutoBackupSection = () => {
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const appUserStr = sessionStorage.getItem('tibrewal_app_user') || '';
 
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/daily-backup`,
@@ -92,6 +93,7 @@ const AutoBackupSection = () => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${anonKey}`,
+            'x-app-user': appUserStr,
           },
         }
       );

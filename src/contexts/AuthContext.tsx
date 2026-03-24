@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Admin {
   id: string;
@@ -28,20 +29,14 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Admin credentials - stored securely in database
-const ADMIN_CREDENTIALS = [
-  { username: 'ishant8465', password: 'ishant@8465', full_name: 'Ishant Tibrewal' },
-  { username: 'trishav8465', password: 'trishav@8465', full_name: 'Trishav Tibrewal' },
-  { username: 'abhay1234', password: 'abhay@1234', full_name: 'Abhay Jalan' },
-  { username: 'sunil8465', password: 'sunil@8465', full_name: 'Sunil Tibrewal' },
-];
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
     const storedAdmin = localStorage.getItem('tibrewal_admin');
     if (storedAdmin) {
       try {
@@ -54,21 +49,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    const foundAdmin = ADMIN_CREDENTIALS.find(
-      (a) => a.username === username && a.password === password
-    );
-
-    if (foundAdmin) {
-      const adminData: Admin = {
-        id: crypto.randomUUID(),
-        username: foundAdmin.username,
-        full_name: foundAdmin.full_name,
-      };
-      setAdmin(adminData);
-      localStorage.setItem('tibrewal_admin', JSON.stringify(adminData));
-      return true;
+    // Rate limiting check
+    const attemptKey = `admin_login_attempts`;
+    const lockoutKey = `admin_login_lockout`;
+    
+    const lockoutUntil = localStorage.getItem(lockoutKey);
+    if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+      return false;
     }
-    return false;
+
+    const attempts = parseInt(localStorage.getItem(attemptKey) || '0');
+    if (attempts >= MAX_ATTEMPTS) {
+      localStorage.setItem(lockoutKey, (Date.now() + LOCKOUT_DURATION).toString());
+      localStorage.removeItem(attemptKey);
+      return false;
+    }
+
+    // Query admins table from database instead of hardcoded credentials
+    const { data, error } = await supabase
+      .from('admins')
+      .select('id, username, full_name, password_hash')
+      .eq('username', username)
+      .single();
+
+    if (error || !data || data.password_hash !== password) {
+      localStorage.setItem(attemptKey, (attempts + 1).toString());
+      return false;
+    }
+
+    // Success - clear attempts
+    localStorage.removeItem(attemptKey);
+    localStorage.removeItem(lockoutKey);
+
+    const adminData: Admin = {
+      id: data.id,
+      username: data.username,
+      full_name: data.full_name,
+    };
+    setAdmin(adminData);
+    localStorage.setItem('tibrewal_admin', JSON.stringify(adminData));
+    return true;
   };
 
   const logout = () => {
