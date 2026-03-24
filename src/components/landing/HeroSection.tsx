@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/tibrewal-logo.png';
 import heroImg from '@/assets/hero-mining-operations.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -52,13 +52,13 @@ const HeroSection = () => {
       <div ref={overlayRef} className="absolute inset-0 z-[2] opacity-0" style={{ background: '#0a0d14' }} />
 
       <div ref={contentRef} className="relative z-10 w-full max-w-5xl mx-auto px-6 md:px-12 py-20 will-change-transform">
-        <img src={companyLogo} alt="Tibrewal Group" className="hero-logo h-20 w-20 mb-8 object-contain drop-shadow-lg" width={80} height={80} fetchPriority="high" />
+        <img src={companyLogo} alt="Tibrewal Group" className="hero-logo h-20 w-auto mb-8 object-contain drop-shadow-lg" fetchPriority="high" />
         <h1 className="hero-title text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight text-white">TIBREWAL GROUP</h1>
         <p className="hero-subtitle text-lg md:text-xl font-medium mb-8 text-white/70">A Prominent Industrial Business Group</p>
         <div className="hero-line w-16 h-1 rounded-full mb-10 origin-left bg-orange-500" />
         <p className="hero-desc text-sm max-w-lg leading-relaxed mb-10 text-white/50">
           Mining • Stone Crushing • Petroleum • Tyres • Agro Processing<br />
-          Established 2014 — Jharkhand, India
+          Established 2013 — Jharkhand, India
         </p>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">

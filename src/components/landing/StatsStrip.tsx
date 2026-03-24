@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
 import { Shield, Truck, Users, Building2 } from 'lucide-react';
 
 const stats = [
   { icon: Building2, label: 'Diversified Verticals', value: 'Multi-Sector' },
   { icon: Truck, label: 'Fleet Strength', value: 'Ample Fleet' },
   { icon: Users, label: 'Workforce', value: 'Large Team' },
-  { icon: Shield, label: 'Operations', value: 'Since 2014' },
+  { icon: Shield, label: 'Operations', value: 'Since 2013' },
 ];
 
 const StatsStrip = () => (

@@ -1,4 +1,4 @@
-import { Phone } from 'lucide-react';
+import { Phone, Mail } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -14,15 +14,8 @@ const CTABanner = () => {
 
     const ctx = gsap.context(() => {
       gsap.from('.cta-content', {
-        opacity: 0,
-        y: 50,
-        duration: 0.7,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top 80%',
-          toggleActions: 'play none none none',
-        },
+        opacity: 0, y: 50, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: section, start: 'top 80%', toggleActions: 'play none none none' },
       });
     }, section);
 
@@ -44,11 +37,18 @@ const CTABanner = () => {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="tel:9386469006"
+            href="tel:9006767633"
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-bold text-sm transition-transform hover:scale-105 bg-white text-orange-600"
           >
             <Phone className="h-4 w-4" />
-            Call Now — 9386469006
+            Call Director — 9006767633
+          </a>
+          <a
+            href="mailto:trishavkumar992@gmail.com"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-bold text-sm border-2 border-white/50 text-white transition-transform hover:scale-105"
+          >
+            <Mail className="h-4 w-4" />
+            Email Proprietor
           </a>
           <a
             href="https://wa.me/916203229118"

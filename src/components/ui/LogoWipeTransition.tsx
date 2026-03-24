@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/tibrewal-logo.png';
 
 interface LogoWipeTransitionProps {
   show: boolean;
@@ -17,9 +17,6 @@ const LogoWipeTransition = ({ show, onComplete }: LogoWipeTransitionProps) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, delay: 0.5 }}
-          onAnimationComplete={(def: any) => {
-            // Only call onComplete when exit finishes
-          }}
         >
           {/* Wipe curtain from center */}
           <motion.div
@@ -31,29 +28,50 @@ const LogoWipeTransition = ({ show, onComplete }: LogoWipeTransitionProps) => {
             transition={{ duration: 0.35, ease: [0.33, 1, 0.68, 1] }}
           />
 
-          {/* Logo */}
+          {/* Logo with text-first then arc animation */}
           <motion.div
-            className="relative z-10 flex flex-col items-center gap-3"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            className="relative z-10 flex flex-col items-center gap-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ duration: 0.25, delay: 0.1 }}
             onAnimationComplete={() => {
               if (show) {
-                setTimeout(onComplete, 400);
+                setTimeout(onComplete, 500);
               }
             }}
           >
-            <img src={companyLogo} alt="T&T" className="h-16 w-16 object-contain rounded-xl" loading="eager" />
-            <motion.div
+            {/* Text appears first */}
+            <motion.p
+              className="text-2xl font-extrabold tracking-[0.15em] uppercase"
+              style={{ color: 'hsl(210, 15%, 90%)' }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.35, ease: [0.33, 1, 0.68, 1] }}
+            >
+              TIBREWAL
+            </motion.p>
+
+            {/* Logo arc/design slides in from above */}
+            <motion.img
+              src={companyLogo}
+              alt="Tibrewal Group"
+              className="h-16 w-auto object-contain"
+              loading="eager"
+              initial={{ opacity: 0, y: -30, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.4, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            />
+
+            <motion.p
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.2 }}
-              className="text-center"
+              transition={{ delay: 0.55, duration: 0.2 }}
+              className="text-[10px] font-medium"
+              style={{ color: 'hsl(210, 15%, 50%)' }}
             >
-              <p className="text-sm font-bold" style={{ color: 'hsl(210, 15%, 90%)' }}>Tibrewal Group</p>
-              <p className="text-[10px] font-medium" style={{ color: 'hsl(210, 15%, 50%)' }}>Industrial Business Group</p>
-            </motion.div>
+              Industrial Business Group
+            </motion.p>
           </motion.div>
         </motion.div>
       )}
