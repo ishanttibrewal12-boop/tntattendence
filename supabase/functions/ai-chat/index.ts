@@ -212,6 +212,32 @@ ${activityLogs.slice(0, 10).map((l: any) => `- ${l.user_name} ${l.action} on ${l
 `;
 }
 
+// Helper to verify the caller is an authenticated app user
+async function verifyAppUser(req: Request): Promise<{ authenticated: boolean; username?: string }> {
+  const authHeader = req.headers.get('x-app-user');
+  if (!authHeader) return { authenticated: false };
+  
+  try {
+    const parsed = JSON.parse(authHeader);
+    if (parsed?.username && parsed?.id) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data } = await supabase
+        .from('app_users')
+        .select('id, username')
+        .eq('id', parsed.id)
+        .eq('username', parsed.username)
+        .eq('is_active', true)
+        .single();
+      
+      if (data) return { authenticated: true, username: data.username };
+    }
+  } catch {}
+  return { authenticated: false };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -223,6 +249,17 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // If requesting internal data, verify authentication
+    if (includeData !== false) {
+      const auth = await verifyAppUser(req);
+      if (!auth.authenticated) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required for internal data access' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Save user message to database
     const lastMsg = messages[messages.length - 1];

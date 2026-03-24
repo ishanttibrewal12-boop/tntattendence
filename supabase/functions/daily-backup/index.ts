@@ -14,6 +14,37 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+    // Verify authenticated app user
+    const authHeader = req.headers.get('x-app-user')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    try {
+      const parsed = JSON.parse(authHeader)
+      const supabaseAuth = createClient(supabaseUrl, serviceRoleKey)
+      const { data } = await supabaseAuth
+        .from('app_users')
+        .select('id, role')
+        .eq('id', parsed.id)
+        .eq('username', parsed.username)
+        .eq('is_active', true)
+        .single()
+      if (!data || data.role !== 'manager') {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Manager access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     const tables = [
