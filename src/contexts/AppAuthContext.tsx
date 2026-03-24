@@ -169,6 +169,25 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      // Rate limiting check
+      const attemptKey = `login_attempts_${username}`;
+      const lockoutKey = `login_lockout_${username}`;
+      const MAX_ATTEMPTS = 5;
+      const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
+      const lockoutUntil = sessionStorage.getItem(lockoutKey);
+      if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+        const remaining = Math.ceil((parseInt(lockoutUntil) - Date.now()) / 60000);
+        return { success: false, error: `Account locked. Try again in ${remaining} minutes.` };
+      }
+
+      const attempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
+      if (attempts >= MAX_ATTEMPTS) {
+        sessionStorage.setItem(lockoutKey, (Date.now() + LOCKOUT_DURATION).toString());
+        sessionStorage.removeItem(attemptKey);
+        return { success: false, error: 'Too many failed attempts. Account locked for 15 minutes.' };
+      }
+
       const { data, error } = await supabase
         .from('app_users')
         .select('*')
@@ -177,12 +196,18 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
         .single();
 
       if (error || !data) {
-        return { success: false, error: 'Invalid username or password' };
+        sessionStorage.setItem(attemptKey, (attempts + 1).toString());
+        return { success: false, error: `Invalid username or password. ${MAX_ATTEMPTS - attempts - 1} attempts remaining.` };
       }
 
       if (data.password_hash !== password) {
-        return { success: false, error: 'Invalid username or password' };
+        sessionStorage.setItem(attemptKey, (attempts + 1).toString());
+        return { success: false, error: `Invalid username or password. ${MAX_ATTEMPTS - attempts - 1} attempts remaining.` };
       }
+
+      // Success - clear attempts
+      sessionStorage.removeItem(attemptKey);
+      sessionStorage.removeItem(lockoutKey);
 
       const appUser: AppUser = {
         id: data.id,
