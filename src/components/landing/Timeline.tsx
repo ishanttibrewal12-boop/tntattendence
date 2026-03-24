@@ -5,9 +5,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const milestones = [
-  { year: '2021', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'A Private Limited Company established for transport & logistics — handling freight transport by road under the directorship of Trishav Tibrewal.' },
   { year: '2013', title: 'Bharat Petroleum Fuel Station', desc: 'Foundation of the group with petroleum distribution — the first step into industrial operations.' },
   { year: '2014', title: 'Tibrewal Tyres', desc: 'Commercial tyre trading and distribution launched, serving transporters and fleet operators across Jharkhand.' },
+  { year: '2021', title: 'Tibrewal & Tibrewal Pvt. Ltd.', desc: 'A Private Limited Company established for transport & logistics — handling freight transport by road under the directorship of Trishav Tibrewal.' },
   { year: '2022', title: 'Tibrewal Mines & Minerals Pvt. Ltd.', desc: 'Mining & mineral extraction operations launched, marking entry into large-scale industrial operations.' },
   { year: '2022', title: 'Tibrewal Agro Food Processing', desc: 'Agricultural processing and value addition venture launched to bridge farm-to-market supply chain.' },
   { year: '2025', title: 'Tibrewal Ventures', desc: 'Strategic investments and new business expansion arm, driving growth into high-potential sectors.' },
