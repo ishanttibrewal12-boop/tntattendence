@@ -22,12 +22,12 @@ const testimonials = [
     company: 'Navayuga Engineering',
   },
   {
-    quote: 'From petroleum supply to mineral resources — Tibrewal Group delivers with consistency that few can match in the region.',
+    quote: 'From petroleum supply to mineral resources, Tibrewal Group delivers with consistency that few can match in the region.',
     author: 'Supply Chain Lead',
     company: 'Megha Engineering (MEIL)',
   },
   {
-    quote: 'A dependable name in Jharkhand's industrial ecosystem. Their multi-vertical expertise makes them a one-stop partner for us.',
+    quote: "A dependable name in Jharkhand's industrial ecosystem. Their multi-vertical expertise makes them a one-stop partner for us.",
     author: 'Regional Manager',
     company: 'Montecarlo',
   },
