@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import { useEffect, useRef, useCallback } from 'react';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
 import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star } from 'lucide-react';
