@@ -108,8 +108,8 @@ const TrustedBySection = () => {
           </div>
         </div>
 
-        {/* Infinite Marquee */}
-        <div ref={marqueeRef} className="relative w-full overflow-hidden py-8 mb-20 md:mb-28 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
+        {/* Infinite Marquee Row 1 */}
+        <div ref={marqueeRef} className="relative w-full overflow-hidden py-6 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
           <div className="marquee-track flex items-center gap-12 w-max">
             {clients.map((client, i) => (
               <div
@@ -125,7 +125,30 @@ const TrustedBySection = () => {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-500" loading="lazy" />
+                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain transition-all duration-500" loading="lazy" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Infinite Marquee Row 2 (Reverse) */}
+        <div ref={marqueeReverseRef} className="relative w-full overflow-hidden py-6 mb-20 md:mb-28 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
+          <div className="marquee-track-reverse flex items-center gap-12 w-max">
+            {[...clients].reverse().map((client, i) => (
+              <div
+                key={i}
+                className="group flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-500"
+                style={{ background: '#fafafa', borderColor: '#e5e7eb', width: '220px', height: '120px' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#f97316';
+                  e.currentTarget.style.boxShadow = '0 8px 40px -8px rgba(249,115,22,0.18)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain transition-all duration-500" loading="lazy" />
               </div>
             ))}
           </div>
