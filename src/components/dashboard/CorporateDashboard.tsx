@@ -469,7 +469,7 @@ const FounderPage = () => (
                 </h3>
 
                 <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-4">
-                  The visionary founder of Tibrewal Group who laid the foundation of the group's diversified industrial operations. Starting with a Bharat Petroleum fuel station in 2014, his strategic vision has been instrumental in building the group from a single business into a multi-vertical industrial conglomerate.
+                  The visionary founder of Tibrewal Group who laid the foundation of the group's diversified industrial operations. Starting with a Bharat Petroleum fuel station in 2013, his strategic vision has been instrumental in building the group from a single business into a multi-vertical industrial conglomerate.
                 </p>
 
                 <p className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-6">
