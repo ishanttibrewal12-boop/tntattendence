@@ -19,6 +19,7 @@ import LeadershipShowcase from '@/components/landing/LeadershipShowcase';
 import PoliciesSection from '@/components/landing/PoliciesSection';
 import PhotoGallery from '@/components/landing/PhotoGallery';
 import CTABanner from '@/components/landing/CTABanner';
+import TrustedBySection from '@/components/landing/TrustedBySection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
 import AIChatBot from '@/components/AIChatBot';
 
