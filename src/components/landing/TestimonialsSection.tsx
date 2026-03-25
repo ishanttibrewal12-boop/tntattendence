@@ -8,37 +8,31 @@ gsap.registerPlugin(ScrollTrigger);
 const testimonials = [
   {
     quote: 'Tibrewal Group has been a reliable partner for our infrastructure projects. Their consistent supply of quality materials has kept our timelines on track.',
-    author: 'Senior Project Manager',
     company: 'Afcons Infrastructure',
     rating: 5,
   },
   {
     quote: 'We trust Tibrewal for their professionalism and commitment to delivery. Their mining operations meet the highest industry standards.',
-    author: 'Procurement Head',
     company: 'UltraTech Cement',
     rating: 5,
   },
   {
     quote: 'Exceptional service and material quality. Tibrewal Group understands the demands of large-scale engineering projects.',
-    author: 'Operations Director',
     company: 'Navayuga Engineering',
     rating: 5,
   },
   {
     quote: 'From petroleum supply to mineral resources, Tibrewal Group delivers with consistency that few can match in the region.',
-    author: 'Supply Chain Lead',
     company: 'Megha Engineering (MEIL)',
     rating: 5,
   },
   {
     quote: "A dependable name in Jharkhand's industrial ecosystem. Their multi-vertical expertise makes them a one-stop partner for us.",
-    author: 'Regional Manager',
     company: 'Montecarlo',
     rating: 5,
   },
   {
     quote: "Tibrewal Group's commitment to quality and timely delivery has made them an indispensable partner in our construction projects across the region.",
-    author: 'Project Director',
     company: 'S.P. Singla Constructions',
     rating: 5,
   },
@@ -140,15 +134,12 @@ const TestimonialsSection = () => {
                 "{t.quote}"
               </p>
 
-              {/* Author */}
+              {/* Company */}
               <div className="mt-auto flex items-center gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 group-hover:scale-110" style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.2), rgba(249,115,22,0.08))', color: '#f97316', border: '1px solid rgba(249,115,22,0.15)' }}>
                   {t.company.charAt(0)}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white/80">{t.author}</p>
-                  <p className="text-xs text-orange-400/60 font-medium">{t.company}</p>
-                </div>
+                <p className="text-sm font-semibold text-orange-400/80">{t.company}</p>
               </div>
             </div>
           ))}
