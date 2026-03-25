@@ -761,7 +761,7 @@ interface CorporateDashboardProps {
 const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection }: CorporateDashboardProps) => {
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8 space-y-16 lg:space-y-24">
-      <HeroPage />
+      <HeroPage isManager={isManager} onNavigateDepartment={onNavigateDepartment} onNavigateSection={onNavigateSection} />
       <TimelinePage />
       {companies.map((company, i) => (
         <CompanyPage key={i} company={company} index={i} />
