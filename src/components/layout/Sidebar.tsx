@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
-  Building2,
   LayoutDashboard,
   Users,
   Calendar,
@@ -11,6 +10,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import companyLogo from '@/assets/tibrewal-logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
@@ -32,7 +32,7 @@ const Sidebar = () => {
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-50 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
+            <img src={companyLogo} alt="Tibrewal Group" className="h-7 w-7 object-contain" />
             <span className="font-bold text-foreground">Tibrewal Group</span>
           </div>
           <Button
@@ -65,7 +65,7 @@ const Sidebar = () => {
           {/* Logo */}
           <div className="p-6 border-b border-border">
             <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-primary" />
+              <img src={companyLogo} alt="Tibrewal Group" className="h-9 w-9 object-contain" />
               <div>
                 <h1 className="font-bold text-foreground">Tibrewal Group</h1>
                 <p className="text-xs text-muted-foreground">Industrial Business Group</p>

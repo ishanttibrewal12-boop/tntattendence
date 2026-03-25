@@ -3,7 +3,7 @@ import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settin
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
-import companyLogo from '@/assets/company-logo.png';
+import companyLogo from '@/assets/tibrewal-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import AIChatBot from '@/components/AIChatBot';
