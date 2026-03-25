@@ -167,7 +167,15 @@ const GlowOrbs = ({ accent = 'hsla(28,88%,52%,0.15)', secondary = 'hsla(210,60%,
 );
 
 // --- 1. HERO PAGE ---
-const HeroPage = () => (
+const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager }: { onNavigateDepartment?: (dept: string) => void; onNavigateSection?: (section: string) => void; isManager?: boolean }) => {
+  const quickLinks = [
+    { label: 'Crusher', dept: 'crusher', icon: Pickaxe, color: 'hsla(28,88%,52%,0.15)' },
+    { label: 'Petroleum', dept: 'petroleum', icon: Fuel, color: 'hsla(45,80%,50%,0.15)' },
+    { label: 'MLT', dept: 'mlt', icon: Truck, color: 'hsla(200,60%,45%,0.15)' },
+    { label: 'Tyres & Office', dept: 'tyres-office', icon: Car, color: 'hsla(0,60%,50%,0.12)' },
+  ];
+
+  return (
   <RevealSection>
     <div className="min-h-[85vh] flex flex-col justify-center">
       <motion.div
@@ -230,7 +238,7 @@ const HeroPage = () => (
 
           {/* Stats with icons */}
           <motion.div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.6 }}
@@ -254,11 +262,46 @@ const HeroPage = () => (
               );
             })}
           </motion.div>
+
+          {/* Quick Access Department Grid */}
+          {isManager && onNavigateDepartment && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1, duration: 0.5 }}
+            >
+              <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3">Quick Access</p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {quickLinks.map((link, i) => {
+                  const Icon = link.icon;
+                  return (
+                    <motion.button
+                      key={link.dept}
+                      onClick={() => onNavigateDepartment(link.dept)}
+                      className="flex items-center gap-3 p-3.5 rounded-xl border border-primary-foreground/8 text-left transition-all"
+                      style={{ background: link.color }}
+                      whileHover={{ scale: 1.03, borderColor: 'hsla(28,88%,52%,0.3)' }}
+                      whileTap={{ scale: 0.97 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.2 + i * 0.06, duration: 0.3 }}
+                    >
+                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                        <Icon className="h-4 w-4 text-primary-foreground/70" />
+                      </div>
+                      <span className="text-xs font-semibold text-primary-foreground/70">{link.label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>
   </RevealSection>
-);
+  );
+};
 
 // --- 2. TIMELINE ---
 const TimelinePage = () => (
