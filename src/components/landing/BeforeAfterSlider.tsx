@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import crusherImg from '@/assets/gallery-crusher-new-7.jpeg';
-import truckImg from '@/assets/gallery-truck-new-3.jpeg';
+import beforeImg from '@/assets/before-raw-stone.jpeg';
+import afterImg from '@/assets/after-crushed-stone.jpeg';
 
 gsap.registerPlugin(ScrollTrigger);
 
