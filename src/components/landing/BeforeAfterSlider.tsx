@@ -92,7 +92,7 @@ const BeforeAfterSlider = () => {
             style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
           >
             <img
-              src={crusherImg}
+              src={beforeImg}
               alt="Before - Raw terrain"
               className="absolute inset-0 w-full h-full object-cover"
             />
