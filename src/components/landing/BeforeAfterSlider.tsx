@@ -81,7 +81,7 @@ const BeforeAfterSlider = () => {
         >
           {/* After image (full) */}
           <img
-            src={truckImg}
+            src={afterImg}
             alt="After - Developed operations"
             className="absolute inset-0 w-full h-full object-cover"
           />
