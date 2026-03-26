@@ -99,7 +99,7 @@ const TrustedBySection = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden" style={{ background: '#ffffff' }}>
+    <section ref={sectionRef} className="relative overflow-hidden" style={{ background: '#0f1420' }}>
       <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c, #f97316)' }} />
 
       <div className="py-24 md:py-36">
@@ -109,11 +109,11 @@ const TrustedBySection = () => {
             <p className="trusted-sub text-xs font-bold tracking-[0.3em] uppercase mb-4" style={{ color: '#f97316' }}>
               Our Esteemed Clients
             </p>
-            <h2 className="trusted-heading text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight" style={{ color: '#0B1F33' }}>
+            <h2 className="trusted-heading text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight" style={{ color: '#f2f4f7' }}>
               Trusted by Industry Leaders
             </h2>
             <div className="trusted-line w-24 h-1.5 mx-auto mt-6 rounded-full origin-left" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c)' }} />
-            <p className="trusted-sub mt-6 text-base md:text-lg max-w-2xl mx-auto" style={{ color: '#4b5563' }}>
+            <p className="trusted-sub mt-6 text-base md:text-lg max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
               We are proud to have served and supplied premium materials &amp; services to some of India's most respected infrastructure and engineering companies.
             </p>
           </div>
@@ -126,13 +126,13 @@ const TrustedBySection = () => {
               <div
                 key={i}
                 className="group flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-500"
-                style={{ background: '#fafafa', borderColor: '#e5e7eb', width: '220px', height: '120px' }}
+                style={{ background: '#ffffff', borderColor: 'rgba(255,255,255,0.1)', width: '220px', height: '120px' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#f97316';
                   e.currentTarget.style.boxShadow = '0 8px 40px -8px rgba(249,115,22,0.18)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
@@ -149,13 +149,13 @@ const TrustedBySection = () => {
               <div
                 key={i}
                 className="group flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-500"
-                style={{ background: '#fafafa', borderColor: '#e5e7eb', width: '220px', height: '120px' }}
+                style={{ background: '#ffffff', borderColor: 'rgba(255,255,255,0.1)', width: '220px', height: '120px' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#f97316';
                   e.currentTarget.style.boxShadow = '0 8px 40px -8px rgba(249,115,22,0.18)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
@@ -168,9 +168,9 @@ const TrustedBySection = () => {
         <div className="max-w-6xl mx-auto px-4">
           {/* Divider */}
           <div className="flex items-center gap-4 mb-16 md:mb-20 max-w-3xl mx-auto">
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, #d1d5db)' }} />
-            <span className="text-xs font-bold tracking-[0.25em] uppercase" style={{ color: '#9ca3af' }}>Companies We've Served</span>
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, #d1d5db, transparent)' }} />
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15))' }} />
+            <span className="text-xs font-bold tracking-[0.25em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>Companies We've Served</span>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.15), transparent)' }} />
           </div>
 
           {/* Company Name Pills */}
@@ -179,9 +179,9 @@ const TrustedBySection = () => {
               <span
                 key={i}
                 className="client-name-pill inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm md:text-base font-semibold transition-all duration-300 cursor-default border"
-                style={{ background: '#f8fafc', color: '#1e293b', borderColor: '#e2e8f0' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#0B1F33'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderColor = '#0B1F33'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'scale(1)'; }}
+                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.1)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#f97316'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <span className="w-2 h-2 rounded-full" style={{ background: '#f97316' }} />
                 {c.name}
