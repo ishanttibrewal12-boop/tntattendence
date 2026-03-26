@@ -7,8 +7,8 @@ gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
   { icon: Building2, label: 'Diversified Verticals', value: 6, suffix: '+', prefix: '', useCounter: true },
-  { icon: Truck, label: 'Ample Fleet', value: 0, suffix: '', prefix: '', useCounter: false, text: 'Ample' },
-  { icon: Users, label: 'Large Team', value: 0, suffix: '', prefix: '', useCounter: false, text: 'Ample' },
+  { icon: Truck, label: 'Fleet Strength', value: 0, suffix: '', prefix: '', useCounter: false, text: 'Ample' },
+  { icon: Users, label: 'Team Strength', value: 0, suffix: '', prefix: '', useCounter: false, text: 'Ample' },
   { icon: Shield, label: 'Years of Operations', value: 13, suffix: '+', prefix: '', useCounter: true },
 ];
 
