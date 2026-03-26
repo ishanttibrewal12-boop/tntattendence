@@ -81,10 +81,12 @@ const LandingContent = () => {
         </DropdownMenu>
       </div>
 
+      <StickyNav />
       <HeroSection />
       <ImageGallery />
       <div id="about"><WhyChooseUs /></div>
-      <StatsStrip />
+      <AnimatedStats />
+      <BeforeAfterSlider />
       <CompanySection />
       <Timeline />
       <div id="companies"><CompanyShowcase /></div>
