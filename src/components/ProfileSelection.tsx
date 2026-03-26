@@ -9,9 +9,11 @@ import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LandingThemeProvider, useLandingTheme } from '@/components/landing/LandingThemeContext';
 import HeroSection from '@/components/landing/HeroSection';
+import StickyNav from '@/components/landing/StickyNav';
 import ImageGallery from '@/components/landing/ImageGallery';
 import WhyChooseUs from '@/components/landing/WhyChooseUs';
-import StatsStrip from '@/components/landing/StatsStrip';
+import AnimatedStats from '@/components/landing/AnimatedStats';
+import BeforeAfterSlider from '@/components/landing/BeforeAfterSlider';
 import CompanySection from '@/components/landing/CompanySection';
 import Timeline from '@/components/landing/Timeline';
 import CompanyShowcase from '@/components/landing/CompanyShowcase';
@@ -79,10 +81,12 @@ const LandingContent = () => {
         </DropdownMenu>
       </div>
 
+      <StickyNav />
       <HeroSection />
       <ImageGallery />
       <div id="about"><WhyChooseUs /></div>
-      <StatsStrip />
+      <AnimatedStats />
+      <BeforeAfterSlider />
       <CompanySection />
       <Timeline />
       <div id="companies"><CompanyShowcase /></div>
