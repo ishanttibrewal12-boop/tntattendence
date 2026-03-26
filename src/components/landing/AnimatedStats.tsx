@@ -6,10 +6,10 @@ import { Shield, Truck, Users, Building2 } from 'lucide-react';
 gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
-  { icon: Building2, label: 'Diversified Verticals', value: 6, suffix: '+', prefix: '' },
-  { icon: Truck, label: 'Fleet Strength', value: 100, suffix: '+', prefix: '' },
-  { icon: Users, label: 'Workforce', value: 500, suffix: '+', prefix: '' },
-  { icon: Shield, label: 'Years of Operations', value: 13, suffix: '+', prefix: '' },
+  { icon: Building2, label: 'Diversified Verticals', value: 6, suffix: '+', prefix: '', useCounter: true },
+  { icon: Truck, label: 'Fleet Strength', value: 0, suffix: '', prefix: '', useCounter: false, text: 'Ample' },
+  { icon: Users, label: 'Workforce', value: 0, suffix: '', prefix: '', useCounter: false, text: 'Ample' },
+  { icon: Shield, label: 'Years of Operations', value: 13, suffix: '+', prefix: '', useCounter: true },
 ];
 
 const CountUp = ({ target, suffix, prefix }: { target: number; suffix: string; prefix: string }) => {
