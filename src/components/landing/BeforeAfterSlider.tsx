@@ -122,10 +122,10 @@ const BeforeAfterSlider = () => {
 
           {/* Labels */}
           <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)' }}>
-            Raw Material
+            Raw Stone
           </div>
           <div className="absolute top-4 right-4 z-10 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)' }}>
-            Operations
+            Crushed Aggregates
           </div>
         </div>
       </div>
