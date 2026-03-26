@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'Tibrewal & Tibrewal Pvt. Ltd.',
+        name: 'Tibrewal Group',
         short_name: 'Tibrewal',
         description: 'Industrial Business Management App',
         theme_color: '#1a1a2e',
