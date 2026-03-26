@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import crusherImg from '@/assets/gallery-crusher-new-7.jpeg';
-import truckImg from '@/assets/gallery-truck-new-3.jpeg';
+import beforeImg from '@/assets/before-raw-stone.jpeg';
+import afterImg from '@/assets/after-crushed-stone.jpeg';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -81,7 +81,7 @@ const BeforeAfterSlider = () => {
         >
           {/* After image (full) */}
           <img
-            src={truckImg}
+            src={afterImg}
             alt="After - Developed operations"
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -92,7 +92,7 @@ const BeforeAfterSlider = () => {
             style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
           >
             <img
-              src={crusherImg}
+              src={beforeImg}
               alt="Before - Raw terrain"
               className="absolute inset-0 w-full h-full object-cover"
             />
