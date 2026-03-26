@@ -97,7 +97,11 @@ const AnimatedStats = () => {
                 <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors duration-300" style={{ background: 'rgba(249,115,22,0.1)' }}>
                   <Icon className="h-7 w-7" style={{ color: '#f97316' }} />
                 </div>
-                <CountUp target={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
+                {stat.useCounter ? (
+                  <CountUp target={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
+                ) : (
+                  <span className="text-3xl md:text-4xl font-extrabold text-white">{stat.text}</span>
+                )}
                 <p className="text-xs mt-2 uppercase tracking-widest font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>{stat.label}</p>
               </div>
             );
