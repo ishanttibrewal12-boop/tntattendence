@@ -5,7 +5,11 @@ import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
-import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel } from 'lucide-react';
+import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity } from 'lucide-react';
+import LiveKPICards from './LiveKPICards';
+import GreetingBanner from './GreetingBanner';
+import ActivityFeed from './ActivityFeed';
+import { useAuth } from '@/contexts/AuthContext';
 
 // --- Data ---
 const timelineData = [
