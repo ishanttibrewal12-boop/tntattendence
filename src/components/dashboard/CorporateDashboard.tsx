@@ -5,7 +5,11 @@ import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
-import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel } from 'lucide-react';
+import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity } from 'lucide-react';
+import LiveKPICards from './LiveKPICards';
+import GreetingBanner from './GreetingBanner';
+import ActivityFeed from './ActivityFeed';
+import { useAuth } from '@/contexts/AuthContext';
 
 // --- Data ---
 const timelineData = [
@@ -167,7 +171,7 @@ const GlowOrbs = ({ accent = 'hsla(28,88%,52%,0.15)', secondary = 'hsla(210,60%,
 );
 
 // --- 1. HERO PAGE ---
-const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager }: { onNavigateDepartment?: (dept: string) => void; onNavigateSection?: (section: string) => void; isManager?: boolean }) => {
+const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminName }: { onNavigateDepartment?: (dept: string) => void; onNavigateSection?: (section: string) => void; isManager?: boolean; adminName?: string }) => {
   const quickLinks = [
     { label: 'Crusher', dept: 'crusher', icon: Pickaxe, color: 'hsla(28,88%,52%,0.15)' },
     { label: 'Petroleum', dept: 'petroleum', icon: Fuel, color: 'hsla(45,80%,50%,0.15)' },
@@ -198,6 +202,9 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager }: { onNa
         </div>
 
         <div className="relative z-10">
+          {/* Greeting Banner */}
+          <GreetingBanner userName={adminName} />
+
           <motion.div
             className="flex items-center gap-5 lg:gap-6 mb-8"
             initial={{ opacity: 0, y: 20 }}
@@ -236,7 +243,22 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager }: { onNa
             From mining and minerals to petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2013.
           </motion.p>
 
-          {/* Stats with icons */}
+          {/* Live KPI Cards */}
+          {isManager && (
+            <motion.div
+              className="mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.85, duration: 0.6 }}
+            >
+              <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                <Activity className="h-3 w-3" /> Live Operations
+              </p>
+              <LiveKPICards />
+            </motion.div>
+          )}
+
+          {/* Group Strength Stats */}
           <motion.div
             className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-10"
             initial={{ opacity: 0, y: 20 }}
@@ -294,6 +316,21 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager }: { onNa
                   );
                 })}
               </div>
+            </motion.div>
+          )}
+
+          {/* Recent Activity Feed */}
+          {isManager && (
+            <motion.div
+              className="mt-8"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3, duration: 0.5 }}
+            >
+              <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                <Activity className="h-3 w-3" /> Recent Activity
+              </p>
+              <ActivityFeed />
             </motion.div>
           )}
         </div>
@@ -759,9 +796,11 @@ interface CorporateDashboardProps {
 }
 
 const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection }: CorporateDashboardProps) => {
+  const { admin } = useAuth();
+  const adminName = admin?.full_name || 'Admin';
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8 space-y-16 lg:space-y-24">
-      <HeroPage isManager={isManager} onNavigateDepartment={onNavigateDepartment} onNavigateSection={onNavigateSection} />
+      <HeroPage isManager={isManager} onNavigateDepartment={onNavigateDepartment} onNavigateSection={onNavigateSection} adminName={adminName} />
       <TimelinePage />
       {companies.map((company, i) => (
         <CompanyPage key={i} company={company} index={i} />
