@@ -13,6 +13,7 @@ import {
 import companyLogo from '@/assets/tibrewal-logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,6 +35,16 @@ const Sidebar = () => {
           <div className="flex items-center gap-2">
             <img src={companyLogo} alt="Tibrewal Group" className="h-7 w-7 object-contain" />
             <span className="font-bold text-foreground">Tibrewal Group</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+            >
+              {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
           <Button
             variant="ghost"
@@ -64,12 +75,15 @@ const Sidebar = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-border">
-            <div className="flex items-center gap-3">
-              <img src={companyLogo} alt="Tibrewal Group" className="h-9 w-9 object-contain" />
-              <div>
-                <h1 className="font-bold text-foreground">Tibrewal Group</h1>
-                <p className="text-xs text-muted-foreground">Industrial Business Group</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src={companyLogo} alt="Tibrewal Group" className="h-9 w-9 object-contain" />
+                <div>
+                  <h1 className="font-bold text-foreground">Tibrewal Group</h1>
+                  <p className="text-xs text-muted-foreground">Industrial Business Group</p>
+                </div>
               </div>
+              <NotificationBell />
             </div>
           </div>
 
