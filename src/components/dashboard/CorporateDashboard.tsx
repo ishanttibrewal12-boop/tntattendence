@@ -171,7 +171,7 @@ const GlowOrbs = ({ accent = 'hsla(28,88%,52%,0.15)', secondary = 'hsla(210,60%,
 );
 
 // --- 1. HERO PAGE ---
-const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager }: { onNavigateDepartment?: (dept: string) => void; onNavigateSection?: (section: string) => void; isManager?: boolean }) => {
+const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminName }: { onNavigateDepartment?: (dept: string) => void; onNavigateSection?: (section: string) => void; isManager?: boolean; adminName?: string }) => {
   const quickLinks = [
     { label: 'Crusher', dept: 'crusher', icon: Pickaxe, color: 'hsla(28,88%,52%,0.15)' },
     { label: 'Petroleum', dept: 'petroleum', icon: Fuel, color: 'hsla(45,80%,50%,0.15)' },
@@ -796,9 +796,11 @@ interface CorporateDashboardProps {
 }
 
 const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection }: CorporateDashboardProps) => {
+  const { admin } = useAuth();
+  const adminName = admin?.full_name || 'Admin';
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8 space-y-16 lg:space-y-24">
-      <HeroPage isManager={isManager} onNavigateDepartment={onNavigateDepartment} onNavigateSection={onNavigateSection} />
+      <HeroPage isManager={isManager} onNavigateDepartment={onNavigateDepartment} onNavigateSection={onNavigateSection} adminName={adminName} />
       <TimelinePage />
       {companies.map((company, i) => (
         <CompanyPage key={i} company={company} index={i} />
