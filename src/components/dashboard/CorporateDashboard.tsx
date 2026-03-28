@@ -10,7 +10,7 @@ import LiveKPICards from './LiveKPICards';
 import GreetingBanner from './GreetingBanner';
 import ActivityFeed from './ActivityFeed';
 import WeatherWidget from './WeatherWidget';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAppAuth } from '@/contexts/AppAuthContext';
 
 // --- Data ---
 const timelineData = [
@@ -805,8 +805,8 @@ interface CorporateDashboardProps {
 }
 
 const CorporateDashboard = ({ isManager, onNavigateDepartment, onNavigateSection }: CorporateDashboardProps) => {
-  const { admin } = useAuth();
-  const adminName = admin?.full_name || 'Admin';
+  const { user } = useAppAuth();
+  const adminName = user?.full_name || 'Admin';
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto pb-24 lg:pb-8 space-y-16 lg:space-y-24">
       <HeroPage isManager={isManager} onNavigateDepartment={onNavigateDepartment} onNavigateSection={onNavigateSection} adminName={adminName} />

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAppAuth } from '@/contexts/AppAuthContext';
 import Sidebar from './Sidebar';
 import AIChatBot from '@/components/AIChatBot';
 import IdleWarningDialog from '@/components/IdleWarningDialog';
@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAppAuth();
 
   if (isLoading) {
     return (
