@@ -30,6 +30,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { IndianRupee, Calculator, Pencil, User, Check } from 'lucide-react';
+import SectionBreadcrumb from '@/components/layout/SectionBreadcrumb';
+import { TableSkeleton } from '@/components/sections/SectionWrapper';
 
 interface Staff {
   id: string;
@@ -293,6 +295,7 @@ const Payroll = () => {
 
   return (
     <div className="space-y-6">
+      <SectionBreadcrumb />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -395,7 +398,7 @@ const Payroll = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <TableSkeleton rows={6} />
           ) : payrollRecords.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No payroll records. Click "Generate Payroll" to create records based on attendance.
