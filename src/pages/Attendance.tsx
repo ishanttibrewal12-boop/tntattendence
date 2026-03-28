@@ -22,6 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import SectionBreadcrumb from '@/components/layout/SectionBreadcrumb';
+import { TableSkeleton } from '@/components/sections/SectionWrapper';
 
 interface Staff {
   id: string;
@@ -191,6 +193,7 @@ const Attendance = () => {
 
   return (
     <div className="space-y-6">
+      <SectionBreadcrumb />
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Attendance</h1>
@@ -289,7 +292,7 @@ const Attendance = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <TableSkeleton rows={6} />
           ) : filteredStaff.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No staff found. Add staff members first!
