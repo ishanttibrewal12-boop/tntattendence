@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAppAuth } from '@/contexts/AppAuthContext';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -24,7 +24,7 @@ const navItems = [
 
 const Sidebar = () => {
   const location = useLocation();
-  const { admin, logout } = useAuth();
+  const { user, logout } = useAppAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
@@ -107,7 +107,7 @@ const Sidebar = () => {
           {/* User Info & Logout */}
           <div className="p-4 border-t border-border">
             <div className="mb-4 px-4">
-              <p className="text-sm font-medium text-foreground">{admin?.full_name}</p>
+              <p className="text-sm font-medium text-foreground">{user?.full_name}</p>
               <p className="text-xs text-muted-foreground">Administrator</p>
             </div>
             <Button
