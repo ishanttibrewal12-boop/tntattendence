@@ -171,7 +171,10 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
     setDialogOpen(false);
     setConfirmAdd(false);
     resetForm();
-    fetchData();
+    setStaffList([]);
+    setPage(0);
+    setHasMore(true);
+    fetchPage(0, true);
   };
 
   const handleDelete = async () => {
@@ -189,12 +192,11 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
 
     toast.success('Staff removed');
     setDeleteDialog(null);
-    fetchData();
+    setStaffList([]);
+    setPage(0);
+    setHasMore(true);
+    fetchPage(0, true);
   };
-
-  const filteredStaff = staffList.filter((staff) => {
-    return staff.name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto">
