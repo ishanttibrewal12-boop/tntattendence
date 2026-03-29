@@ -29,6 +29,7 @@ const Sidebar = () => {
   const location = useLocation();
   const { user, logout } = useAppAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   return (
     <>
