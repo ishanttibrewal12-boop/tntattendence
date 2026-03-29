@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Phone, MapPin, GraduationCap, Award, Mail } from 'lucide-react';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
-import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
+import founderPhoto from '@/assets/founder-sunil-tibrewal.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
 
