@@ -227,7 +227,7 @@ const ForgotPin = ({ onBack, onSuccess }: ForgotPinProps) => {
           )}
 
           <p className="text-xs text-center text-muted-foreground">
-            Tibrewal Staff Manager
+            Tibrewal Group
           </p>
         </CardContent>
       </Card>

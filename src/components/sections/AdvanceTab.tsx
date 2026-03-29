@@ -292,7 +292,7 @@ const AdvanceTab = ({ category }: AdvanceTabProps) => {
       message += '\n';
     });
 
-    message += '_Tibrewal Staff Manager_';
+    message += '_Tibrewal Group_';
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
