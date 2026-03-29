@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Search, Edit2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowLeft, Plus, Trash2, Search, Edit2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,14 +26,23 @@ interface StaffSectionProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
+const PAGE_SIZE = 50;
+
 const StaffSection = ({ onBack, category }: StaffSectionProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<Staff | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [confirmAdd, setConfirmAdd] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Form state
   const [name, setName] = useState('');
@@ -44,24 +53,61 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
 
   const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) + ' ' : '';
 
+  // Debounce search
   useEffect(() => {
-    fetchData();
-  }, [category]);
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(searchTimerRef.current);
+  }, [searchQuery]);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  // Reset and fetch when search or category changes
+  useEffect(() => {
+    setStaffList([]);
+    setPage(0);
+    setHasMore(true);
+    fetchPage(0, true);
+  }, [category, debouncedSearch]);
+
+  const fetchPage = useCallback(async (pageNum: number, reset = false) => {
+    if (reset) setIsLoading(true);
+    else setIsLoadingMore(true);
+
+    const from = pageNum * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
     let query = supabase
       .from('staff')
-      .select('id, name, category, phone, base_salary, is_active, notes, address')
+      .select('id, name, category, phone, base_salary, is_active, notes, address', { count: 'exact' })
       .eq('is_active', true)
-      .order('name');
-    
-    if (category) query = query.eq('category', category);
+      .order('name')
+      .range(from, to);
 
-    const { data } = await query;
-    if (data) setStaffList(data as Staff[]);
+    if (category) query = query.eq('category', category);
+    if (debouncedSearch) query = query.ilike('name', `%${debouncedSearch}%`);
+
+    const { data, count } = await query;
+    
+    if (data) {
+      setStaffList(prev => reset ? data as Staff[] : [...prev, ...(data as Staff[])]);
+      setTotalCount(count || 0);
+      setHasMore(data.length === PAGE_SIZE);
+    }
+    
     setIsLoading(false);
-  };
+    setIsLoadingMore(false);
+  }, [category, debouncedSearch]);
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || isLoadingMore || !hasMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchPage(nextPage);
+    }
+  }, [page, isLoadingMore, hasMore, fetchPage]);
 
   const resetForm = () => {
     setName('');
