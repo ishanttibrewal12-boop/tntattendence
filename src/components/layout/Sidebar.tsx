@@ -9,11 +9,14 @@ import {
   LogOut,
   Menu,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import { useTheme } from '@/hooks/useTheme';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,6 +29,7 @@ const Sidebar = () => {
   const location = useLocation();
   const { user, logout } = useAppAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   return (
     <>
@@ -104,8 +108,16 @@ const Sidebar = () => {
             })}
           </nav>
 
-          {/* User Info & Logout */}
+          {/* Theme Toggle & User Info */}
           <div className="p-4 border-t border-border">
+            <Button
+              variant="ghost"
+              className="w-full justify-start mb-3 text-muted-foreground hover:text-foreground"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5 mr-3" /> : <Moon className="h-5 w-5 mr-3" />}
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </Button>
             <div className="mb-4 px-4">
               <p className="text-sm font-medium text-foreground">{user?.full_name}</p>
               <p className="text-xs text-muted-foreground">Administrator</p>
