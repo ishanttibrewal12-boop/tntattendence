@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 // Bilingual note to add to all exports - without any names
 export const REPORT_NOTE_ENGLISH = 'Note: If you have any queries, contact 6203229118';
 export const REPORT_NOTE_HINDI = 'नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें';
-export const REPORT_FOOTER = 'Tibrewal Staff Manager';
+export const REPORT_FOOTER = 'Tibrewal Group';
 
 // Excel export helper with bilingual notes
 export const createExcelWithNotes = (
