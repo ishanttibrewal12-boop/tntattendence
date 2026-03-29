@@ -147,7 +147,7 @@ const SalaryTab = ({ category }: SalaryTabProps) => {
       message += `   Advances: -₹${s.totalAdvances.toLocaleString()}\n`;
       message += `   *Payable: ₹${s.payable.toLocaleString()}*\n\n`;
     });
-    message += `💰 *Total Payable: ₹${totalPayable.toLocaleString()}*\n_Tibrewal Staff Manager_`;
+    message += `💰 *Total Payable: ₹${totalPayable.toLocaleString()}*\n_Tibrewal Group_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 

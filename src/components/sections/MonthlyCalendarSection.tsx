@@ -178,7 +178,7 @@ const MonthlyCalendarSection = ({ onBack, category }: MonthlyCalendarSectionProp
     const wb = XLSX.utils.book_new();
     const wsData = [
       [`Monthly Attendance - ${months[selectedMonth - 1]} ${selectedYear}`],
-      ['Tibrewal Staff Manager'],
+      ['Tibrewal Group'],
       [],
       headers,
       ...data,
