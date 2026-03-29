@@ -9,11 +9,14 @@ import {
   LogOut,
   Menu,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import { useTheme } from '@/hooks/useTheme';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
