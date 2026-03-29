@@ -4,7 +4,7 @@ import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
-import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
+import founderPhoto from '@/assets/founder-sunil-tibrewal.jpg';
 import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity, Calendar, Wallet, CreditCard, Zap } from 'lucide-react';
 import LiveKPICards from './LiveKPICards';
 import GreetingBanner from './GreetingBanner';
