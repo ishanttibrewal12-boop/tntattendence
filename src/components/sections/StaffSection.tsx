@@ -205,7 +205,7 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
       {/* Summary */}
       <Card className="mb-4">
         <CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-foreground">{staffList.length}</p>
+          <p className="text-2xl font-bold text-foreground">{totalCount}</p>
           <p className="text-xs text-muted-foreground">Total {categoryTitle}Staff</p>
         </CardContent>
       </Card>
@@ -304,14 +304,18 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
             </Card>
           ))}
         </div>
-      ) : filteredStaff.length === 0 ? (
+      ) : staffList.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-sm font-medium">No staff found</p>
           <p className="text-xs mt-1">Try adjusting your search or add new staff</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {filteredStaff.map((staff) => (
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="space-y-2 max-h-[60vh] overflow-y-auto pr-1"
+        >
+          {staffList.map((staff) => (
             <Card key={staff.id}>
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
@@ -347,7 +351,16 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
               </CardContent>
             </Card>
           ))}
-        </div>
+          {isLoadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {!hasMore && staffList.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-2">
+              Showing all {totalCount} staff
+            </p>
+          )}
       )}
 
       {/* Add Confirmation Dialog */}
