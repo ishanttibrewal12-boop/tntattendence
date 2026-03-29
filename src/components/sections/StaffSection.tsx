@@ -361,6 +361,7 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
               Showing all {totalCount} staff
             </p>
           )}
+        </div>
       )}
 
       {/* Add Confirmation Dialog */}
