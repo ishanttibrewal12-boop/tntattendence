@@ -101,7 +101,7 @@ const RemindersSection = ({ onBack }: RemindersSectionProps) => {
     }
     message += `\n📅 ${format(new Date(reminder.reminder_date), 'dd MMM yyyy')}`;
     message += ` at ${reminder.reminder_time}\n\n`;
-    message += `_Tibrewal Staff Manager_`;
+    message += `_Tibrewal Group_`;
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');

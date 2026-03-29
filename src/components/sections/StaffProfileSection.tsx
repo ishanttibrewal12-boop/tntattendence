@@ -443,7 +443,7 @@ const StaffProfileSection = ({ onBack, category }: StaffProfileSectionProps) => 
       message += `${format(new Date(a.date), 'dd MMM')}: ${statusText}\n`;
     });
 
-    message += `\n_Tibrewal Staff Manager_`;
+    message += `\n_Tibrewal Group_`;
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');

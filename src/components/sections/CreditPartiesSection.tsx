@@ -371,18 +371,18 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
     const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
-    let msg = `📋 *Credit Ledger: ${selectedParty.name}*\n📅 ${period}\n\n`;
-    if (dieselTotal > 0) msg += `⛽ Diesel: ${dieselLitres.toFixed(1)}L = ₹${dieselTotal.toLocaleString('en-IN')}\n`;
-    if (petrolTotal > 0) msg += `⛽ Petrol: ${petrolLitres.toFixed(1)}L = ₹${petrolTotal.toLocaleString('en-IN')}\n`;
-    if (tyreTotal > 0) msg += `🛞 Tyre: ₹${tyreTotal.toLocaleString('en-IN')}\n`;
-    msg += `\n📊 Debit: ₹${totalDebits.toLocaleString('en-IN')}\n`;
-    msg += `💰 Credit: ₹${totalCredits.toLocaleString('en-IN')}\n`;
-    msg += `⏳ *Pending: ₹${pendingBalance.toLocaleString('en-IN')}*\n\n`;
-    msg += `📋 *Entries:*\n`;
+    let msg = `*Credit Ledger: ${selectedParty.name}*\n${period}\n\n`;
+    if (dieselTotal > 0) msg += `Diesel: ${dieselLitres.toFixed(1)}L = Rs.${dieselTotal.toLocaleString('en-IN')}\n`;
+    if (petrolTotal > 0) msg += `Petrol: ${petrolLitres.toFixed(1)}L = Rs.${petrolTotal.toLocaleString('en-IN')}\n`;
+    if (tyreTotal > 0) msg += `Tyre: Rs.${tyreTotal.toLocaleString('en-IN')}\n`;
+    msg += `\nDebit: Rs.${totalDebits.toLocaleString('en-IN')}\n`;
+    msg += `Credit: Rs.${totalCredits.toLocaleString('en-IN')}\n`;
+    msg += `*Pending: Rs.${pendingBalance.toLocaleString('en-IN')}*\n\n`;
+    msg += `*Entries:*\n`;
     ledger.forEach(t => {
-      const icon = t.transaction_type === 'payment' ? '💰' : t.transaction_type === 'petroleum' ? '⛽' : t.transaction_type === 'tyre' ? '🛞' : '📤';
       const sign = t.transaction_type === 'payment' ? '-' : '+';
-      msg += `${format(new Date(t.date), 'dd MMM')}: ${icon} ${sign}₹${Number(t.amount).toLocaleString('en-IN')} (Bal: ₹${t.runningBalance.toLocaleString('en-IN')})`;
+      const typeLabel = t.transaction_type === 'payment' ? 'CR' : t.transaction_type === 'petroleum' ? 'Fuel' : t.transaction_type === 'tyre' ? 'Tyre' : 'DR';
+      msg += `${format(new Date(t.date), 'dd MMM')}: ${typeLabel} ${sign}Rs.${Number(t.amount).toLocaleString('en-IN')} (Bal: Rs.${t.runningBalance.toLocaleString('en-IN')})`;
       if (t.litres) msg += ` ${t.litres}L`;
       if (t.tyre_name) msg += ` ${t.tyre_name}`;
       msg += `\n`;

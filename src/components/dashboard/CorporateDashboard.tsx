@@ -5,7 +5,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
-import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity } from 'lucide-react';
+import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity, Calendar, Wallet, CreditCard, Zap } from 'lucide-react';
 import LiveKPICards from './LiveKPICards';
 import GreetingBanner from './GreetingBanner';
 import ActivityFeed from './ActivityFeed';
@@ -66,8 +66,16 @@ const RevealSection = ({ children, className = '' }: { children: React.ReactNode
 const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba(255,255,255,0.15)' }: { color?: string; particleColor?: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
+  const lastFrameRef = useRef<number>(0);
 
-  const draw = useCallback(() => {
+  const draw = useCallback((timestamp: number) => {
+    // Throttle to ~20fps for performance
+    if (timestamp - lastFrameRef.current < 50) {
+      animRef.current = requestAnimationFrame(draw);
+      return;
+    }
+    lastFrameRef.current = timestamp;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -76,58 +84,57 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.scale(dpr, dpr);
+
+    // Only resize canvas when dimensions change
+    const targetW = w * dpr;
+    const targetH = h * dpr;
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+      ctx.scale(dpr, dpr);
+    }
 
     if (!(canvas as any)._particles) {
       const pts: { x: number; y: number; vx: number; vy: number; r: number; phase: number }[] = [];
-      const count = Math.min(50, Math.floor((w * h) / 10000));
+      const count = Math.min(25, Math.floor((w * h) / 20000));
       for (let i = 0; i < count; i++) {
         pts.push({
           x: Math.random() * w, y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
-          r: Math.random() * 2 + 0.5, phase: Math.random() * Math.PI * 2,
+          vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+          r: Math.random() * 1.5 + 0.5, phase: Math.random() * Math.PI * 2,
         });
       }
       (canvas as any)._particles = pts;
     }
 
     const pts = (canvas as any)._particles as { x: number; y: number; vx: number; vy: number; r: number; phase: number }[];
-    const time = performance.now() * 0.001;
+    const time = timestamp * 0.001;
 
     ctx.clearRect(0, 0, w, h);
 
-    const maxDist = 130;
+    const maxDist = 120;
     for (let i = 0; i < pts.length; i++) {
       for (let j = i + 1; j < pts.length; j++) {
         const dx = pts[i].x - pts[j].x;
         const dy = pts[i].y - pts[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < maxDist) {
+        const distSq = dx * dx + dy * dy;
+        if (distSq < maxDist * maxDist) {
+          const dist = Math.sqrt(distSq);
           ctx.beginPath();
           ctx.moveTo(pts[i].x, pts[i].y);
           ctx.lineTo(pts[j].x, pts[j].y);
-          ctx.strokeStyle = color.replace('0.08', String(0.06 * (1 - dist / maxDist)));
-          ctx.lineWidth = 0.6;
+          ctx.strokeStyle = color.replace('0.08', String(0.05 * (1 - dist / maxDist)));
+          ctx.lineWidth = 0.5;
           ctx.stroke();
         }
       }
     }
 
     for (const p of pts) {
-      const pulse = 0.5 + 0.5 * Math.sin(time * 1.5 + p.phase);
+      const pulse = 0.5 + 0.5 * Math.sin(time * 1.2 + p.phase);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * (0.8 + pulse * 0.4), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.r * (0.8 + pulse * 0.3), 0, Math.PI * 2);
       ctx.fillStyle = particleColor;
-      ctx.fill();
-      // Soft glow
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
-      grad.addColorStop(0, particleColor.replace('0.15', '0.06'));
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
       ctx.fill();
 
       p.x += p.vx;
@@ -286,12 +293,52 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             })}
           </motion.div>
 
+          {/* Quick Actions Toolbar */}
+          {isManager && onNavigateSection && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0, duration: 0.5 }}
+              className="mb-6"
+            >
+              <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                <Zap className="h-3 w-3" /> Quick Actions
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Mark Attendance', section: 'attendance', icon: Calendar, bg: 'hsla(200,60%,45%,0.18)' },
+                  { label: 'Add Dispatch', section: 'crusher-reports', icon: Truck, bg: 'hsla(28,88%,52%,0.18)' },
+                  { label: 'Record Payment', section: 'credit-parties', icon: CreditCard, bg: 'hsla(130,50%,40%,0.18)' },
+                  { label: 'Give Advance', section: 'advance-salary', icon: Wallet, bg: 'hsla(45,80%,50%,0.18)' },
+                ].map((action, i) => {
+                  const Icon = action.icon;
+                  return (
+                    <motion.button
+                      key={action.section}
+                      onClick={() => onNavigateSection(action.section)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-foreground/10 text-xs font-semibold text-primary-foreground/80 transition-all"
+                      style={{ background: action.bg }}
+                      whileHover={{ scale: 1.04, borderColor: 'hsla(28,88%,52%,0.3)' }}
+                      whileTap={{ scale: 0.96 }}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.05 + i * 0.05, duration: 0.25 }}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {action.label}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
           {/* Quick Access Department Grid */}
           {isManager && onNavigateDepartment && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1, duration: 0.5 }}
+              transition={{ delay: 1.2, duration: 0.5 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3">Quick Access</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -307,7 +354,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.2 + i * 0.06, duration: 0.3 }}
+                      transition={{ delay: 1.3 + i * 0.06, duration: 0.3 }}
                     >
                       <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <Icon className="h-4 w-4 text-primary-foreground/70" />

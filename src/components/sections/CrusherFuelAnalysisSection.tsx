@@ -224,7 +224,7 @@ const CrusherFuelAnalysisSection = ({ onBack }: Props) => {
       `Running Hours: ${totalHours.toLocaleString()} hrs\n` +
       `Avg Consumption: ${avgConsumption} L/hr\n\n` +
       `📋 *Section-wise Breakdown*\n${sectionBreakdown}\n\n` +
-      `_Tibrewal Staff Manager_`;
+      `_Tibrewal Group_`;
 
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
