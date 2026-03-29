@@ -62,7 +62,7 @@ const StickyNav = () => {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="flex items-center gap-2 group"
         >
-          <img src={companyLogo} alt="Tibrewal Group" className="h-8 w-auto object-contain" />
+          <img src={companyLogo} alt="Tibrewal Group" className="h-8 w-auto object-contain" width={32} height={32} />
           <span className="text-sm font-bold tracking-wide text-white/80 group-hover:text-white transition-colors hidden sm:inline">
             TIBREWAL GROUP
           </span>

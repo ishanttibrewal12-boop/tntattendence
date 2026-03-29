@@ -25,7 +25,8 @@ import TrustedBySection from '@/components/landing/TrustedBySection';
 import TestimonialsSection from '@/components/landing/TestimonialsSection';
 import ContactSection from '@/components/landing/ContactSection';
 import WhatsAppButton from '@/components/landing/WhatsAppButton';
-import AIChatBot from '@/components/AIChatBot';
+import { lazy, Suspense } from 'react';
+const AIChatBot = lazy(() => import('@/components/AIChatBot'));
 
 const LandingContent = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -143,7 +144,7 @@ const LandingContent = () => {
           </form>
         </DialogContent>
       </Dialog>
-      <AIChatBot includeData={false} />
+      <Suspense fallback={null}><AIChatBot includeData={false} /></Suspense>
     </div>
   );
 };
