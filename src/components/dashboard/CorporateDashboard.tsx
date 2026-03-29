@@ -5,7 +5,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import companyLogo from '@/assets/tibrewal-logo.png';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.png';
-import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity } from 'lucide-react';
+import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Phone, GraduationCap, Building2, Pickaxe, Car, Wheat, TrendingUp, CircleDot, Sparkles, Star, Fuel, Activity, Calendar, Wallet, CreditCard, Zap } from 'lucide-react';
 import LiveKPICards from './LiveKPICards';
 import GreetingBanner from './GreetingBanner';
 import ActivityFeed from './ActivityFeed';
@@ -286,12 +286,52 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             })}
           </motion.div>
 
+          {/* Quick Actions Toolbar */}
+          {isManager && onNavigateSection && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0, duration: 0.5 }}
+              className="mb-6"
+            >
+              <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                <Zap className="h-3 w-3" /> Quick Actions
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Mark Attendance', section: 'attendance', icon: Calendar, bg: 'hsla(200,60%,45%,0.18)' },
+                  { label: 'Add Dispatch', section: 'crusher-reports', icon: Truck, bg: 'hsla(28,88%,52%,0.18)' },
+                  { label: 'Record Payment', section: 'credit-parties', icon: CreditCard, bg: 'hsla(130,50%,40%,0.18)' },
+                  { label: 'Give Advance', section: 'advance-salary', icon: Wallet, bg: 'hsla(45,80%,50%,0.18)' },
+                ].map((action, i) => {
+                  const Icon = action.icon;
+                  return (
+                    <motion.button
+                      key={action.section}
+                      onClick={() => onNavigateSection(action.section)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-foreground/10 text-xs font-semibold text-primary-foreground/80 transition-all"
+                      style={{ background: action.bg }}
+                      whileHover={{ scale: 1.04, borderColor: 'hsla(28,88%,52%,0.3)' }}
+                      whileTap={{ scale: 0.96 }}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.05 + i * 0.05, duration: 0.25 }}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {action.label}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
           {/* Quick Access Department Grid */}
           {isManager && onNavigateDepartment && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1, duration: 0.5 }}
+              transition={{ delay: 1.2, duration: 0.5 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3">Quick Access</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -307,7 +347,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.2 + i * 0.06, duration: 0.3 }}
+                      transition={{ delay: 1.3 + i * 0.06, duration: 0.3 }}
                     >
                       <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <Icon className="h-4 w-4 text-primary-foreground/70" />
