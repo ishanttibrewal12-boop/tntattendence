@@ -41,26 +41,15 @@ const LiveKPICards = () => {
   const fetchKPIs = async () => {
     const today = format(new Date(), 'yyyy-MM-dd');
 
-    const [staffRes, advancesRes, dispatchRes, attendanceRes, vehiclesRes] = await Promise.all([
-      supabase.from('staff').select('id').eq('is_active', true),
+    const [staffRes, advancesRes, attendanceRes, vehiclesRes] = await Promise.all([
+      supabase.from('staff').select('id', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('advances').select('amount').eq('is_deducted', false),
-      supabase.from('dispatch_reports').select('amount, date').gte('date', format(subDays(new Date(), 6), 'yyyy-MM-dd')),
       supabase.from('attendance').select('status, date').gte('date', format(subDays(new Date(), 6), 'yyyy-MM-dd')),
       supabase.from('vehicles').select('id, insurance_expiry, fitness_expiry').eq('is_active', true),
     ]);
 
-    const activeStaff = staffRes.data?.length || 0;
+    const activeStaff = staffRes.count || 0;
     const pendingAdvances = (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0);
-    const dispatches = dispatchRes.data || [];
-    const todayRevenue = dispatches.filter(d => d.date === today).reduce((s, d) => s + Number(d.amount), 0);
-
-    // 7-day revenue trend
-    const revenueTrend: { day: string; val: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = format(subDays(new Date(), i), 'yyyy-MM-dd');
-      const dayTotal = dispatches.filter(r => r.date === d).reduce((s, r) => s + Number(r.amount), 0);
-      revenueTrend.push({ day: d.slice(5), val: dayTotal });
-    }
 
     // 7-day attendance trend
     const attendance = attendanceRes.data || [];
@@ -80,7 +69,6 @@ const LiveKPICards = () => {
     }).length;
 
     setKpis([
-      { label: "Today's Revenue", value: todayRevenue, prefix: '₹', icon: TrendingUp, color: 'hsl(142, 71%, 45%)', bgColor: 'hsla(142, 71%, 45%, 0.1)', trend: revenueTrend },
       { label: 'Active Staff', value: activeStaff, icon: Users, color: 'hsl(217, 91%, 60%)', bgColor: 'hsla(217, 91%, 60%, 0.1)' },
       { label: 'Pending Advances', value: pendingAdvances, prefix: '₹', icon: Wallet, color: 'hsl(0, 84%, 60%)', bgColor: 'hsla(0, 84%, 60%, 0.1)' },
       { label: "Today's Attendance", value: todayAttendance, icon: Calendar, color: 'hsl(45, 93%, 47%)', bgColor: 'hsla(45, 93%, 47%, 0.1)', trend: attendanceTrend },
