@@ -366,26 +366,18 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             </motion.div>
           )}
 
-          {/* Weather + Activity Feed */}
+          {/* Recent Activity */}
           {isManager && (
             <motion.div
-              className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4"
+              className="mt-8"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.3, duration: 0.5 }}
             >
-              <div>
-                <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                  <Activity className="h-3 w-3" /> Recent Activity
-                </p>
-                <ActivityFeed />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3">
-                  ☁ Local Weather
-                </p>
-                <WeatherWidget />
-              </div>
+              <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                <Activity className="h-3 w-3" /> Recent Activity
+              </p>
+              <ActivityFeed />
             </motion.div>
           )}
         </div>

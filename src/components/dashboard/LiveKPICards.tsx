@@ -51,7 +51,7 @@ const LiveKPICards = () => {
   }, []);
 
   const fetchKPIs = async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    try {
 
     const [staffRes, advancesRes, attendanceRes, vehiclesRes] = await Promise.all([
       supabase.from('staff').select('id', { count: 'exact', head: true }).eq('is_active', true),
