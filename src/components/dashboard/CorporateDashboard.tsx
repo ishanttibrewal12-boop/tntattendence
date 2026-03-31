@@ -9,7 +9,6 @@ import { Shield, Award, Users, Truck, Scale, FileCheck, Globe, Heart, MapPin, Ph
 import LiveKPICards from './LiveKPICards';
 import GreetingBanner from './GreetingBanner';
 import ActivityFeed from './ActivityFeed';
-import WeatherWidget from './WeatherWidget';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 
 // --- Data ---
