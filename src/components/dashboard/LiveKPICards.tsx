@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Wallet, TrendingUp, Calendar, AlertTriangle, Truck } from 'lucide-react';
+import { Users, Wallet, Calendar, AlertTriangle, Truck } from 'lucide-react';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 interface KPIStat {
@@ -35,65 +35,67 @@ const LiveKPICards = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Use cached data if available (within 2 minutes)
+    const cached = sessionStorage.getItem('kpi_cache');
+    if (cached) {
+      try {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < 120000) {
+          setKpis(data.map((k: any) => ({ ...k, icon: { Users, Wallet, Calendar, AlertTriangle, Truck }[k.iconKey] || Users })));
+          setIsLoading(false);
+          return;
+        }
+      } catch {}
+    }
     fetchKPIs();
   }, []);
 
   const fetchKPIs = async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    try {
+      const [staffRes, advancesRes, attendanceRes, vehiclesRes] = await Promise.all([
+        supabase.from('staff').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('advances').select('amount').eq('is_deducted', false),
+        supabase.from('attendance').select('status, date').gte('date', format(subDays(new Date(), 6), 'yyyy-MM-dd')),
+        supabase.from('vehicles').select('id, insurance_expiry, fitness_expiry').eq('is_active', true),
+      ]);
 
-    const [staffRes, advancesRes, dispatchRes, attendanceRes, vehiclesRes] = await Promise.all([
-      supabase.from('staff').select('id').eq('is_active', true),
-      supabase.from('advances').select('amount').eq('is_deducted', false),
-      supabase.from('dispatch_reports').select('amount, date').gte('date', format(subDays(new Date(), 6), 'yyyy-MM-dd')),
-      supabase.from('attendance').select('status, date').gte('date', format(subDays(new Date(), 6), 'yyyy-MM-dd')),
-      supabase.from('vehicles').select('id, insurance_expiry, fitness_expiry').eq('is_active', true),
-    ]);
+      const activeStaff = staffRes.count || 0;
+      const pendingAdvances = (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0);
 
-    const activeStaff = staffRes.data?.length || 0;
-    const pendingAdvances = (advancesRes.data || []).reduce((s, a) => s + Number(a.amount), 0);
-    const dispatches = dispatchRes.data || [];
-    const todayRevenue = dispatches.filter(d => d.date === today).reduce((s, d) => s + Number(d.amount), 0);
+      const attendance = attendanceRes.data || [];
+      const attendanceTrend: { day: string; val: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = format(subDays(new Date(), i), 'yyyy-MM-dd');
+        const dayCount = attendance.filter(a => a.date === d && (a.status === 'present' || a.status === 'half_day')).length;
+        attendanceTrend.push({ day: d.slice(5), val: dayCount });
+      }
+      const todayAttendance = attendanceTrend[attendanceTrend.length - 1]?.val || 0;
 
-    // 7-day revenue trend
-    const revenueTrend: { day: string; val: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = format(subDays(new Date(), i), 'yyyy-MM-dd');
-      const dayTotal = dispatches.filter(r => r.date === d).reduce((s, r) => s + Number(r.amount), 0);
-      revenueTrend.push({ day: d.slice(5), val: dayTotal });
+      const expiringVehicles = (vehiclesRes.data || []).filter(v => {
+        const thirtyDaysFromNow = format(subDays(new Date(), -30), 'yyyy-MM-dd');
+        return (v.insurance_expiry && v.insurance_expiry <= thirtyDaysFromNow) ||
+               (v.fitness_expiry && v.fitness_expiry <= thirtyDaysFromNow);
+      }).length;
+
+      const result: KPIStat[] = [
+        { label: 'Active Staff', value: activeStaff, icon: Users, color: 'hsl(217, 91%, 60%)', bgColor: 'hsla(217, 91%, 60%, 0.1)' },
+        { label: 'Pending Advances', value: pendingAdvances, prefix: '₹', icon: Wallet, color: 'hsl(0, 84%, 60%)', bgColor: 'hsla(0, 84%, 60%, 0.1)' },
+        { label: "Today's Attendance", value: todayAttendance, icon: Calendar, color: 'hsl(45, 93%, 47%)', bgColor: 'hsla(45, 93%, 47%, 0.1)', trend: attendanceTrend },
+        { label: 'Expiring Docs', value: expiringVehicles, icon: AlertTriangle, color: 'hsl(25, 95%, 53%)', bgColor: 'hsla(25, 95%, 53%, 0.1)' },
+        { label: 'Active Fleet', value: vehiclesRes.data?.length || 0, icon: Truck, color: 'hsl(262, 83%, 58%)', bgColor: 'hsla(262, 83%, 58%, 0.1)' },
+      ];
+      setKpis(result);
+    } catch (e) {
+      console.error('KPI fetch error:', e);
+    } finally {
+      setIsLoading(false);
     }
-
-    // 7-day attendance trend
-    const attendance = attendanceRes.data || [];
-    const attendanceTrend: { day: string; val: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = format(subDays(new Date(), i), 'yyyy-MM-dd');
-      const dayCount = attendance.filter(a => a.date === d && (a.status === 'present' || a.status === 'half_day')).length;
-      attendanceTrend.push({ day: d.slice(5), val: dayCount });
-    }
-    const todayAttendance = attendanceTrend[attendanceTrend.length - 1]?.val || 0;
-
-    // Expiring vehicles (within 30 days)
-    const expiringVehicles = (vehiclesRes.data || []).filter(v => {
-      const thirtyDaysFromNow = format(subDays(new Date(), -30), 'yyyy-MM-dd');
-      return (v.insurance_expiry && v.insurance_expiry <= thirtyDaysFromNow) ||
-             (v.fitness_expiry && v.fitness_expiry <= thirtyDaysFromNow);
-    }).length;
-
-    setKpis([
-      { label: "Today's Revenue", value: todayRevenue, prefix: '₹', icon: TrendingUp, color: 'hsl(142, 71%, 45%)', bgColor: 'hsla(142, 71%, 45%, 0.1)', trend: revenueTrend },
-      { label: 'Active Staff', value: activeStaff, icon: Users, color: 'hsl(217, 91%, 60%)', bgColor: 'hsla(217, 91%, 60%, 0.1)' },
-      { label: 'Pending Advances', value: pendingAdvances, prefix: '₹', icon: Wallet, color: 'hsl(0, 84%, 60%)', bgColor: 'hsla(0, 84%, 60%, 0.1)' },
-      { label: "Today's Attendance", value: todayAttendance, icon: Calendar, color: 'hsl(45, 93%, 47%)', bgColor: 'hsla(45, 93%, 47%, 0.1)', trend: attendanceTrend },
-      { label: 'Expiring Docs', value: expiringVehicles, icon: AlertTriangle, color: 'hsl(25, 95%, 53%)', bgColor: 'hsla(25, 95%, 53%, 0.1)' },
-      { label: 'Active Fleet', value: vehiclesRes.data?.length || 0, icon: Truck, color: 'hsl(262, 83%, 58%)', bgColor: 'hsla(262, 83%, 58%, 0.1)' },
-    ]);
-    setIsLoading(false);
   };
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(5)].map((_, i) => (
           <div key={i} className="h-24 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }} />
         ))}
       </div>
