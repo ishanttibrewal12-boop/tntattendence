@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Wallet, Calendar, AlertTriangle, Truck } from 'lucide-react';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 interface KPIStat {
