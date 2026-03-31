@@ -35,6 +35,18 @@ const LiveKPICards = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Use cached data if available (within 2 minutes)
+    const cached = sessionStorage.getItem('kpi_cache');
+    if (cached) {
+      try {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < 120000) {
+          setKpis(data.map((k: any) => ({ ...k, icon: { Users, Wallet, Calendar, AlertTriangle, Truck }[k.iconKey] || Users })));
+          setIsLoading(false);
+          return;
+        }
+      } catch {}
+    }
     fetchKPIs();
   }, []);
 
