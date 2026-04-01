@@ -292,7 +292,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3">Quick Access</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
