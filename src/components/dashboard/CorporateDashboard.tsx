@@ -387,19 +387,7 @@ const TimelinePage = () => (
             >
               {/* Animated dot with pulse ring */}
               <div className="absolute left-5 lg:left-1/2 w-10 h-10 rounded-full -translate-x-1/2 z-10 flex items-center justify-center border-4" style={{ background: '#060a12', borderColor: 'hsl(28, 88%, 52%)' }}>
-                <motion.div
-                  className="w-3 h-3 rounded-full"
-                  style={{ background: 'hsl(28, 88%, 52%)' }}
-                  animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                />
-                {/* Pulse ring */}
-                <motion.div
-                  className="absolute w-10 h-10 rounded-full border"
-                  style={{ borderColor: 'hsla(28,88%,52%,0.3)' }}
-                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                />
+                <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(28, 88%, 52%)' }} />
               </div>
 
               <div className={`ml-14 lg:ml-0 lg:w-[43%] ${i % 2 === 0 ? 'lg:pr-14 lg:text-right' : 'lg:pl-14 lg:ml-auto'}`}>
