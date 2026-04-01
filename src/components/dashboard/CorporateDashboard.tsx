@@ -308,7 +308,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.3 + i * 0.06, duration: 0.3 }}
+                      transition={{ delay: 0.35 + i * 0.04, duration: 0.25 }}
                     >
                       <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <Icon className="h-4 w-4 text-primary-foreground/70" />
