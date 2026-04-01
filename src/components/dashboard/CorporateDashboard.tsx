@@ -665,12 +665,10 @@ const ProprietorPage2 = () => (
             <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: 'linear-gradient(90deg, transparent 0%, hsl(var(--accent)) 50%, transparent 100%)' }} />
             <CardContent className="p-8 lg:p-12">
               <div className="flex items-center gap-4 mb-6">
-                <motion.img
+                <img
                   src={proprietorPhoto}
                   alt="Trishav Tibrewal"
                   className="w-14 h-14 rounded-full object-cover border-2 border-accent"
-                  animate={{ boxShadow: ['0 0 0px hsla(28,88%,52%,0)', '0 0 20px hsla(28,88%,52%,0.25)', '0 0 0px hsla(28,88%,52%,0)'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 <div>
                   <h3 className="text-lg font-bold text-foreground">Trishav Tibrewal</h3>
