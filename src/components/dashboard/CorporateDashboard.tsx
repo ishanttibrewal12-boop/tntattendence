@@ -440,12 +440,11 @@ const CompanyPage = ({ company, index }: { company: typeof companies[0]; index: 
             {/* Header band with particle effect */}
             <div className="relative bg-primary p-8 lg:p-12 overflow-hidden">
               <div className="absolute inset-0 pointer-events-none">
-                <motion.div
+                <div
                   className="absolute top-0 right-0 w-72 h-72 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"
                   style={{ background: `radial-gradient(circle, ${company.color} 0%, transparent 70%)` }}
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
                 />
+              </div>
               </div>
               <div className="relative z-10">
                 <span className="text-5xl lg:text-6xl mb-4 block">
