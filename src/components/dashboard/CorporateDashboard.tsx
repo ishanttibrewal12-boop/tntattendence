@@ -189,7 +189,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                 className="text-sm lg:text-lg text-primary-foreground/65 mt-2 font-medium"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
               >
                 A Diversified Industrial Business Group
               </motion.p>
