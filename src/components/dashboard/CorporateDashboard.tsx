@@ -61,15 +61,14 @@ const RevealSection = ({ children, className = '' }: { children: React.ReactNode
   </motion.div>
 );
 
-// --- Particle Canvas ---
-const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba(255,255,255,0.15)' }: { color?: string; particleColor?: string }) => {
+// --- Particle Canvas (only for hero, lightweight) ---
+const ParticleCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const lastFrameRef = useRef<number>(0);
 
   const draw = useCallback((timestamp: number) => {
-    // Throttle to ~20fps for performance
-    if (timestamp - lastFrameRef.current < 50) {
+    if (timestamp - lastFrameRef.current < 80) { // ~12fps for less CPU
       animRef.current = requestAnimationFrame(draw);
       return;
     }
@@ -84,7 +83,6 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
 
-    // Only resize canvas when dimensions change
     const targetW = w * dpr;
     const targetH = h * dpr;
     if (canvas.width !== targetW || canvas.height !== targetH) {
@@ -94,48 +92,26 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     }
 
     if (!(canvas as any)._particles) {
-      const pts: { x: number; y: number; vx: number; vy: number; r: number; phase: number }[] = [];
-      const count = Math.min(25, Math.floor((w * h) / 20000));
+      const pts: { x: number; y: number; vx: number; vy: number; r: number }[] = [];
+      const count = Math.min(15, Math.floor((w * h) / 30000)); // fewer particles
       for (let i = 0; i < count; i++) {
         pts.push({
           x: Math.random() * w, y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
-          r: Math.random() * 1.5 + 0.5, phase: Math.random() * Math.PI * 2,
+          vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15,
+          r: Math.random() * 1.2 + 0.5,
         });
       }
       (canvas as any)._particles = pts;
     }
 
-    const pts = (canvas as any)._particles as { x: number; y: number; vx: number; vy: number; r: number; phase: number }[];
-    const time = timestamp * 0.001;
-
+    const pts = (canvas as any)._particles as { x: number; y: number; vx: number; vy: number; r: number }[];
     ctx.clearRect(0, 0, w, h);
 
-    const maxDist = 120;
-    for (let i = 0; i < pts.length; i++) {
-      for (let j = i + 1; j < pts.length; j++) {
-        const dx = pts[i].x - pts[j].x;
-        const dy = pts[i].y - pts[j].y;
-        const distSq = dx * dx + dy * dy;
-        if (distSq < maxDist * maxDist) {
-          const dist = Math.sqrt(distSq);
-          ctx.beginPath();
-          ctx.moveTo(pts[i].x, pts[i].y);
-          ctx.lineTo(pts[j].x, pts[j].y);
-          ctx.strokeStyle = color.replace('0.08', String(0.05 * (1 - dist / maxDist)));
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      }
-    }
-
     for (const p of pts) {
-      const pulse = 0.5 + 0.5 * Math.sin(time * 1.2 + p.phase);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * (0.8 + pulse * 0.3), 0, Math.PI * 2);
-      ctx.fillStyle = particleColor;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.fill();
-
       p.x += p.vx;
       p.y += p.vy;
       if (p.x < 0 || p.x > w) p.vx *= -1;
@@ -143,7 +119,7 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     }
 
     animRef.current = requestAnimationFrame(draw);
-  }, [color, particleColor]);
+  }, []);
 
   useEffect(() => {
     animRef.current = requestAnimationFrame(draw);
