@@ -445,7 +445,6 @@ const CompanyPage = ({ company, index }: { company: typeof companies[0]; index: 
                   style={{ background: `radial-gradient(circle, ${company.color} 0%, transparent 70%)` }}
                 />
               </div>
-              </div>
               <div className="relative z-10">
                 <span className="text-5xl lg:text-6xl mb-4 block">
                   {company.icon}
