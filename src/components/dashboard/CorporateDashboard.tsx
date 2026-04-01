@@ -129,26 +129,16 @@ const ParticleCanvas = () => {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />;
 };
 
-// --- Floating Glow Orbs ---
-const GlowOrbs = ({ accent = 'hsla(28,88%,52%,0.15)', secondary = 'hsla(210,60%,40%,0.10)' }) => (
+// --- Static Glow Orbs (no infinite animations) ---
+const GlowOrbs = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <motion.div
-      className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[180px] -translate-y-1/2 translate-x-1/3"
-      style={{ background: `radial-gradient(circle, ${accent} 0%, transparent 70%)` }}
-      animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
-      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+    <div
+      className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3"
+      style={{ background: 'radial-gradient(circle, hsla(28,88%,52%,0.12) 0%, transparent 70%)' }}
     />
-    <motion.div
-      className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[160px] translate-y-1/3 -translate-x-1/4"
-      style={{ background: `radial-gradient(circle, ${secondary} 0%, transparent 70%)` }}
-      animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
-      transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-    />
-    <motion.div
-      className="absolute top-1/2 left-1/2 w-[250px] h-[250px] rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"
-      style={{ background: `radial-gradient(circle, ${accent.replace('0.15', '0.06')} 0%, transparent 60%)` }}
-      animate={{ scale: [1, 1.3, 1] }}
-      transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+    <div
+      className="absolute bottom-0 left-0 w-[300px] h-[300px] rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4"
+      style={{ background: 'radial-gradient(circle, hsla(210,60%,40%,0.08) 0%, transparent 70%)' }}
     />
   </div>
 );
