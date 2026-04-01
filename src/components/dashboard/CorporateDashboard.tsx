@@ -357,8 +357,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
 const TimelinePage = () => (
   <RevealSection>
     <div className="min-h-[85vh] flex flex-col justify-center rounded-3xl py-16 px-6 lg:px-16 relative overflow-hidden" style={{ background: '#060a12' }}>
-      <ParticleCanvas color="rgba(234,136,37,0.04)" particleColor="rgba(234,136,37,0.08)" />
-      <GlowOrbs accent="hsla(28,88%,52%,0.08)" secondary="hsla(210,60%,40%,0.06)" />
+      {/* Removed heavy particle/glow effects for performance */}
 
       <div className="relative z-10">
         <motion.div
