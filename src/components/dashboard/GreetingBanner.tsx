@@ -53,17 +53,15 @@ const GreetingBanner = ({ userName }: GreetingBannerProps) => {
         </div>
       </div>
       {reminderCount > 0 && (
-        <motion.div
+        <div
           className="flex items-center gap-2 px-3 py-1.5 rounded-full"
           style={{ background: 'rgba(234,136,37,0.1)', border: '1px solid rgba(234,136,37,0.15)' }}
-          animate={{ scale: [1, 1.03, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
         >
           <Bell className="h-3.5 w-3.5" style={{ color: 'hsl(28, 88%, 52%)' }} />
           <span className="text-xs font-bold" style={{ color: 'hsl(28, 88%, 55%)' }}>
             {reminderCount} reminder{reminderCount > 1 ? 's' : ''} today
           </span>
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );

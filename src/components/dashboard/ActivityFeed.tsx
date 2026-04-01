@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Activity, Plus, Pencil, Trash2, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,12 +8,27 @@ const ActivityFeed = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Use cache if fresh (2 min)
+    const cached = sessionStorage.getItem('activity_feed_cache');
+    if (cached) {
+      try {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < 120000) {
+          setLogs(data);
+          setIsLoading(false);
+          return;
+        }
+      } catch {}
+    }
+
     const fetchLogs = async () => {
       const { data } = await supabase.from('activity_logs')
-        .select('*')
+        .select('id,action,user_name,table_name,created_at')
         .order('created_at', { ascending: false })
         .limit(5);
-      setLogs(data || []);
+      const result = data || [];
+      setLogs(result);
+      sessionStorage.setItem('activity_feed_cache', JSON.stringify({ data: result, ts: Date.now() }));
       setIsLoading(false);
     };
     fetchLogs();
@@ -52,17 +66,14 @@ const ActivityFeed = () => {
 
   return (
     <div className="space-y-1.5">
-      {logs.map((log, i) => {
+      {logs.map((log) => {
         const ActionIcon = getActionIcon(log.action);
         const color = getActionColor(log.action);
         return (
-          <motion.div
+          <div
             key={log.id}
             className="flex items-center gap-3 p-2.5 rounded-lg border border-primary-foreground/5"
             style={{ background: 'rgba(255,255,255,0.02)' }}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.3 }}
           >
             <div className="p-1 rounded-md" style={{ background: `${color}15` }}>
               <ActionIcon className="h-3 w-3" style={{ color }} />
@@ -77,7 +88,7 @@ const ActivityFeed = () => {
               <Clock className="h-2.5 w-2.5" />
               {formatDistanceToNow(new Date(log.created_at), { addSuffix: false })}
             </span>
-          </motion.div>
+          </div>
         );
       })}
     </div>
