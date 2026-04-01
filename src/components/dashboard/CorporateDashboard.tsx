@@ -175,12 +175,10 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            <motion.img
+            <img
               src={companyLogo}
               alt="Tibrewal Group"
               className="h-18 w-18 lg:h-24 lg:w-24 object-contain rounded-2xl border border-primary-foreground/10"
-              animate={{ boxShadow: ['0 0 0px hsla(28,88%,52%,0)', '0 0 30px hsla(28,88%,52%,0.2)', '0 0 0px hsla(28,88%,52%,0)'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               style={{ width: 72, height: 72 }}
             />
             <div>
