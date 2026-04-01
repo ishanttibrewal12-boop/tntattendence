@@ -448,13 +448,9 @@ const CompanyPage = ({ company, index }: { company: typeof companies[0]; index: 
                 />
               </div>
               <div className="relative z-10">
-                <motion.span
-                  className="text-5xl lg:text-6xl mb-4 block"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                >
+                <span className="text-5xl lg:text-6xl mb-4 block">
                   {company.icon}
-                </motion.span>
+                </span>
                 <h2 className="text-2xl lg:text-3xl font-extrabold text-primary-foreground tracking-tight mb-2">
                   {company.title}
                 </h2>
