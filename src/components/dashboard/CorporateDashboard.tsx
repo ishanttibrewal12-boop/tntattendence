@@ -327,7 +327,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
               className="mt-8"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.3, duration: 0.5 }}
+              transition={{ delay: 0.35, duration: 0.4 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                 <Activity className="h-3 w-3" /> Recent Activity
