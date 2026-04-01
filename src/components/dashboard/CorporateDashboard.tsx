@@ -173,7 +173,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             className="flex items-center gap-5 lg:gap-6 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
             <img
               src={companyLogo}
