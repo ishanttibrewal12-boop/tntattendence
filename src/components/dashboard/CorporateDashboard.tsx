@@ -276,7 +276,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                       whileTap={{ scale: 0.96 }}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.05 + i * 0.05, duration: 0.25 }}
+                      transition={{ delay: 0.3 + i * 0.03, duration: 0.2 }}
                     >
                       <Icon className="h-3.5 w-3.5" />
                       {action.label}
