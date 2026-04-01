@@ -61,15 +61,14 @@ const RevealSection = ({ children, className = '' }: { children: React.ReactNode
   </motion.div>
 );
 
-// --- Particle Canvas ---
-const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba(255,255,255,0.15)' }: { color?: string; particleColor?: string }) => {
+// --- Particle Canvas (only for hero, lightweight) ---
+const ParticleCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const lastFrameRef = useRef<number>(0);
 
   const draw = useCallback((timestamp: number) => {
-    // Throttle to ~20fps for performance
-    if (timestamp - lastFrameRef.current < 50) {
+    if (timestamp - lastFrameRef.current < 80) { // ~12fps for less CPU
       animRef.current = requestAnimationFrame(draw);
       return;
     }
@@ -84,7 +83,6 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
 
-    // Only resize canvas when dimensions change
     const targetW = w * dpr;
     const targetH = h * dpr;
     if (canvas.width !== targetW || canvas.height !== targetH) {
@@ -94,48 +92,26 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     }
 
     if (!(canvas as any)._particles) {
-      const pts: { x: number; y: number; vx: number; vy: number; r: number; phase: number }[] = [];
-      const count = Math.min(25, Math.floor((w * h) / 20000));
+      const pts: { x: number; y: number; vx: number; vy: number; r: number }[] = [];
+      const count = Math.min(15, Math.floor((w * h) / 30000)); // fewer particles
       for (let i = 0; i < count; i++) {
         pts.push({
           x: Math.random() * w, y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
-          r: Math.random() * 1.5 + 0.5, phase: Math.random() * Math.PI * 2,
+          vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15,
+          r: Math.random() * 1.2 + 0.5,
         });
       }
       (canvas as any)._particles = pts;
     }
 
-    const pts = (canvas as any)._particles as { x: number; y: number; vx: number; vy: number; r: number; phase: number }[];
-    const time = timestamp * 0.001;
-
+    const pts = (canvas as any)._particles as { x: number; y: number; vx: number; vy: number; r: number }[];
     ctx.clearRect(0, 0, w, h);
 
-    const maxDist = 120;
-    for (let i = 0; i < pts.length; i++) {
-      for (let j = i + 1; j < pts.length; j++) {
-        const dx = pts[i].x - pts[j].x;
-        const dy = pts[i].y - pts[j].y;
-        const distSq = dx * dx + dy * dy;
-        if (distSq < maxDist * maxDist) {
-          const dist = Math.sqrt(distSq);
-          ctx.beginPath();
-          ctx.moveTo(pts[i].x, pts[i].y);
-          ctx.lineTo(pts[j].x, pts[j].y);
-          ctx.strokeStyle = color.replace('0.08', String(0.05 * (1 - dist / maxDist)));
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      }
-    }
-
     for (const p of pts) {
-      const pulse = 0.5 + 0.5 * Math.sin(time * 1.2 + p.phase);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * (0.8 + pulse * 0.3), 0, Math.PI * 2);
-      ctx.fillStyle = particleColor;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.fill();
-
       p.x += p.vx;
       p.y += p.vy;
       if (p.x < 0 || p.x > w) p.vx *= -1;
@@ -143,7 +119,7 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
     }
 
     animRef.current = requestAnimationFrame(draw);
-  }, [color, particleColor]);
+  }, []);
 
   useEffect(() => {
     animRef.current = requestAnimationFrame(draw);
@@ -153,26 +129,16 @@ const ParticleCanvas = ({ color = 'rgba(234,160,60,0.08)', particleColor = 'rgba
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }} />;
 };
 
-// --- Floating Glow Orbs ---
-const GlowOrbs = ({ accent = 'hsla(28,88%,52%,0.15)', secondary = 'hsla(210,60%,40%,0.10)' }) => (
+// --- Static Glow Orbs (no infinite animations) ---
+const GlowOrbs = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <motion.div
-      className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[180px] -translate-y-1/2 translate-x-1/3"
-      style={{ background: `radial-gradient(circle, ${accent} 0%, transparent 70%)` }}
-      animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
-      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+    <div
+      className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3"
+      style={{ background: 'radial-gradient(circle, hsla(28,88%,52%,0.12) 0%, transparent 70%)' }}
     />
-    <motion.div
-      className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[160px] translate-y-1/3 -translate-x-1/4"
-      style={{ background: `radial-gradient(circle, ${secondary} 0%, transparent 70%)` }}
-      animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
-      transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-    />
-    <motion.div
-      className="absolute top-1/2 left-1/2 w-[250px] h-[250px] rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"
-      style={{ background: `radial-gradient(circle, ${accent.replace('0.15', '0.06')} 0%, transparent 60%)` }}
-      animate={{ scale: [1, 1.3, 1] }}
-      transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+    <div
+      className="absolute bottom-0 left-0 w-[300px] h-[300px] rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4"
+      style={{ background: 'radial-gradient(circle, hsla(210,60%,40%,0.08) 0%, transparent 70%)' }}
     />
   </div>
 );
@@ -198,15 +164,6 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
         <ParticleCanvas />
         <GlowOrbs />
 
-        {/* Subtle scan line effect */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <motion.div
-            className="absolute left-0 right-0 h-[1px]"
-            style={{ background: 'linear-gradient(90deg, transparent 0%, hsla(28,88%,52%,0.15) 50%, transparent 100%)' }}
-            animate={{ top: ['0%', '100%'] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
 
         <div className="relative z-10">
           {/* Greeting Banner */}
@@ -216,14 +173,12 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             className="flex items-center gap-5 lg:gap-6 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            <motion.img
+            <img
               src={companyLogo}
               alt="Tibrewal Group"
               className="h-18 w-18 lg:h-24 lg:w-24 object-contain rounded-2xl border border-primary-foreground/10"
-              animate={{ boxShadow: ['0 0 0px hsla(28,88%,52%,0)', '0 0 30px hsla(28,88%,52%,0.2)', '0 0 0px hsla(28,88%,52%,0)'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               style={{ width: 72, height: 72 }}
             />
             <div>
@@ -234,7 +189,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                 className="text-sm lg:text-lg text-primary-foreground/65 mt-2 font-medium"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
               >
                 A Diversified Industrial Business Group
               </motion.p>
@@ -245,7 +200,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             className="text-sm lg:text-base text-primary-foreground/50 max-w-2xl leading-relaxed mb-10"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
           >
             From mining and minerals to petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2013.
           </motion.p>
@@ -256,7 +211,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
               className="mb-10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.85, duration: 0.6 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                 <Activity className="h-3 w-3" /> Live Operations
@@ -270,7 +225,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.6 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
           >
             {groupStrength.map((stat, i) => {
               const Icon = stat.icon;
@@ -297,7 +252,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0, duration: 0.5 }}
+              transition={{ delay: 0.25, duration: 0.4 }}
               className="mb-6"
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
@@ -321,7 +276,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                       whileTap={{ scale: 0.96 }}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.05 + i * 0.05, duration: 0.25 }}
+                      transition={{ delay: 0.3 + i * 0.03, duration: 0.2 }}
                     >
                       <Icon className="h-3.5 w-3.5" />
                       {action.label}
@@ -337,7 +292,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3">Quick Access</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -353,7 +308,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.3 + i * 0.06, duration: 0.3 }}
+                      transition={{ delay: 0.35 + i * 0.04, duration: 0.25 }}
                     >
                       <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <Icon className="h-4 w-4 text-primary-foreground/70" />
@@ -372,7 +327,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
               className="mt-8"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.3, duration: 0.5 }}
+              transition={{ delay: 0.35, duration: 0.4 }}
             >
               <p className="text-[10px] font-bold text-primary-foreground/30 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                 <Activity className="h-3 w-3" /> Recent Activity
@@ -391,8 +346,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
 const TimelinePage = () => (
   <RevealSection>
     <div className="min-h-[85vh] flex flex-col justify-center rounded-3xl py-16 px-6 lg:px-16 relative overflow-hidden" style={{ background: '#060a12' }}>
-      <ParticleCanvas color="rgba(234,136,37,0.04)" particleColor="rgba(234,136,37,0.08)" />
-      <GlowOrbs accent="hsla(28,88%,52%,0.08)" secondary="hsla(210,60%,40%,0.06)" />
+      {/* Removed heavy particle/glow effects for performance */}
 
       <div className="relative z-10">
         <motion.div
@@ -433,19 +387,7 @@ const TimelinePage = () => (
             >
               {/* Animated dot with pulse ring */}
               <div className="absolute left-5 lg:left-1/2 w-10 h-10 rounded-full -translate-x-1/2 z-10 flex items-center justify-center border-4" style={{ background: '#060a12', borderColor: 'hsl(28, 88%, 52%)' }}>
-                <motion.div
-                  className="w-3 h-3 rounded-full"
-                  style={{ background: 'hsl(28, 88%, 52%)' }}
-                  animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                />
-                {/* Pulse ring */}
-                <motion.div
-                  className="absolute w-10 h-10 rounded-full border"
-                  style={{ borderColor: 'hsla(28,88%,52%,0.3)' }}
-                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                />
+                <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(28, 88%, 52%)' }} />
               </div>
 
               <div className={`ml-14 lg:ml-0 lg:w-[43%] ${i % 2 === 0 ? 'lg:pr-14 lg:text-right' : 'lg:pl-14 lg:ml-auto'}`}>
@@ -498,21 +440,15 @@ const CompanyPage = ({ company, index }: { company: typeof companies[0]; index: 
             {/* Header band with particle effect */}
             <div className="relative bg-primary p-8 lg:p-12 overflow-hidden">
               <div className="absolute inset-0 pointer-events-none">
-                <motion.div
+                <div
                   className="absolute top-0 right-0 w-72 h-72 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"
                   style={{ background: `radial-gradient(circle, ${company.color} 0%, transparent 70%)` }}
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
                 />
               </div>
               <div className="relative z-10">
-                <motion.span
-                  className="text-5xl lg:text-6xl mb-4 block"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                >
+                <span className="text-5xl lg:text-6xl mb-4 block">
                   {company.icon}
-                </motion.span>
+                </span>
                 <h2 className="text-2xl lg:text-3xl font-extrabold text-primary-foreground tracking-tight mb-2">
                   {company.title}
                 </h2>
@@ -727,12 +663,10 @@ const ProprietorPage2 = () => (
             <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: 'linear-gradient(90deg, transparent 0%, hsl(var(--accent)) 50%, transparent 100%)' }} />
             <CardContent className="p-8 lg:p-12">
               <div className="flex items-center gap-4 mb-6">
-                <motion.img
+                <img
                   src={proprietorPhoto}
                   alt="Trishav Tibrewal"
                   className="w-14 h-14 rounded-full object-cover border-2 border-accent"
-                  animate={{ boxShadow: ['0 0 0px hsla(28,88%,52%,0)', '0 0 20px hsla(28,88%,52%,0.25)', '0 0 0px hsla(28,88%,52%,0)'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 />
                 <div>
                   <h3 className="text-lg font-bold text-foreground">Trishav Tibrewal</h3>
