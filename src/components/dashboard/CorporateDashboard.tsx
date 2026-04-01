@@ -164,15 +164,6 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
         <ParticleCanvas />
         <GlowOrbs />
 
-        {/* Subtle scan line effect */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <motion.div
-            className="absolute left-0 right-0 h-[1px]"
-            style={{ background: 'linear-gradient(90deg, transparent 0%, hsla(28,88%,52%,0.15) 50%, transparent 100%)' }}
-            animate={{ top: ['0%', '100%'] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
 
         <div className="relative z-10">
           {/* Greeting Banner */}
