@@ -200,7 +200,7 @@ const HeroPage = ({ onNavigateDepartment, onNavigateSection, isManager, adminNam
             className="text-sm lg:text-base text-primary-foreground/50 max-w-2xl leading-relaxed mb-10"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
           >
             From mining and minerals to petroleum, tyres, and agro-food processing — powering Jharkhand's infrastructure growth since 2013.
           </motion.p>
