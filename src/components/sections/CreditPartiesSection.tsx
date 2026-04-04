@@ -101,7 +101,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const viewAllTime = viewMode === 'all';
 
   useEffect(() => { fetchParties(); fetchAllPartyTransactions(); }, []);
-  useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewAllTime]);
+  useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewMode, rangeStart, rangeEnd]);
 
   useEffect(() => {
     if (txType === 'petroleum' && !txManualAmount && txLitres && txRatePerLitre) {
