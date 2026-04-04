@@ -525,10 +525,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
         {/* Period + Filter Controls */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Tabs value={viewAllTime ? 'all' : 'monthly'} onValueChange={(v) => setViewAllTime(v === 'all')}>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'all' | 'monthly' | 'range')}>
             <TabsList className="h-8">
               <TabsTrigger value="all" className="text-xs px-3 h-7">All Time</TabsTrigger>
               <TabsTrigger value="monthly" className="text-xs px-3 h-7">Monthly</TabsTrigger>
+              <TabsTrigger value="range" className="text-xs px-3 h-7">Date Range</TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex-1" />
@@ -541,7 +542,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           </Tabs>
         </div>
 
-        {!viewAllTime && (
+        {viewMode === 'monthly' && (
           <div className="grid grid-cols-2 gap-2 mb-3">
             <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -551,6 +552,33 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
+          </div>
+        )}
+
+        {viewMode === 'range' && (
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <Popover open={rangeStartOpen} onOpenChange={setRangeStartOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start h-9 text-xs">
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  {rangeStart ? format(rangeStart, 'dd MMM yyyy') : 'Start date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={rangeStart} onSelect={(d) => { setRangeStart(d); setRangeStartOpen(false); }} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            <Popover open={rangeEndOpen} onOpenChange={setRangeEndOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start h-9 text-xs">
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  {rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : 'End date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar mode="single" selected={rangeEnd} onSelect={(d) => { setRangeEnd(d); setRangeEndOpen(false); }} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
