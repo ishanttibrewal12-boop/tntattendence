@@ -91,9 +91,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [viewAllTime, setViewAllTime] = useState(true);
+  const [viewMode, setViewMode] = useState<'all' | 'monthly' | 'range'>('all');
+  const [rangeStart, setRangeStart] = useState<Date | undefined>(undefined);
+  const [rangeEnd, setRangeEnd] = useState<Date | undefined>(undefined);
+  const [rangeStartOpen, setRangeStartOpen] = useState(false);
+  const [rangeEndOpen, setRangeEndOpen] = useState(false);
   const [ledgerFilter, setLedgerFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const viewAllTime = viewMode === 'all';
 
   useEffect(() => { fetchParties(); fetchAllPartyTransactions(); }, []);
   useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewAllTime]);
