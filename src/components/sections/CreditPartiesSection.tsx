@@ -642,64 +642,141 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
         {/* Transaction Dialog */}
         <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingTx ? 'Edit Entry' : txType === 'payment' ? 'Record Payment (Credit)' : txType === 'debit' ? 'Manual Debit Entry' : `Add ${txType === 'petroleum' ? 'Petroleum' : 'Tyre'} Debit`}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Type</Label>
-                <Select value={txType} onValueChange={(v) => { setTxType(v as any); if (v !== 'petroleum') setTxFuelType(''); }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="petroleum">⛽ Petroleum (Debit)</SelectItem>
-                    <SelectItem value="tyre">🛞 Tyre (Debit)</SelectItem>
-                    <SelectItem value="debit">📤 Manual Debit</SelectItem>
-                    <SelectItem value="payment">💰 Payment (Credit)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${txType === 'payment' ? 'bg-green-500/10' : txType === 'petroleum' ? 'bg-blue-500/10' : txType === 'tyre' ? 'bg-accent/10' : 'bg-destructive/10'}`}>
+                  {txType === 'payment' ? <Banknote className="h-5 w-5 text-green-600" /> : txType === 'petroleum' ? <Fuel className="h-5 w-5 text-blue-500" /> : txType === 'tyre' ? <CircleDot className="h-5 w-5 text-accent" /> : <ArrowUpRight className="h-5 w-5 text-destructive" />}
+                </div>
+                <div>
+                  <DialogTitle className="text-base">{editingTx ? 'Edit Entry' : txType === 'payment' ? 'Record Payment (Credit)' : txType === 'debit' ? 'Manual Debit Entry' : `Add ${txType === 'petroleum' ? 'Petroleum' : 'Tyre'} Debit`}</DialogTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">{selectedParty.name}</p>
+                </div>
               </div>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              {/* Type Selector as visual pills */}
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transaction Type</Label>
+                <div className="grid grid-cols-4 gap-1.5 mt-2">
+                  {[
+                    { value: 'petroleum', label: 'Fuel', icon: <Fuel className="h-3.5 w-3.5" />, color: 'text-blue-500 border-blue-500/40 bg-blue-500/5' },
+                    { value: 'tyre', label: 'Tyre', icon: <CircleDot className="h-3.5 w-3.5" />, color: 'text-accent border-accent/40 bg-accent/5' },
+                    { value: 'debit', label: 'Debit', icon: <ArrowUpRight className="h-3.5 w-3.5" />, color: 'text-destructive border-destructive/40 bg-destructive/5' },
+                    { value: 'payment', label: 'Credit', icon: <Banknote className="h-3.5 w-3.5" />, color: 'text-green-600 border-green-500/40 bg-green-500/5' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => { setTxType(opt.value as any); if (opt.value !== 'petroleum') setTxFuelType(''); }}
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all text-xs font-medium ${
+                        txType === opt.value
+                          ? `${opt.color} ring-1 ring-offset-1 ring-offset-background`
+                          : 'border-border/50 text-muted-foreground hover:border-border'
+                      }`}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fuel Type Pills */}
               {txType === 'petroleum' && (
                 <div>
-                  <Label>Fuel Type *</Label>
-                  <Select value={txFuelType} onValueChange={(v) => setTxFuelType(v as 'diesel' | 'petrol')}>
-                    <SelectTrigger><SelectValue placeholder="Select fuel type" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="diesel">Diesel</SelectItem>
-                      <SelectItem value="petrol">Petrol</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fuel Type *</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setTxFuelType('diesel')}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                        txFuelType === 'diesel' ? 'border-blue-500/50 bg-blue-500/10 text-blue-500' : 'border-border/50 text-muted-foreground hover:border-border'
+                      }`}
+                    >
+                      <Fuel className="h-4 w-4" /> Diesel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTxFuelType('petrol')}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                        txFuelType === 'petrol' ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500' : 'border-border/50 text-muted-foreground hover:border-border'
+                      }`}
+                    >
+                      <Fuel className="h-4 w-4" /> Petrol
+                    </button>
+                  </div>
                 </div>
               )}
+
+              {/* Fuel quantity fields */}
               {txType === 'petroleum' && (
-                <>
-                  <div><Label>Litres *</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="Enter litres" /></div>
-                  <div><Label>Rate per Litre (₹)</Label><Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Optional — auto-calculates total" /></div>
-                </>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Litres *</Label>
+                    <Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="0.00" className="mt-1.5 font-mono" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Rate/Litre (₹)</Label>
+                    <Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Auto" className="mt-1.5 font-mono" />
+                  </div>
+                </div>
               )}
+
+              {/* Amount */}
               <div>
-                <Label>Amount (₹) * {txType === 'petroleum' && txLitres && txRatePerLitre && !txManualAmount ? '(Auto)' : ''}</Label>
-                <Input type="number" value={txAmount} onChange={(e) => { setTxAmount(e.target.value); if (txType === 'petroleum') setTxManualAmount(true); }} placeholder="Amount" />
+                <Label className="text-xs">
+                  Amount (₹) *
+                  {txType === 'petroleum' && txLitres && txRatePerLitre && !txManualAmount && (
+                    <Badge variant="outline" className="ml-2 text-[9px] h-4 px-1.5 border-green-500/30 text-green-600">Auto-calculated</Badge>
+                  )}
+                </Label>
+                <div className="relative mt-1.5">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">₹</span>
+                  <Input
+                    type="number"
+                    value={txAmount}
+                    onChange={(e) => { setTxAmount(e.target.value); if (txType === 'petroleum') setTxManualAmount(true); }}
+                    placeholder="0.00"
+                    className="pl-7 font-mono text-lg font-bold h-12"
+                  />
+                </div>
               </div>
-              {txType === 'tyre' && <div><Label>Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="Tyre name (optional)" /></div>}
-              <div>
-                <Label>Date</Label>
-                <Popover open={txCalendarOpen} onOpenChange={setTxCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      <CalendarIcon className="h-4 w-4 mr-2" />{format(txDate, 'dd MMM yyyy')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={txDate} onSelect={(d) => { if (d) setTxDate(d); setTxCalendarOpen(false); }} initialFocus />
-                  </PopoverContent>
-                </Popover>
+
+              {txType === 'tyre' && (
+                <div>
+                  <Label className="text-xs">Tyre Name</Label>
+                  <Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="e.g. MRF 295/80" className="mt-1.5" />
+                </div>
+              )}
+
+              {/* Date & Notes in a compact row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Date</Label>
+                  <Popover open={txCalendarOpen} onOpenChange={setTxCalendarOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start mt-1.5 h-10 text-sm">
+                        <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />{format(txDate, 'dd MMM yyyy')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar mode="single" selected={txDate} onSelect={(d) => { if (d) setTxDate(d); setTxCalendarOpen(false); }} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label className="text-xs">Notes</Label>
+                  <Input value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Optional" className="mt-1.5 h-10" />
+                </div>
               </div>
-              <div><Label>Notes</Label><Textarea value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Optional notes" /></div>
             </div>
-            <DialogFooter>
-              <Button onClick={editingTx ? updateTransaction : addTransaction} className="w-full">
-                {editingTx ? 'Update Entry' : 'Add Entry'}
+            <DialogFooter className="mt-2">
+              <Button
+                onClick={editingTx ? updateTransaction : addTransaction}
+                className={`w-full h-11 text-sm font-semibold ${txType === 'payment' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+              >
+                {editingTx ? 'Update Entry' : txType === 'payment' ? '✓ Record Payment' : '+ Add Entry'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -714,15 +791,36 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
         {/* Edit Party Dialog */}
         <Dialog open={!!editingParty} onOpenChange={(open) => { if (!open) { setEditingParty(null); setNewName(''); setNewPhone(''); setNewAddress(''); setNewPartyNotes(''); } }}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Edit Party</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><Label>Name *</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} /></div>
-              <div><Label>Phone</Label><Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} /></div>
-              <div><Label>Address</Label><Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} /></div>
-              <div><Label>Notes</Label><Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} /></div>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <DialogTitle className="text-base">Edit Party Details</DialogTitle>
+              </div>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label className="text-xs">Name *</Label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} className="mt-1.5" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Phone</Label>
+                  <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} className="mt-1.5" />
+                </div>
+                <div>
+                  <Label className="text-xs">Address</Label>
+                  <Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} className="mt-1.5" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Notes</Label>
+                <Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} className="mt-1.5" rows={2} />
+              </div>
             </div>
-            <DialogFooter><Button onClick={updateParty} className="w-full">Update Party</Button></DialogFooter>
+            <DialogFooter className="mt-2"><Button onClick={updateParty} className="w-full h-11 text-sm font-semibold">Update Party</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -866,15 +964,39 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
       {/* Add Party Dialog */}
       <Dialog open={showAddParty} onOpenChange={setShowAddParty}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Credit Party</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Name *</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Party name" /></div>
-            <div><Label>Phone</Label><Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone number" /></div>
-            <div><Label>Address</Label><Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Address" /></div>
-            <div><Label>Notes</Label><Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} placeholder="Notes" /></div>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Plus className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-base">Add Credit Party</DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Create a new party for credit tracking</p>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-xs">Party Name *</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Enter party name" className="mt-1.5" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Phone</Label>
+                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone number" className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-xs">Address</Label>
+                <Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Address" className="mt-1.5" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Notes</Label>
+              <Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} placeholder="Any additional notes" className="mt-1.5" rows={2} />
+            </div>
           </div>
-          <DialogFooter><Button onClick={addParty} className="w-full">Add Party</Button></DialogFooter>
+          <DialogFooter className="mt-2"><Button onClick={addParty} className="w-full h-11 text-sm font-semibold">Add Party</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
