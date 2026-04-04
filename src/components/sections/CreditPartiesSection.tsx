@@ -378,7 +378,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const sharePartyWhatsApp = () => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
-    const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
+    const period = viewMode === 'all' ? 'All Time' : viewMode === 'range' ? `${rangeStart ? format(rangeStart, 'dd MMM yyyy') : '...'} to ${rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : '...'}` : `${months[selectedMonth - 1]} ${selectedYear}`;
     let msg = `*Credit Ledger: ${selectedParty.name}*\n${period}\n\n`;
     if (dieselTotal > 0) msg += `Diesel: ${dieselLitres.toFixed(1)}L = Rs.${dieselTotal.toLocaleString('en-IN')}\n`;
     if (petrolTotal > 0) msg += `Petrol: ${petrolLitres.toFixed(1)}L = Rs.${petrolTotal.toLocaleString('en-IN')}\n`;
