@@ -91,12 +91,17 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [viewAllTime, setViewAllTime] = useState(true);
+  const [viewMode, setViewMode] = useState<'all' | 'monthly' | 'range'>('all');
+  const [rangeStart, setRangeStart] = useState<Date | undefined>(undefined);
+  const [rangeEnd, setRangeEnd] = useState<Date | undefined>(undefined);
+  const [rangeStartOpen, setRangeStartOpen] = useState(false);
+  const [rangeEndOpen, setRangeEndOpen] = useState(false);
   const [ledgerFilter, setLedgerFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const viewAllTime = viewMode === 'all';
 
   useEffect(() => { fetchParties(); fetchAllPartyTransactions(); }, []);
-  useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewAllTime]);
+  useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewMode, rangeStart, rangeEnd]);
 
   useEffect(() => {
     if (txType === 'petroleum' && !txManualAmount && txLitres && txRatePerLitre) {
@@ -126,11 +131,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const fetchTransactions = async (partyId: string) => {
     let query = supabase.from('credit_party_transactions').select('*').eq('party_id', partyId).order('date', { ascending: true });
-    if (!viewAllTime) {
+    if (viewMode === 'monthly') {
       const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
       const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
       const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
       query = query.gte('date', startDate).lte('date', endDate);
+    } else if (viewMode === 'range') {
+      if (rangeStart) query = query.gte('date', format(rangeStart, 'yyyy-MM-dd'));
+      if (rangeEnd) query = query.lte('date', format(rangeEnd, 'yyyy-MM-dd'));
     }
     const { data } = await query;
     if (data) setAllTransactions(data as Transaction[]);
@@ -317,7 +325,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     doc.setFontSize(16);
     doc.text(`Credit Ledger: ${selectedParty.name}`, 14, 15);
     doc.setFontSize(10);
-    const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
+    const period = viewMode === 'all' ? 'All Time' : viewMode === 'range' ? `${rangeStart ? format(rangeStart, 'dd MMM yyyy') : '...'} to ${rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : '...'}` : `${months[selectedMonth - 1]} ${selectedYear}`;
     doc.text(period, 14, 22);
     doc.text(`Debit: ${formatCurrencyForPDF(totalDebits)} | Credit: ${formatCurrencyForPDF(totalCredits)} | Pending: ${formatCurrencyForPDF(pendingBalance)}`, 14, 30);
     let infoY = 36;
@@ -370,7 +378,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const sharePartyWhatsApp = () => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
-    const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
+    const period = viewMode === 'all' ? 'All Time' : viewMode === 'range' ? `${rangeStart ? format(rangeStart, 'dd MMM yyyy') : '...'} to ${rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : '...'}` : `${months[selectedMonth - 1]} ${selectedYear}`;
     let msg = `*Credit Ledger: ${selectedParty.name}*\n${period}\n\n`;
     if (dieselTotal > 0) msg += `Diesel: ${dieselLitres.toFixed(1)}L = Rs.${dieselTotal.toLocaleString('en-IN')}\n`;
     if (petrolTotal > 0) msg += `Petrol: ${petrolLitres.toFixed(1)}L = Rs.${petrolTotal.toLocaleString('en-IN')}\n`;
@@ -517,10 +525,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
         {/* Period + Filter Controls */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Tabs value={viewAllTime ? 'all' : 'monthly'} onValueChange={(v) => setViewAllTime(v === 'all')}>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'all' | 'monthly' | 'range')}>
             <TabsList className="h-8">
               <TabsTrigger value="all" className="text-xs px-3 h-7">All Time</TabsTrigger>
               <TabsTrigger value="monthly" className="text-xs px-3 h-7">Monthly</TabsTrigger>
+              <TabsTrigger value="range" className="text-xs px-3 h-7">Date Range</TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex-1" />
@@ -533,7 +542,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           </Tabs>
         </div>
 
-        {!viewAllTime && (
+        {viewMode === 'monthly' && (
           <div className="grid grid-cols-2 gap-2 mb-3">
             <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -543,6 +552,33 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
+          </div>
+        )}
+
+        {viewMode === 'range' && (
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <Popover open={rangeStartOpen} onOpenChange={setRangeStartOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start h-9 text-xs">
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  {rangeStart ? format(rangeStart, 'dd MMM yyyy') : 'Start date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={rangeStart} onSelect={(d) => { setRangeStart(d); setRangeStartOpen(false); }} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            <Popover open={rangeEndOpen} onOpenChange={setRangeEndOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start h-9 text-xs">
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  {rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : 'End date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar mode="single" selected={rangeEnd} onSelect={(d) => { setRangeEnd(d); setRangeEndOpen(false); }} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
