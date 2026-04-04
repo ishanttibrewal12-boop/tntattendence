@@ -964,15 +964,39 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
       {/* Add Party Dialog */}
       <Dialog open={showAddParty} onOpenChange={setShowAddParty}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Credit Party</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Name *</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Party name" /></div>
-            <div><Label>Phone</Label><Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone number" /></div>
-            <div><Label>Address</Label><Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Address" /></div>
-            <div><Label>Notes</Label><Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} placeholder="Notes" /></div>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Plus className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-base">Add Credit Party</DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Create a new party for credit tracking</p>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-xs">Party Name *</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Enter party name" className="mt-1.5" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Phone</Label>
+                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone number" className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-xs">Address</Label>
+                <Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Address" className="mt-1.5" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Notes</Label>
+              <Textarea value={newPartyNotes} onChange={(e) => setNewPartyNotes(e.target.value)} placeholder="Any additional notes" className="mt-1.5" rows={2} />
+            </div>
           </div>
-          <DialogFooter><Button onClick={addParty} className="w-full">Add Party</Button></DialogFooter>
+          <DialogFooter className="mt-2"><Button onClick={addParty} className="w-full h-11 text-sm font-semibold">Add Party</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
