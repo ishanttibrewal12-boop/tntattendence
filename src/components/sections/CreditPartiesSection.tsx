@@ -325,7 +325,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     doc.setFontSize(16);
     doc.text(`Credit Ledger: ${selectedParty.name}`, 14, 15);
     doc.setFontSize(10);
-    const period = viewAllTime ? 'All Time' : `${months[selectedMonth - 1]} ${selectedYear}`;
+    const period = viewMode === 'all' ? 'All Time' : viewMode === 'range' ? `${rangeStart ? format(rangeStart, 'dd MMM yyyy') : '...'} to ${rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : '...'}` : `${months[selectedMonth - 1]} ${selectedYear}`;
     doc.text(period, 14, 22);
     doc.text(`Debit: ${formatCurrencyForPDF(totalDebits)} | Credit: ${formatCurrencyForPDF(totalCredits)} | Pending: ${formatCurrencyForPDF(pendingBalance)}`, 14, 30);
     let infoY = 36;
