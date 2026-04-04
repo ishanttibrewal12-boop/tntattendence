@@ -131,11 +131,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
   const fetchTransactions = async (partyId: string) => {
     let query = supabase.from('credit_party_transactions').select('*').eq('party_id', partyId).order('date', { ascending: true });
-    if (!viewAllTime) {
+    if (viewMode === 'monthly') {
       const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
       const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
       const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
       query = query.gte('date', startDate).lte('date', endDate);
+    } else if (viewMode === 'range') {
+      if (rangeStart) query = query.gte('date', format(rangeStart, 'yyyy-MM-dd'));
+      if (rangeEnd) query = query.lte('date', format(rangeEnd, 'yyyy-MM-dd'));
     }
     const { data } = await query;
     if (data) setAllTransactions(data as Transaction[]);
