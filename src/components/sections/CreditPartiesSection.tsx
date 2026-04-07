@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Plus, Trash2, Download, Share2, User, Phone, Edit2, Calendar as CalendarIcon, FileSpreadsheet, Search, CreditCard, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, MoreVertical, MapPin, StickyNote, Fuel, CircleDot, Banknote, Eye, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -63,6 +63,31 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedParty, setSelectedParty] = useState<CreditParty | null>(null);
+
+  // Browser back button support for internal navigation
+  const handledPopState = useRef(false);
+  
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedParty) {
+        handledPopState.current = true;
+        setSelectedParty(null);
+        // Re-push state so the parent's popstate doesn't also fire a back
+        window.history.pushState({}, '', '');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedParty]);
+
+  const selectParty = useCallback((party: CreditParty) => {
+    window.history.pushState({ partyView: true }, '');
+    setSelectedParty(party);
+  }, []);
+
+  const goBackFromParty = useCallback(() => {
+    window.history.back();
+  }, []);
   const [showAddParty, setShowAddParty] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -519,7 +544,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setSelectedParty(null)}>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={goBackFromParty}>
               <ChevronRight className="h-5 w-5 rotate-180" />
             </Button>
             <div>
@@ -884,7 +909,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 {filteredParties.map((party) => (
                   <tr key={party.id}
                     className="border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => setSelectedParty(party)}
+                    onClick={() => selectParty(party)}
                   >
                     <td className="p-3.5">
                       <div className="flex items-center gap-3">
@@ -938,7 +963,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           <div className="lg:hidden space-y-2">
             {filteredParties.map((party, i) => (
               <motion.div key={party.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.25 }}>
-                <Card className="cursor-pointer card-hover border-border/50 overflow-hidden" onClick={() => setSelectedParty(party)}>
+                <Card className="cursor-pointer card-hover border-border/50 overflow-hidden" onClick={() => selectParty(party)}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
