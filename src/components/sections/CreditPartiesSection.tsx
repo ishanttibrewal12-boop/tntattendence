@@ -541,7 +541,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setSelectedParty(null)}>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={goBackFromParty}>
               <ChevronRight className="h-5 w-5 rotate-180" />
             </Button>
             <div>
@@ -906,7 +906,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 {filteredParties.map((party) => (
                   <tr key={party.id}
                     className="border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => setSelectedParty(party)}
+                    onClick={() => selectParty(party)}
                   >
                     <td className="p-3.5">
                       <div className="flex items-center gap-3">
@@ -960,7 +960,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           <div className="lg:hidden space-y-2">
             {filteredParties.map((party, i) => (
               <motion.div key={party.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.25 }}>
-                <Card className="cursor-pointer card-hover border-border/50 overflow-hidden" onClick={() => setSelectedParty(party)}>
+                <Card className="cursor-pointer card-hover border-border/50 overflow-hidden" onClick={() => selectParty(party)}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
