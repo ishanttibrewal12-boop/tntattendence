@@ -65,17 +65,20 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [selectedParty, setSelectedParty] = useState<CreditParty | null>(null);
 
   // Browser back button support for internal navigation
+  const handledPopState = useRef(false);
+  
   useEffect(() => {
     const handlePopState = () => {
       if (selectedParty) {
+        handledPopState.current = true;
         setSelectedParty(null);
-      } else {
-        onBack();
+        // Re-push state so the parent's popstate doesn't also fire a back
+        window.history.pushState({}, '', '');
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedParty, onBack]);
+  }, [selectedParty]);
 
   const selectParty = useCallback((party: CreditParty) => {
     window.history.pushState({ partyView: true }, '');
