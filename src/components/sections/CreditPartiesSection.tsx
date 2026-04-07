@@ -63,6 +63,28 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedParty, setSelectedParty] = useState<CreditParty | null>(null);
+
+  // Browser back button support for internal navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedParty) {
+        setSelectedParty(null);
+      } else {
+        onBack();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedParty, onBack]);
+
+  const selectParty = useCallback((party: CreditParty) => {
+    window.history.pushState({ partyView: true }, '');
+    setSelectedParty(party);
+  }, []);
+
+  const goBackFromParty = useCallback(() => {
+    window.history.back();
+  }, []);
   const [showAddParty, setShowAddParty] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
