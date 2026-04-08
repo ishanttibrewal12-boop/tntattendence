@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ArrowLeft, Download, Share2, Search, Filter, Calendar, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,6 +54,30 @@ const YearlyDataSection = ({ onBack, category }: YearlyDataSectionProps) => {
   const [yearlyData, setYearlyData] = useState<YearlyReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const handledPopState = useRef(false);
+
+  // Browser back button support
+  useEffect(() => {
+    const handlePopState = () => {
+      if (handledPopState.current) { handledPopState.current = false; return; }
+      if (selectedStaff) {
+        handledPopState.current = true;
+        setSelectedStaff(null);
+        window.history.pushState({}, '', '');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedStaff]);
+
+  const selectStaff = useCallback((staff: YearlyReport) => {
+    window.history.pushState({ staffView: true }, '');
+    setSelectedStaff(staff);
+  }, []);
+
+  const goBackFromStaff = useCallback(() => {
+    window.history.back();
+  }, []);
 
   const fetchYearlyData = async () => {
     setIsLoading(true);
@@ -238,7 +262,7 @@ const YearlyDataSection = ({ onBack, category }: YearlyDataSectionProps) => {
       <div className="min-h-screen bg-background">
         <div className="sticky top-0 z-10 bg-background border-b">
           <div className="flex items-center gap-3 p-4">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedStaff(null)}>
+            <Button variant="ghost" size="icon" onClick={goBackFromStaff}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex-1">
@@ -347,7 +371,7 @@ const YearlyDataSection = ({ onBack, category }: YearlyDataSectionProps) => {
               <Card 
                 key={`${item.staff.type}-${item.staff.id}`}
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedStaff(item)}
+                onClick={() => selectStaff(item)}
               >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">

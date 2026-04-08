@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Plus, Trash2, User, Calendar, Wallet, FileText, Download, Share2, Search, Check, Camera, UserCog, DollarSign, Truck, FolderArchive, TrendingUp, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +78,30 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [monthlyAttendance, setMonthlyAttendance] = useState<MLTAttendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStaff, setSelectedStaff] = useState<MLTStaff | null>(null);
+  const handledPopState = useRef(false);
+
+  // Browser back button support for view navigation
+  const navigateToView = useCallback((newView: ViewType) => {
+    window.history.pushState({ mltView: newView }, '');
+    setView(newView);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (handledPopState.current) { handledPopState.current = false; return; }
+      if (view === 'profile') {
+        handledPopState.current = true;
+        setView('staff-details');
+        window.history.pushState({}, '', '');
+      } else if (view !== 'home') {
+        handledPopState.current = true;
+        setView('home');
+        window.history.pushState({}, '', '');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
   
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: '', category: 'driver' as 'driver' | 'khalasi', phone: '', address: '', notes: '', base_salary: 0, designation: '' });
@@ -589,7 +613,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           ].map(item => {
             const Icon = item.icon;
             return (
-              <Card key={item.view} className="cursor-pointer card-hover border-0 shadow-sm" onClick={() => setView(item.view)}>
+              <Card key={item.view} className="cursor-pointer card-hover border-0 shadow-sm" onClick={() => navigateToView(item.view)}>
                 <CardContent className="p-4 flex flex-col items-center text-center gap-2.5">
                   <div className={`p-3 rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg`}>
                     <Icon className="h-6 w-6 text-white" />
@@ -610,7 +634,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           ].map(item => {
             const Icon = item.icon;
             return (
-              <Card key={item.view} className="cursor-pointer card-hover border-0 shadow-sm" onClick={() => setView(item.view)}>
+              <Card key={item.view} className="cursor-pointer card-hover border-0 shadow-sm" onClick={() => navigateToView(item.view)}>
                 <CardContent className="p-3.5">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-muted">
@@ -674,7 +698,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
               <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                 {staff.photo_url ? <img src={staff.photo_url} alt={staff.name} className="w-full h-full object-cover" /> : <User className="h-5 w-5 text-muted-foreground" />}
               </div>
-              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' }); setView('profile'); }}>
+              <div className="flex-1" onClick={() => { setSelectedStaff(staff); setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' }); navigateToView('profile'); }}>
                 <p className="font-medium text-foreground">{staff.name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{staff.category}{staff.designation ? ` • ${staff.designation}` : ''}</p>
               </div>
@@ -984,7 +1008,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           <Card key={staff.id} className="cursor-pointer card-hover border-0 shadow-sm" onClick={() => {
             setSelectedStaff(staff);
             setEditForm({ name: staff.name, phone: staff.phone || '', address: staff.address || '', category: staff.category, base_salary: staff.base_salary.toString(), shift_rate_28: (staff.shift_rate_28 || 0).toString(), shift_rate_30: (staff.shift_rate_30 || 0).toString(), shift_rate_31: (staff.shift_rate_31 || 0).toString(), notes: staff.notes || '', designation: staff.designation || '' });
-            setView('profile');
+            navigateToView('profile');
           }}>
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden ring-2 ring-border">
@@ -1154,8 +1178,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
       <div className="flex items-center gap-3 mb-5">
         <Button variant="ghost" size="icon" onClick={() => {
           if (view === 'home') onBack();
-          else if (view === 'profile') setView('staff-details');
-          else setView('home');
+          else window.history.back();
         }}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
