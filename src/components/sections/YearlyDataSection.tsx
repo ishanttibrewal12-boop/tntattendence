@@ -54,6 +54,30 @@ const YearlyDataSection = ({ onBack, category }: YearlyDataSectionProps) => {
   const [yearlyData, setYearlyData] = useState<YearlyReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const handledPopState = useRef(false);
+
+  // Browser back button support
+  useEffect(() => {
+    const handlePopState = () => {
+      if (handledPopState.current) { handledPopState.current = false; return; }
+      if (selectedStaff) {
+        handledPopState.current = true;
+        setSelectedStaff(null);
+        window.history.pushState({}, '', '');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedStaff]);
+
+  const selectStaff = useCallback((staff: YearlyReport) => {
+    window.history.pushState({ staffView: true }, '');
+    setSelectedStaff(staff);
+  }, []);
+
+  const goBackFromStaff = useCallback(() => {
+    window.history.back();
+  }, []);
 
   const fetchYearlyData = async () => {
     setIsLoading(true);
