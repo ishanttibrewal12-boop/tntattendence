@@ -86,13 +86,6 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     setView(newView);
   }, []);
 
-  const navigateToProfile = useCallback((staff: MLTStaff, editFormData: any) => {
-    setSelectedStaff(staff);
-    setEditForm(editFormData);
-    window.history.pushState({ mltView: 'profile' }, '');
-    setView('profile');
-  }, []);
-
   useEffect(() => {
     const handlePopState = () => {
       if (handledPopState.current) { handledPopState.current = false; return; }
