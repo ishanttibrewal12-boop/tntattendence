@@ -371,7 +371,7 @@ const YearlyDataSection = ({ onBack, category }: YearlyDataSectionProps) => {
               <Card 
                 key={`${item.staff.type}-${item.staff.id}`}
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedStaff(item)}
+                onClick={() => selectStaff(item)}
               >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">
