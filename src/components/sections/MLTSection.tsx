@@ -78,6 +78,37 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [monthlyAttendance, setMonthlyAttendance] = useState<MLTAttendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStaff, setSelectedStaff] = useState<MLTStaff | null>(null);
+  const handledPopState = useRef(false);
+
+  // Browser back button support for view navigation
+  const navigateToView = useCallback((newView: ViewType) => {
+    window.history.pushState({ mltView: newView }, '');
+    setView(newView);
+  }, []);
+
+  const navigateToProfile = useCallback((staff: MLTStaff, editFormData: any) => {
+    setSelectedStaff(staff);
+    setEditForm(editFormData);
+    window.history.pushState({ mltView: 'profile' }, '');
+    setView('profile');
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (handledPopState.current) { handledPopState.current = false; return; }
+      if (view === 'profile') {
+        handledPopState.current = true;
+        setView('staff-details');
+        window.history.pushState({}, '', '');
+      } else if (view !== 'home') {
+        handledPopState.current = true;
+        setView('home');
+        window.history.pushState({}, '', '');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
   
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: '', category: 'driver' as 'driver' | 'khalasi', phone: '', address: '', notes: '', base_salary: 0, designation: '' });
