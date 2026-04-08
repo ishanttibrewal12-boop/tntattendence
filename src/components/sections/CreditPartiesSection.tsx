@@ -225,7 +225,6 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const addTransaction = async () => {
     if (!txAmount || !selectedParty) { toast.error('Amount required'); return; }
     if (txType === 'petroleum' && !txFuelType) { toast.error('Please select Diesel or Petrol'); return; }
-    if (txType === 'petroleum' && !txLitres) { toast.error('Litres is required for petroleum entries'); return; }
     const insertData: any = {
       party_id: selectedParty.id, transaction_type: txType, amount: parseFloat(txAmount),
       litres: txType === 'petroleum' && txLitres ? parseFloat(txLitres) : null,
@@ -246,7 +245,6 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const updateTransaction = async () => {
     if (!editingTx || !txAmount) return;
     if (txType === 'petroleum' && !txFuelType) { toast.error('Please select Diesel or Petrol'); return; }
-    if (txType === 'petroleum' && !txLitres) { toast.error('Litres is required for petroleum entries'); return; }
     const updateData: any = {
       transaction_type: txType, amount: parseFloat(txAmount),
       litres: txType === 'petroleum' && txLitres ? parseFloat(txLitres) : null,
