@@ -62,7 +62,18 @@ const AppContent = () => {
 };
 
 const App = () => {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes default
+        gcTime: 1000 * 60 * 30,   // 30 minutes gc
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        retry: 2,
+        refetchInterval: false,
+      },
+    },
+  }));
 
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
