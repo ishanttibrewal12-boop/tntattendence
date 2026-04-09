@@ -1,0 +1,31 @@
+ALTER PUBLICATION supabase_realtime ADD TABLE public.reminders;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.advances;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.mlt_advances;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.vehicle_maintenance;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.attendance;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.staff;
+
+-- Performance indexes for frequently queried columns
+CREATE INDEX IF NOT EXISTS idx_advances_date ON public.advances(date);
+CREATE INDEX IF NOT EXISTS idx_advances_staff_id ON public.advances(staff_id);
+CREATE INDEX IF NOT EXISTS idx_advances_is_deducted ON public.advances(is_deducted);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_staff_id ON public.attendance(staff_id);
+CREATE INDEX IF NOT EXISTS idx_credit_party_transactions_party_id ON public.credit_party_transactions(party_id);
+CREATE INDEX IF NOT EXISTS idx_credit_party_transactions_date ON public.credit_party_transactions(date);
+CREATE INDEX IF NOT EXISTS idx_production_entries_date ON public.production_entries(date);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_date ON public.stock_movements(date);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON public.stock_movements(product_name);
+CREATE INDEX IF NOT EXISTS idx_mlt_fuel_reports_date ON public.mlt_fuel_reports(date);
+CREATE INDEX IF NOT EXISTS idx_mlt_attendance_date ON public.mlt_attendance(date);
+CREATE INDEX IF NOT EXISTS idx_mlt_attendance_staff_id ON public.mlt_attendance(staff_id);
+CREATE INDEX IF NOT EXISTS idx_mlt_advances_staff_id ON public.mlt_advances(staff_id);
+CREATE INDEX IF NOT EXISTS idx_dispatch_reports_date ON public.dispatch_reports(date);
+CREATE INDEX IF NOT EXISTS idx_petroleum_sales_date ON public.petroleum_sales(date);
+CREATE INDEX IF NOT EXISTS idx_payroll_month_year ON public.payroll(month, year);
+CREATE INDEX IF NOT EXISTS idx_salary_records_month_year ON public.salary_records(month, year);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON public.activity_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_crusher_fuel_entries_date ON public.crusher_fuel_entries(date);
+CREATE INDEX IF NOT EXISTS idx_bolder_reports_date ON public.bolder_reports(date);
+CREATE INDEX IF NOT EXISTS idx_party_payments_party_id ON public.party_payments(party_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_maintenance_vehicle_id ON public.vehicle_maintenance(vehicle_id);

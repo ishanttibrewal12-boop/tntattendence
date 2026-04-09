@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
+      devOptions: {
+        enabled: false,
+      },
       manifest: {
         name: 'Tibrewal Group',
         short_name: 'Tibrewal',
@@ -36,10 +39,12 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/~oauth/],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/hcrzulunbiemwcdifnuh\.supabase\.co\/rest\/v1\/.*/i,
@@ -54,6 +59,24 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200],
               },
               networkTimeoutSeconds: 5,
+            },
+          },
+          {
+            urlPattern: /^https:\/\/hcrzulunbiemwcdifnuh\.supabase\.co\/auth\/.*/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/hcrzulunbiemwcdifnuh\.supabase\.co\/storage\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'supabase-storage-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
           {
@@ -78,7 +101,6 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // JS/CSS are handled by precache — no runtime caching needed
         ],
       },
     }),
