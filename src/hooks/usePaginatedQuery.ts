@@ -52,28 +52,38 @@ export function usePaginatedQuery<T = any>(options: UsePaginatedQueryOptions) {
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
-      .from(table)
-      .select(select, { count: 'exact' })
-      .order(orderBy, { ascending })
-      .range(from, to);
+    // Build query using raw fetch to avoid deep type instantiation
+    const params = new URLSearchParams();
+    params.set('select', select);
+    params.set('order', `${orderBy}.${ascending ? 'asc' : 'desc'}`);
+    params.set('offset', from.toString());
+    params.set('limit', pageSize.toString());
 
     // Apply filters
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        query = query.eq(key, value);
+        params.set(key, `eq.${value}`);
       }
     });
 
     // Apply search
     if (searchColumn && searchQuery) {
-      query = query.ilike(searchColumn, `%${searchQuery}%`);
+      params.set(searchColumn, `ilike.*${searchQuery}*`);
     }
 
-    const { data, count, error } = await query;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/${table}?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Prefer': 'count=exact',
+      },
+    });
 
-    if (!error) {
-      const totalCount = count || 0;
+    const data = await res.json();
+    const totalCount = parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
+
+    if (res.ok) {
       const totalPages = Math.ceil(totalCount / pageSize);
       setState({
         data: (data || []) as T[],
