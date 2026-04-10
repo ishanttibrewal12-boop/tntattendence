@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Plus, Trash2, Search, Edit2, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Search, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { usePaginatedQuery } from '@/hooks/usePaginatedQuery';
+import TablePagination from '@/components/ui/TablePagination';
 
 interface Staff {
   id: string;
@@ -26,22 +28,13 @@ interface StaffSectionProps {
   category?: 'petroleum' | 'crusher' | 'office';
 }
 
-const PAGE_SIZE = 50;
-
 const StaffSection = ({ onBack, category }: StaffSectionProps) => {
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<Staff | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [confirmAdd, setConfirmAdd] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Form state
@@ -61,53 +54,37 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
     return () => clearTimeout(searchTimerRef.current);
   }, [searchQuery]);
 
-  // Reset and fetch when search or category changes
+  const filters: Record<string, any> = { is_active: true };
+  if (category) filters.category = category;
+
+  const {
+    data: staffList,
+    totalCount,
+    currentPage,
+    totalPages,
+    pageSize,
+    isLoading,
+    hasNext,
+    hasPrev,
+    nextPage,
+    prevPage,
+    fetchPage,
+    refresh,
+  } = usePaginatedQuery<Staff>({
+    table: 'staff',
+    select: 'id,name,category,phone,base_salary,is_active,notes,address',
+    pageSize: 50,
+    orderBy: 'name',
+    ascending: true,
+    filters,
+    searchColumn: debouncedSearch ? 'name' : undefined,
+    searchQuery: debouncedSearch || undefined,
+  });
+
+  // Fetch first page on mount and when filters change
   useEffect(() => {
-    setStaffList([]);
-    setPage(0);
-    setHasMore(true);
-    fetchPage(0, true);
-  }, [category, debouncedSearch]);
-
-  const fetchPage = useCallback(async (pageNum: number, reset = false) => {
-    if (reset) setIsLoading(true);
-    else setIsLoadingMore(true);
-
-    const from = pageNum * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    let query = supabase
-      .from('staff')
-      .select('id, name, category, phone, base_salary, is_active, notes, address', { count: 'exact' })
-      .eq('is_active', true)
-      .order('name')
-      .range(from, to);
-
-    if (category) query = query.eq('category', category);
-    if (debouncedSearch) query = query.ilike('name', `%${debouncedSearch}%`);
-
-    const { data, count } = await query;
-    
-    if (data) {
-      setStaffList(prev => reset ? data as Staff[] : [...prev, ...(data as Staff[])]);
-      setTotalCount(count || 0);
-      setHasMore(data.length === PAGE_SIZE);
-    }
-    
-    setIsLoading(false);
-    setIsLoadingMore(false);
-  }, [category, debouncedSearch]);
-
-  // Infinite scroll handler
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || isLoadingMore || !hasMore) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchPage(nextPage);
-    }
-  }, [page, isLoadingMore, hasMore, fetchPage]);
+    fetchPage(0);
+  }, [fetchPage]);
 
   const resetForm = () => {
     setName('');
@@ -171,10 +148,7 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
     setDialogOpen(false);
     setConfirmAdd(false);
     resetForm();
-    setStaffList([]);
-    setPage(0);
-    setHasMore(true);
-    fetchPage(0, true);
+    refresh();
   };
 
   const handleDelete = async () => {
@@ -192,10 +166,7 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
 
     toast.success('Staff removed');
     setDeleteDialog(null);
-    setStaffList([]);
-    setPage(0);
-    setHasMore(true);
-    fetchPage(0, true);
+    refresh();
   };
 
   return (
@@ -228,46 +199,23 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
           <div className="space-y-4 mt-4">
             <div>
               <Label>Name *</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter name"
-              />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" />
             </div>
             <div>
               <Label>Phone</Label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter phone number"
-              />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Enter phone number" />
             </div>
             <div>
               <Label>Address</Label>
-              <Textarea
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter address"
-                className="min-h-[60px]"
-              />
+              <Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter address" className="min-h-[60px]" />
             </div>
             <div>
               <Label>Base Salary (₹)</Label>
-              <Input
-                type="number"
-                value={baseSalary}
-                onChange={(e) => setBaseSalary(e.target.value)}
-                placeholder="Enter monthly salary"
-              />
+              <Input type="number" value={baseSalary} onChange={(e) => setBaseSalary(e.target.value)} placeholder="Enter monthly salary" />
             </div>
             <div>
               <Label>Notes</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes about this staff..."
-                className="min-h-[60px]"
-              />
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes about this staff..." className="min-h-[60px]" />
             </div>
             <Button onClick={() => editingStaff ? handleSubmit() : setConfirmAdd(true)} className="w-full">
               {editingStaff ? 'Update Staff' : 'Add Staff'}
@@ -280,12 +228,7 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
       <div className="mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-10"
-            placeholder="Search staff..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <Input className="pl-10" placeholder="Search staff..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
       </div>
 
@@ -310,58 +253,47 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
           <p className="text-xs mt-1">Try adjusting your search or add new staff</p>
         </div>
       ) : (
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="space-y-2 max-h-[60vh] overflow-y-auto pr-1"
-        >
-          {staffList.map((staff) => (
-            <Card key={staff.id}>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{staff.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {staff.phone && <span>{staff.phone}</span>}
+        <>
+          <div className="space-y-2">
+            {staffList.map((staff) => (
+              <Card key={staff.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{staff.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {staff.phone && <span>{staff.phone}</span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">₹{staff.base_salary.toLocaleString()}/month</p>
+                      {staff.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 bg-muted/30 p-1 rounded">📝 {staff.notes}</p>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">₹{staff.base_salary.toLocaleString()}/month</p>
-                    {staff.notes && (
-                      <p className="text-xs text-muted-foreground mt-1 bg-muted/30 p-1 rounded">📝 {staff.notes}</p>
-                    )}
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(staff)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteDialog(staff)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => openEditDialog(staff)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => setDeleteDialog(staff)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {isLoadingMore && (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          {!hasMore && staffList.length > 0 && (
-            <p className="text-center text-xs text-muted-foreground py-2">
-              Showing all {totalCount} staff
-            </p>
-          )}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            hasNext={hasNext}
+            hasPrev={hasPrev}
+            onNext={nextPage}
+            onPrev={prevPage}
+            isLoading={isLoading}
+          />
+        </>
       )}
 
       {/* Add Confirmation Dialog */}
