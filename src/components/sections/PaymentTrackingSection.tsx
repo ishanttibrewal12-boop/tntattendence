@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import TablePagination from '@/components/ui/TablePagination';
 import { ArrowLeft, Plus, IndianRupee, AlertTriangle, Clock, CheckCircle, CreditCard, TrendingUp, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,6 +140,19 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
     return limit > 0 && getPartyStats(p.id).dueAmount > limit;
   });
 
+  const PARTY_PAGE_SIZE = 20;
+  const [partyPage, setPartyPage] = useState(0);
+  const [paymentPage, setPaymentPage] = useState(0);
+  const PAYMENT_PAGE_SIZE = 20;
+
+  useEffect(() => { setPartyPage(0); }, [selectedParty]);
+
+  const partyTotalPages = Math.ceil(filteredParties.length / PARTY_PAGE_SIZE);
+  const paginatedParties = filteredParties.slice(partyPage * PARTY_PAGE_SIZE, (partyPage + 1) * PARTY_PAGE_SIZE);
+
+  const paymentTotalPages = Math.ceil(payments.length / PAYMENT_PAGE_SIZE);
+  const paginatedPayments = payments.slice(paymentPage * PAYMENT_PAGE_SIZE, (paymentPage + 1) * PAYMENT_PAGE_SIZE);
+
   return (
     <div className="p-4 max-w-md mx-auto">
       <div className="flex items-center gap-3 mb-4">
@@ -270,7 +284,7 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
 
       {/* Party Cards */}
       <div className="space-y-3">
-        {filteredParties.map(party => {
+        {paginatedParties.map(party => {
           const stats = getPartyStats(party.id);
           const limit = Number(party.credit_limit);
           const isOverLimit = limit > 0 && stats.dueAmount > limit;
@@ -304,13 +318,23 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
           );
         })}
       </div>
+      <TablePagination
+        currentPage={partyPage}
+        totalPages={partyTotalPages}
+        totalCount={filteredParties.length}
+        pageSize={PARTY_PAGE_SIZE}
+        hasNext={partyPage < partyTotalPages - 1}
+        hasPrev={partyPage > 0}
+        onNext={() => setPartyPage(p => p + 1)}
+        onPrev={() => setPartyPage(p => p - 1)}
+      />
 
       {/* Recent Payments */}
       {payments.length > 0 && (
         <div className="mt-6">
           <h2 className="text-sm font-bold text-foreground mb-2">Recent Payments</h2>
           <div className="space-y-2">
-            {payments.slice(0, 10).map(p => {
+            {paginatedPayments.map(p => {
               const party = parties.find(pt => pt.id === p.party_id);
               return (
                 <Card key={p.id}>
@@ -333,6 +357,16 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
               );
             })}
           </div>
+          <TablePagination
+            currentPage={paymentPage}
+            totalPages={paymentTotalPages}
+            totalCount={payments.length}
+            pageSize={PAYMENT_PAGE_SIZE}
+            hasNext={paymentPage < paymentTotalPages - 1}
+            hasPrev={paymentPage > 0}
+            onNext={() => setPaymentPage(p => p + 1)}
+            onPrev={() => setPaymentPage(p => p - 1)}
+          />
         </div>
       )}
     </div>

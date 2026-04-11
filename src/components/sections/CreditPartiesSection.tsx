@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import TablePagination from '@/components/ui/TablePagination';
 import { Plus, Trash2, Download, Share2, User, Phone, Edit2, Calendar as CalendarIcon, FileSpreadsheet, Search, CreditCard, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, MoreVertical, MapPin, StickyNote, Fuel, CircleDot, Banknote, Eye, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -123,6 +124,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [ledgerFilter, setLedgerFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const viewAllTime = viewMode === 'all';
+  const [partyPage, setPartyPage] = useState(0);
+  const [ledgerPage, setLedgerPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   useEffect(() => { fetchParties(); fetchAllPartyTransactions(); }, []);
   useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewMode, rangeStart, rangeEnd]);
@@ -189,6 +193,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const totalPortfolioDebit = partiesWithBalance.reduce((s, p) => s + p.totalDebit, 0);
   const totalPortfolioCredit = partiesWithBalance.reduce((s, p) => s + p.totalCredit, 0);
   const totalPortfolioPending = partiesWithBalance.reduce((s, p) => s + p.pendingBalance, 0);
+
+  // Reset pages when filters change
+  useEffect(() => { setPartyPage(0); }, [searchQuery, sortBy]);
+  useEffect(() => { setLedgerPage(0); }, [ledgerFilter, selectedParty, selectedMonth, selectedYear, viewMode]);
+
+  // Paginated slices
+  const partyTotalPages = Math.ceil(filteredParties.length / PAGE_SIZE);
+  const paginatedParties = filteredParties.slice(partyPage * PAGE_SIZE, (partyPage + 1) * PAGE_SIZE);
 
   const addParty = async () => {
     if (!newName) { toast.error('Name is required'); return; }
@@ -537,6 +549,8 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   // ============ PARTY LEDGER VIEW ============
   if (selectedParty) {
     const ledger = filteredLedger;
+    const ledgerTotalPages = Math.ceil(ledger.length / PAGE_SIZE);
+    const paginatedLedger = ledger.slice(ledgerPage * PAGE_SIZE, (ledgerPage + 1) * PAGE_SIZE);
     return (
       <div className="p-4 lg:p-8 max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
         {/* Header */}
@@ -724,7 +738,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 </tr>
               </thead>
               <tbody>
-                {ledger.map((tx) => {
+                {paginatedLedger.map((tx) => {
                   const isCredit = tx.transaction_type === 'payment';
                   const fuelLabel = getFuelTypeLabel(tx);
                   return (
@@ -770,7 +784,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-1.5 max-h-[50vh] overflow-y-auto">
           <AnimatePresence>
-            {ledger.map((tx, i) => {
+            {paginatedLedger.map((tx, i) => {
               const isCredit = tx.transaction_type === 'payment';
               const icon = tx.transaction_type === 'payment' ? <Banknote className="h-3.5 w-3.5" />
                 : tx.transaction_type === 'petroleum' ? <Fuel className="h-3.5 w-3.5" />
@@ -821,6 +835,16 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {renderTransactionDialog()}
         {renderDeleteTxDialog()}
         {renderEditPartyDialog()}
+        <TablePagination
+          currentPage={ledgerPage}
+          totalPages={ledgerTotalPages}
+          totalCount={ledger.length}
+          pageSize={PAGE_SIZE}
+          hasNext={ledgerPage < ledgerTotalPages - 1}
+          hasPrev={ledgerPage > 0}
+          onNext={() => setLedgerPage(p => p + 1)}
+          onPrev={() => setLedgerPage(p => p - 1)}
+        />
       </div>
     );
   }
@@ -904,7 +928,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredParties.map((party) => (
+                {paginatedParties.map((party) => (
                   <tr key={party.id}
                     className="border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => selectParty(party)}
@@ -959,7 +983,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
           {/* Mobile Cards */}
           <div className="lg:hidden space-y-2">
-            {filteredParties.map((party, i) => (
+            {paginatedParties.map((party, i) => (
               <motion.div key={party.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.25 }}>
                 <Card className="cursor-pointer card-hover border-border/50 overflow-hidden" onClick={() => selectParty(party)}>
                   <CardContent className="p-4">
@@ -1001,6 +1025,17 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           </div>
         </>
       )}
+
+      <TablePagination
+        currentPage={partyPage}
+        totalPages={partyTotalPages}
+        totalCount={filteredParties.length}
+        pageSize={PAGE_SIZE}
+        hasNext={partyPage < partyTotalPages - 1}
+        hasPrev={partyPage > 0}
+        onNext={() => setPartyPage(p => p + 1)}
+        onPrev={() => setPartyPage(p => p - 1)}
+      />
 
       {/* Add Party Dialog */}
       <Dialog open={showAddParty} onOpenChange={setShowAddParty}>

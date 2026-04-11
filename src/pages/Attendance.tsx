@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, ChevronLeft, ChevronRight, User } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import SectionBreadcrumb from '@/components/layout/SectionBreadcrumb';
 import { TableSkeleton } from '@/components/sections/SectionWrapper';
+import { usePaginatedQuery } from '@/hooks/usePaginatedQuery';
+import TablePagination from '@/components/ui/TablePagination';
 
 interface Staff {
   id: string;
@@ -60,33 +62,59 @@ const statusLabels: Record<AttendanceStatus, string> = {
 };
 
 const Attendance = () => {
-  const [staffList, setStaffList] = useState<Staff[]>([]);
   const [attendance, setAttendance] = useState<Map<string, AttendanceRecord>>(new Map());
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const { toast } = useToast();
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Paginated staff query
+  const {
+    data: staffList,
+    totalCount,
+    currentPage,
+    totalPages,
+    pageSize,
+    isLoading: staffLoading,
+    hasNext,
+    hasPrev,
+    nextPage,
+    prevPage,
+    fetchPage,
+    refresh: refreshStaff,
+  } = usePaginatedQuery<Staff>({
+    table: 'staff',
+    select: 'id,name,designation',
+    pageSize: 50,
+    orderBy: 'name',
+    ascending: true,
+    filters: { is_active: true },
+    searchColumn: debouncedSearch ? 'name' : undefined,
+    searchQuery: debouncedSearch || undefined,
+  });
+
+  // Fetch initial page
+  useEffect(() => {
+    fetchPage(0);
+  }, [fetchPage]);
+
+  // Fetch attendance for selected date
+  const fetchAttendance = useCallback(async () => {
+    setAttendanceLoading(true);
     try {
-      // Fetch active staff
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('id, name, designation')
-        .eq('is_active', true)
-        .order('name');
-
-      if (staffError) throw staffError;
-      setStaffList(staffData || []);
-
-      // Fetch attendance for selected date
-      const { data: attendanceData, error: attendanceError } = await supabase
+      const { data: attendanceData, error } = await supabase
         .from('attendance')
         .select('*')
         .eq('date', selectedDate);
 
-      if (attendanceError) throw attendanceError;
+      if (error) throw error;
 
       const attendanceMap = new Map<string, AttendanceRecord>();
       attendanceData?.forEach((record) => {
@@ -94,20 +122,20 @@ const Attendance = () => {
       });
       setAttendance(attendanceMap);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching attendance:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch attendance data',
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setAttendanceLoading(false);
     }
-  };
+  }, [selectedDate, toast]);
 
   useEffect(() => {
-    fetchData();
-  }, [selectedDate]);
+    fetchAttendance();
+  }, [fetchAttendance]);
 
   const updateAttendance = async (staffId: string, status: AttendanceStatus) => {
     try {
@@ -118,22 +146,16 @@ const Attendance = () => {
           .from('attendance')
           .update({ status })
           .eq('id', existingRecord.id);
-
         if (error) throw error;
       } else {
         const { error } = await supabase.from('attendance').insert([
-          {
-            staff_id: staffId,
-            date: selectedDate,
-            status,
-          },
+          { staff_id: staffId, date: selectedDate, status },
         ]);
-
         if (error) throw error;
       }
 
       toast({ title: 'Success', description: 'Attendance updated' });
-      fetchData();
+      fetchAttendance();
     } catch (error) {
       console.error('Error updating attendance:', error);
       toast({
@@ -146,22 +168,25 @@ const Attendance = () => {
 
   const markAllAs = async (status: AttendanceStatus) => {
     try {
-      const updates = staffList.map((staff) => ({
+      // We need all staff IDs for bulk marking - fetch all
+      const { data: allStaff, error: staffErr } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('is_active', true);
+      if (staffErr) throw staffErr;
+
+      const updates = (allStaff || []).map((staff) => ({
         staff_id: staff.id,
         date: selectedDate,
         status,
       }));
 
-      // Delete existing records for this date
       await supabase.from('attendance').delete().eq('date', selectedDate);
-
-      // Insert new records
       const { error } = await supabase.from('attendance').insert(updates);
-
       if (error) throw error;
 
       toast({ title: 'Success', description: `All staff marked as ${statusLabels[status]}` });
-      fetchData();
+      fetchAttendance();
     } catch (error) {
       console.error('Error marking all:', error);
       toast({
@@ -171,10 +196,6 @@ const Attendance = () => {
       });
     }
   };
-
-  const filteredStaff = staffList.filter((staff) =>
-    staff.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const changeDate = (days: number) => {
     const newDate = addDays(new Date(selectedDate), days);
@@ -191,10 +212,11 @@ const Attendance = () => {
     (a) => a.status === 'half_day'
   ).length;
 
+  const isLoading = staffLoading || attendanceLoading;
+
   return (
     <div className="space-y-6">
       <SectionBreadcrumb />
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Attendance</h1>
         <p className="text-muted-foreground">Track daily attendance for your staff</p>
@@ -228,7 +250,6 @@ const Attendance = () => {
               </Button>
             </div>
 
-            {/* Quick Actions */}
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => markAllAs('present')}>
                 Mark All Present
@@ -251,7 +272,7 @@ const Attendance = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-foreground">{staffList.length}</div>
+            <div className="text-2xl font-bold text-foreground">{totalCount}</div>
             <p className="text-sm text-muted-foreground">Total Staff</p>
           </CardContent>
         </Card>
@@ -293,72 +314,85 @@ const Attendance = () => {
         <CardContent>
           {isLoading ? (
             <TableSkeleton rows={6} />
-          ) : filteredStaff.length === 0 ? (
+          ) : staffList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No staff found. Add staff members first!
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Designation</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStaff.map((staff) => {
-                    const record = attendance.get(staff.id);
-                    const currentStatus = record?.status;
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Designation</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {staffList.map((staff) => {
+                      const record = attendance.get(staff.id);
+                      const currentStatus = record?.status;
 
-                    return (
-                      <TableRow key={staff.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
+                      return (
+                        <TableRow key={staff.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="h-5 w-5 text-primary" />
+                              </div>
+                              <span className="font-medium">{staff.name}</span>
                             </div>
-                            <span className="font-medium">{staff.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{staff.designation || '-'}</TableCell>
-                        <TableCell>
-                          {currentStatus ? (
-                            <Badge className={statusColors[currentStatus]}>
-                              {statusLabels[currentStatus]}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">Not Marked</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={currentStatus || ''}
-                            onValueChange={(value) =>
-                              updateAttendance(staff.id, value as AttendanceStatus)
-                            }
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="present">Present</SelectItem>
-                              <SelectItem value="absent">Absent</SelectItem>
-                              <SelectItem value="half_day">Half Day</SelectItem>
-                              <SelectItem value="holiday">Holiday</SelectItem>
-                              <SelectItem value="sunday">Sunday</SelectItem>
-                              <SelectItem value="leave">Leave</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                          </TableCell>
+                          <TableCell>{staff.designation || '-'}</TableCell>
+                          <TableCell>
+                            {currentStatus ? (
+                              <Badge className={statusColors[currentStatus]}>
+                                {statusLabels[currentStatus]}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">Not Marked</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={currentStatus || ''}
+                              onValueChange={(value) =>
+                                updateAttendance(staff.id, value as AttendanceStatus)
+                              }
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="present">Present</SelectItem>
+                                <SelectItem value="absent">Absent</SelectItem>
+                                <SelectItem value="half_day">Half Day</SelectItem>
+                                <SelectItem value="holiday">Holiday</SelectItem>
+                                <SelectItem value="sunday">Sunday</SelectItem>
+                                <SelectItem value="leave">Leave</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                hasNext={hasNext}
+                hasPrev={hasPrev}
+                onNext={nextPage}
+                onPrev={prevPage}
+                isLoading={staffLoading}
+              />
+            </>
           )}
         </CardContent>
       </Card>
