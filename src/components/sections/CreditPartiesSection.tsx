@@ -777,6 +777,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                           {tx.transaction_type === 'payment' ? 'Credit' : tx.transaction_type === 'petroleum' ? 'Petroleum' : tx.transaction_type === 'tyre' ? 'Tyre' : 'Debit'}
                         </span>
                         {fuelLabel && <Badge variant="outline" className={`ml-1.5 text-[10px] px-1.5 py-0 h-5 ${tx.fuel_type === 'diesel' ? 'border-blue-500/40 text-blue-400' : 'border-emerald-500/40 text-emerald-400'}`}>{fuelLabel}</Badge>}
+                        {isCredit && tx.payment_mode && <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0 h-5 border-green-500/40 text-green-500">{tx.payment_mode === 'upi' ? 'UPI' : tx.payment_mode === 'bank_transfer' ? 'Bank' : 'Cash'}</Badge>}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">
                         {tx.litres && <span>{tx.litres}L</span>}
@@ -827,6 +828,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md ${isCredit ? 'bg-green-500/15 text-green-600' : 'bg-destructive/10 text-destructive'}`}>{icon}{typeLabel}</span>
                             {fuelLabel && <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${tx.fuel_type === 'diesel' ? 'border-blue-500/40 text-blue-400' : 'border-emerald-500/40 text-emerald-400'}`}>{fuelLabel}</Badge>}
+                            {isCredit && tx.payment_mode && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-500/40 text-green-500">{tx.payment_mode === 'upi' ? 'UPI' : tx.payment_mode === 'bank_transfer' ? 'Bank' : 'Cash'}</Badge>}
                             <span className={`font-bold text-sm ${isCredit ? 'text-green-600' : 'text-foreground'}`}>{isCredit ? '-' : '+'}₹{Number(tx.amount).toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
