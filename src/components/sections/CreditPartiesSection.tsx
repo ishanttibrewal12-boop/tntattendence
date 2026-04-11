@@ -549,6 +549,8 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   // ============ PARTY LEDGER VIEW ============
   if (selectedParty) {
     const ledger = filteredLedger;
+    const ledgerTotalPages = Math.ceil(ledger.length / PAGE_SIZE);
+    const paginatedLedger = ledger.slice(ledgerPage * PAGE_SIZE, (ledgerPage + 1) * PAGE_SIZE);
     return (
       <div className="p-4 lg:p-8 max-w-5xl mx-auto pb-24 lg:pb-8 section-enter">
         {/* Header */}
