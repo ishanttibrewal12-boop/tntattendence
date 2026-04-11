@@ -178,9 +178,13 @@ const Home = () => {
   useEffect(() => {
     const handlePopState = () => {
       if (activeSection) {
-        triggerLogoBack('section');
+        // Go back from section to department (or home if no department)
+        setActiveSection(null);
+        if (!activeDepartment) {
+          // No department context, we're already at home after clearing section
+        }
       } else if (activeDepartment) {
-        triggerLogoBack('department');
+        setActiveDepartment(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
