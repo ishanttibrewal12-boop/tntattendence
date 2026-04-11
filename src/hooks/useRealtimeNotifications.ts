@@ -14,6 +14,25 @@ interface RealtimeNotification {
 export function useRealtimeNotifications() {
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
 
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+      oscillator.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + 0.2);
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.4);
+    } catch (e) {
+      // Audio not supported, silently ignore
+    }
+  }, []);
+
   const addNotification = useCallback((n: Omit<RealtimeNotification, 'id' | 'timestamp' | 'read'>) => {
     const notification: RealtimeNotification = {
       ...n,
@@ -23,7 +42,8 @@ export function useRealtimeNotifications() {
     };
     setNotifications(prev => [notification, ...prev].slice(0, 50));
     toast.info(n.title, { description: n.message, duration: 4000 });
-  }, []);
+    playNotificationSound();
+  }, [playNotificationSound]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
