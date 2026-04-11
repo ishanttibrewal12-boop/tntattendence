@@ -284,7 +284,7 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
 
       {/* Party Cards */}
       <div className="space-y-3">
-        {filteredParties.map(party => {
+        {paginatedParties.map(party => {
           const stats = getPartyStats(party.id);
           const limit = Number(party.credit_limit);
           const isOverLimit = limit > 0 && stats.dueAmount > limit;
@@ -318,6 +318,16 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
           );
         })}
       </div>
+      <TablePagination
+        currentPage={partyPage}
+        totalPages={partyTotalPages}
+        totalCount={filteredParties.length}
+        pageSize={PARTY_PAGE_SIZE}
+        hasNext={partyPage < partyTotalPages - 1}
+        hasPrev={partyPage > 0}
+        onNext={() => setPartyPage(p => p + 1)}
+        onPrev={() => setPartyPage(p => p - 1)}
+      />
 
       {/* Recent Payments */}
       {payments.length > 0 && (
