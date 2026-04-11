@@ -334,7 +334,7 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
         <div className="mt-6">
           <h2 className="text-sm font-bold text-foreground mb-2">Recent Payments</h2>
           <div className="space-y-2">
-            {payments.slice(0, 10).map(p => {
+            {paginatedPayments.map(p => {
               const party = parties.find(pt => pt.id === p.party_id);
               return (
                 <Card key={p.id}>
@@ -357,6 +357,16 @@ const PaymentTrackingSection = ({ onBack }: PaymentTrackingProps) => {
               );
             })}
           </div>
+          <TablePagination
+            currentPage={paymentPage}
+            totalPages={paymentTotalPages}
+            totalCount={payments.length}
+            pageSize={PAYMENT_PAGE_SIZE}
+            hasNext={paymentPage < paymentTotalPages - 1}
+            hasPrev={paymentPage > 0}
+            onNext={() => setPaymentPage(p => p + 1)}
+            onPrev={() => setPaymentPage(p => p - 1)}
+          />
         </div>
       )}
     </div>
