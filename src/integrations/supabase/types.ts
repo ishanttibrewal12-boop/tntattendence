@@ -362,6 +362,7 @@ export type Database = {
           litres: number | null
           notes: string | null
           party_id: string
+          payment_mode: string | null
           rate_per_litre: number | null
           transaction_type: string
           tyre_name: string | null
@@ -376,6 +377,7 @@ export type Database = {
           litres?: number | null
           notes?: string | null
           party_id: string
+          payment_mode?: string | null
           rate_per_litre?: number | null
           transaction_type?: string
           tyre_name?: string | null
@@ -390,6 +392,7 @@ export type Database = {
           litres?: number | null
           notes?: string | null
           party_id?: string
+          payment_mode?: string | null
           rate_per_litre?: number | null
           transaction_type?: string
           tyre_name?: string | null
