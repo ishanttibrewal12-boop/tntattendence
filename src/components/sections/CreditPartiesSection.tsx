@@ -44,6 +44,7 @@ interface Transaction {
   notes: string | null;
   fuel_type: string | null;
   rate_per_litre: number | null;
+  payment_mode: string | null;
 }
 
 interface PartyWithBalance extends CreditParty {
@@ -113,6 +114,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [txNotes, setTxNotes] = useState('');
   const [txCalendarOpen, setTxCalendarOpen] = useState(false);
   const [txManualAmount, setTxManualAmount] = useState(false);
+  const [txPaymentMode, setTxPaymentMode] = useState<'upi' | 'bank_transfer' | 'cash'>('cash');
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -244,6 +246,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       date: format(txDate, 'yyyy-MM-dd'), notes: txNotes || null,
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
+      payment_mode: txType === 'payment' ? txPaymentMode : null,
     };
     const { error } = await supabase.from('credit_party_transactions').insert(insertData);
     if (error) { toast.error('Failed to add'); return; }
@@ -264,6 +267,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       date: format(txDate, 'yyyy-MM-dd'), notes: txNotes || null,
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
+      payment_mode: txType === 'payment' ? txPaymentMode : null,
     };
     const { error } = await supabase.from('credit_party_transactions').update(updateData).eq('id', editingTx.id);
     if (error) { toast.error('Failed to update'); return; }
@@ -285,7 +289,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   };
 
   const resetTxForm = () => {
-    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false);
+    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false); setTxPaymentMode('cash');
   };
 
   const openEditTx = (tx: Transaction) => {
@@ -299,6 +303,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setTxNotes(tx.notes || '');
     setTxFuelType((tx.fuel_type as 'diesel' | 'petrol') || '');
     setTxManualAmount(true);
+    setTxPaymentMode((tx.payment_mode as 'upi' | 'bank_transfer' | 'cash') || 'cash');
   };
 
   const openEditParty = (party: CreditParty) => {
@@ -486,6 +491,27 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
               <Input type="number" value={txAmount} onChange={(e) => { setTxAmount(e.target.value); if (txType === 'petroleum') setTxManualAmount(true); }} placeholder="0.00" className="pl-7 font-mono text-lg font-bold h-12" />
             </div>
           </div>
+          {txType === 'payment' && (
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment Mode *</Label>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {[
+                  { value: 'upi', label: 'UPI', icon: '📱' },
+                  { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦' },
+                  { value: 'cash', label: 'Cash', icon: '💵' },
+                ].map(opt => (
+                  <button key={opt.value} type="button"
+                    onClick={() => setTxPaymentMode(opt.value as any)}
+                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all text-xs font-medium ${
+                      txPaymentMode === opt.value 
+                        ? 'border-green-500/50 bg-green-500/10 text-green-600 ring-1 ring-offset-1 ring-offset-background ring-green-500/30' 
+                        : 'border-border/50 text-muted-foreground hover:border-border'
+                    }`}
+                  ><span className="text-base">{opt.icon}</span>{opt.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
           {txType === 'tyre' && (
             <div><Label className="text-xs">Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="e.g. MRF 295/80" className="mt-1.5" /></div>
           )}
@@ -751,6 +777,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                           {tx.transaction_type === 'payment' ? 'Credit' : tx.transaction_type === 'petroleum' ? 'Petroleum' : tx.transaction_type === 'tyre' ? 'Tyre' : 'Debit'}
                         </span>
                         {fuelLabel && <Badge variant="outline" className={`ml-1.5 text-[10px] px-1.5 py-0 h-5 ${tx.fuel_type === 'diesel' ? 'border-blue-500/40 text-blue-400' : 'border-emerald-500/40 text-emerald-400'}`}>{fuelLabel}</Badge>}
+                        {isCredit && tx.payment_mode && <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0 h-5 border-green-500/40 text-green-500">{tx.payment_mode === 'upi' ? 'UPI' : tx.payment_mode === 'bank_transfer' ? 'Bank' : 'Cash'}</Badge>}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">
                         {tx.litres && <span>{tx.litres}L</span>}
@@ -801,6 +828,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md ${isCredit ? 'bg-green-500/15 text-green-600' : 'bg-destructive/10 text-destructive'}`}>{icon}{typeLabel}</span>
                             {fuelLabel && <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${tx.fuel_type === 'diesel' ? 'border-blue-500/40 text-blue-400' : 'border-emerald-500/40 text-emerald-400'}`}>{fuelLabel}</Badge>}
+                            {isCredit && tx.payment_mode && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-500/40 text-green-500">{tx.payment_mode === 'upi' ? 'UPI' : tx.payment_mode === 'bank_transfer' ? 'Bank' : 'Cash'}</Badge>}
                             <span className={`font-bold text-sm ${isCredit ? 'text-green-600' : 'text-foreground'}`}>{isCredit ? '-' : '+'}₹{Number(tx.amount).toLocaleString('en-IN')}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
