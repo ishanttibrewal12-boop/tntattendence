@@ -194,6 +194,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const totalPortfolioCredit = partiesWithBalance.reduce((s, p) => s + p.totalCredit, 0);
   const totalPortfolioPending = partiesWithBalance.reduce((s, p) => s + p.pendingBalance, 0);
 
+  // Reset pages when filters change
+  useEffect(() => { setPartyPage(0); }, [searchQuery, sortBy]);
+  useEffect(() => { setLedgerPage(0); }, [ledgerFilter, selectedParty, selectedMonth, selectedYear, viewMode]);
+
+  // Paginated slices
+  const partyTotalPages = Math.ceil(filteredParties.length / PAGE_SIZE);
+  const paginatedParties = filteredParties.slice(partyPage * PAGE_SIZE, (partyPage + 1) * PAGE_SIZE);
+
   const addParty = async () => {
     if (!newName) { toast.error('Name is required'); return; }
     const { error } = await supabase.from('credit_parties').insert({ name: newName, phone: newPhone || null, address: newAddress || null, notes: newPartyNotes || null });
