@@ -738,7 +738,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 </tr>
               </thead>
               <tbody>
-                {ledger.map((tx) => {
+                {paginatedLedger.map((tx) => {
                   const isCredit = tx.transaction_type === 'payment';
                   const fuelLabel = getFuelTypeLabel(tx);
                   return (
@@ -784,7 +784,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-1.5 max-h-[50vh] overflow-y-auto">
           <AnimatePresence>
-            {ledger.map((tx, i) => {
+            {paginatedLedger.map((tx, i) => {
               const isCredit = tx.transaction_type === 'payment';
               const icon = tx.transaction_type === 'payment' ? <Banknote className="h-3.5 w-3.5" />
                 : tx.transaction_type === 'petroleum' ? <Fuel className="h-3.5 w-3.5" />
@@ -835,6 +835,16 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         {renderTransactionDialog()}
         {renderDeleteTxDialog()}
         {renderEditPartyDialog()}
+        <TablePagination
+          currentPage={ledgerPage}
+          totalPages={ledgerTotalPages}
+          totalCount={ledger.length}
+          pageSize={PAGE_SIZE}
+          hasNext={ledgerPage < ledgerTotalPages - 1}
+          hasPrev={ledgerPage > 0}
+          onNext={() => setLedgerPage(p => p + 1)}
+          onPrev={() => setLedgerPage(p => p - 1)}
+        />
       </div>
     );
   }
@@ -918,7 +928,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredParties.map((party) => (
+                {paginatedParties.map((party) => (
                   <tr key={party.id}
                     className="border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => selectParty(party)}
@@ -973,7 +983,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
           {/* Mobile Cards */}
           <div className="lg:hidden space-y-2">
-            {filteredParties.map((party, i) => (
+            {paginatedParties.map((party, i) => (
               <motion.div key={party.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.25 }}>
                 <Card className="cursor-pointer card-hover border-border/50 overflow-hidden" onClick={() => selectParty(party)}>
                   <CardContent className="p-4">
