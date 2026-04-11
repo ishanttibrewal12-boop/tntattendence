@@ -44,6 +44,7 @@ interface Transaction {
   notes: string | null;
   fuel_type: string | null;
   rate_per_litre: number | null;
+  payment_mode: string | null;
 }
 
 interface PartyWithBalance extends CreditParty {
@@ -113,6 +114,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [txNotes, setTxNotes] = useState('');
   const [txCalendarOpen, setTxCalendarOpen] = useState(false);
   const [txManualAmount, setTxManualAmount] = useState(false);
+  const [txPaymentMode, setTxPaymentMode] = useState<'upi' | 'bank_transfer' | 'cash'>('cash');
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -244,6 +246,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       date: format(txDate, 'yyyy-MM-dd'), notes: txNotes || null,
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
+      payment_mode: txType === 'payment' ? txPaymentMode : null,
     };
     const { error } = await supabase.from('credit_party_transactions').insert(insertData);
     if (error) { toast.error('Failed to add'); return; }
@@ -264,6 +267,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       date: format(txDate, 'yyyy-MM-dd'), notes: txNotes || null,
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
+      payment_mode: txType === 'payment' ? txPaymentMode : null,
     };
     const { error } = await supabase.from('credit_party_transactions').update(updateData).eq('id', editingTx.id);
     if (error) { toast.error('Failed to update'); return; }
@@ -285,7 +289,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   };
 
   const resetTxForm = () => {
-    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false);
+    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false); setTxPaymentMode('cash');
   };
 
   const openEditTx = (tx: Transaction) => {
