@@ -124,6 +124,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [ledgerFilter, setLedgerFilter] = useState<'all' | 'debit' | 'credit'>('all');
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const viewAllTime = viewMode === 'all';
+  const [partyPage, setPartyPage] = useState(0);
+  const [ledgerPage, setLedgerPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   useEffect(() => { fetchParties(); fetchAllPartyTransactions(); }, []);
   useEffect(() => { if (selectedParty) fetchTransactions(selectedParty.id); }, [selectedParty, selectedMonth, selectedYear, viewMode, rangeStart, rangeEnd]);
