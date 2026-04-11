@@ -1026,6 +1026,17 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
         </>
       )}
 
+      <TablePagination
+        currentPage={partyPage}
+        totalPages={partyTotalPages}
+        totalCount={filteredParties.length}
+        pageSize={PAGE_SIZE}
+        hasNext={partyPage < partyTotalPages - 1}
+        hasPrev={partyPage > 0}
+        onNext={() => setPartyPage(p => p + 1)}
+        onPrev={() => setPartyPage(p => p - 1)}
+      />
+
       {/* Add Party Dialog */}
       <Dialog open={showAddParty} onOpenChange={setShowAddParty}>
         <DialogContent className="max-w-md">
