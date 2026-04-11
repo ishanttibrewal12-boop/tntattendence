@@ -490,6 +490,27 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
               <Input type="number" value={txAmount} onChange={(e) => { setTxAmount(e.target.value); if (txType === 'petroleum') setTxManualAmount(true); }} placeholder="0.00" className="pl-7 font-mono text-lg font-bold h-12" />
             </div>
           </div>
+          {txType === 'payment' && (
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment Mode *</Label>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {[
+                  { value: 'upi', label: 'UPI', icon: '📱' },
+                  { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦' },
+                  { value: 'cash', label: 'Cash', icon: '💵' },
+                ].map(opt => (
+                  <button key={opt.value} type="button"
+                    onClick={() => setTxPaymentMode(opt.value as any)}
+                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all text-xs font-medium ${
+                      txPaymentMode === opt.value 
+                        ? 'border-green-500/50 bg-green-500/10 text-green-600 ring-1 ring-offset-1 ring-offset-background ring-green-500/30' 
+                        : 'border-border/50 text-muted-foreground hover:border-border'
+                    }`}
+                  ><span className="text-base">{opt.icon}</span>{opt.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
           {txType === 'tyre' && (
             <div><Label className="text-xs">Tyre Name</Label><Input value={txTyreName} onChange={(e) => setTxTyreName(e.target.value)} placeholder="e.g. MRF 295/80" className="mt-1.5" /></div>
           )}
