@@ -303,6 +303,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setTxNotes(tx.notes || '');
     setTxFuelType((tx.fuel_type as 'diesel' | 'petrol') || '');
     setTxManualAmount(true);
+    setTxPaymentMode((tx.payment_mode as 'upi' | 'bank_transfer' | 'cash') || 'cash');
   };
 
   const openEditParty = (party: CreditParty) => {
