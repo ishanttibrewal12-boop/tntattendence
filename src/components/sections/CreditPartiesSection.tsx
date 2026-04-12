@@ -33,6 +33,11 @@ interface CreditParty {
   is_active: boolean;
 }
 
+interface TruckDetail {
+  truck_number: string;
+  litres: number | string;
+}
+
 interface Transaction {
   id: string;
   party_id: string;
@@ -45,6 +50,7 @@ interface Transaction {
   fuel_type: string | null;
   rate_per_litre: number | null;
   payment_mode: string | null;
+  truck_details: TruckDetail[] | null;
 }
 
 interface PartyWithBalance extends CreditParty {
