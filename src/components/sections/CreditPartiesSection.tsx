@@ -821,6 +821,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                         {tx.rate_per_litre && <span> @ ₹{tx.rate_per_litre}/L</span>}
                         {tx.tyre_name && <span>{tx.tyre_name}</span>}
                         {tx.notes && <span className="italic ml-1">· {tx.notes}</span>}
+                        {Array.isArray(tx.truck_details) && tx.truck_details.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            <span className="text-[10px] font-semibold text-muted-foreground/70">🚛 {tx.truck_details.length} truck{tx.truck_details.length > 1 ? 's' : ''}</span>
+                            {tx.truck_details.map((t: TruckDetail, i: number) => (
+                              <div key={i} className="text-[10px]">{t.truck_number && <span className="font-mono">{t.truck_number}</span>}{t.litres ? ` · ${t.litres}L` : ''}</div>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-right font-mono font-bold text-sm text-destructive">{!isCredit ? `₹${Number(tx.amount).toLocaleString('en-IN')}` : ''}</td>
                       <td className="p-3 text-right font-mono font-bold text-sm text-green-600">{isCredit ? `₹${Number(tx.amount).toLocaleString('en-IN')}` : ''}</td>
@@ -874,6 +882,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                             {tx.rate_per_litre && <span>@ ₹{tx.rate_per_litre}/L</span>}
                             {tx.tyre_name && <span>· {tx.tyre_name}</span>}
                           </div>
+                          {Array.isArray(tx.truck_details) && tx.truck_details.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1 flex-wrap text-[10px] text-muted-foreground/70">
+                              <span>🚛</span>
+                              {tx.truck_details.map((t: TruckDetail, i: number) => (
+                                <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-border/50">{t.truck_number || 'Truck'}{t.litres ? ` ${t.litres}L` : ''}</Badge>
+                              ))}
+                            </div>
+                          )}
                           {tx.notes && <p className="text-[11px] text-muted-foreground/70 mt-0.5 italic">{tx.notes}</p>}
                           <p className="text-[11px] font-mono text-muted-foreground/60 mt-0.5">Bal: <span className={tx.runningBalance > 0 ? 'text-destructive' : 'text-green-600'}>₹{tx.runningBalance.toLocaleString('en-IN')}</span></p>
                         </div>
