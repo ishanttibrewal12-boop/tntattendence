@@ -157,7 +157,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     const { data } = await supabase.from('credit_party_transactions').select('*').order('date', { ascending: false });
     if (data) {
       const grouped: Record<string, Transaction[]> = {};
-      (data as Transaction[]).forEach(tx => {
+      (data as unknown as Transaction[]).forEach(tx => {
         if (!grouped[tx.party_id]) grouped[tx.party_id] = [];
         grouped[tx.party_id].push(tx);
       });
@@ -177,7 +177,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       if (rangeEnd) query = query.lte('date', format(rangeEnd, 'yyyy-MM-dd'));
     }
     const { data } = await query;
-    if (data) setAllTransactions(data as Transaction[]);
+    if (data) setAllTransactions(data as unknown as Transaction[]);
   };
 
   const partiesWithBalance: PartyWithBalance[] = useMemo(() => {
