@@ -254,6 +254,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
       payment_mode: txType === 'payment' ? txPaymentMode : null,
+      truck_details: txType === 'petroleum' && txTruckDetails.length > 0 ? txTruckDetails.filter(t => t.truck_number || t.litres) : null,
     };
     const { error } = await supabase.from('credit_party_transactions').insert(insertData);
     if (error) { toast.error('Failed to add'); return; }
@@ -275,6 +276,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
       payment_mode: txType === 'payment' ? txPaymentMode : null,
+      truck_details: txType === 'petroleum' && txTruckDetails.length > 0 ? txTruckDetails.filter(t => t.truck_number || t.litres) : null,
     };
     const { error } = await supabase.from('credit_party_transactions').update(updateData).eq('id', editingTx.id);
     if (error) { toast.error('Failed to update'); return; }
@@ -296,7 +298,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   };
 
   const resetTxForm = () => {
-    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false); setTxPaymentMode('cash');
+    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false); setTxPaymentMode('cash'); setTxTruckDetails([]);
   };
 
   const openEditTx = (tx: Transaction) => {
@@ -311,6 +313,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setTxFuelType((tx.fuel_type as 'diesel' | 'petrol') || '');
     setTxManualAmount(true);
     setTxPaymentMode((tx.payment_mode as 'upi' | 'bank_transfer' | 'cash') || 'cash');
+    setTxTruckDetails(Array.isArray(tx.truck_details) ? tx.truck_details : []);
   };
 
   const openEditParty = (party: CreditParty) => {
