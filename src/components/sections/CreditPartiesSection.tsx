@@ -33,6 +33,11 @@ interface CreditParty {
   is_active: boolean;
 }
 
+interface TruckDetail {
+  truck_number: string;
+  litres: number | string;
+}
+
 interface Transaction {
   id: string;
   party_id: string;
@@ -45,6 +50,7 @@ interface Transaction {
   fuel_type: string | null;
   rate_per_litre: number | null;
   payment_mode: string | null;
+  truck_details: TruckDetail[] | null;
 }
 
 interface PartyWithBalance extends CreditParty {
@@ -115,6 +121,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [txCalendarOpen, setTxCalendarOpen] = useState(false);
   const [txManualAmount, setTxManualAmount] = useState(false);
   const [txPaymentMode, setTxPaymentMode] = useState<'upi' | 'bank_transfer' | 'cash'>('cash');
+  const [txTruckDetails, setTxTruckDetails] = useState<TruckDetail[]>([]);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -151,7 +158,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     const { data } = await supabase.from('credit_party_transactions').select('*').order('date', { ascending: false });
     if (data) {
       const grouped: Record<string, Transaction[]> = {};
-      (data as Transaction[]).forEach(tx => {
+      (data as unknown as Transaction[]).forEach(tx => {
         if (!grouped[tx.party_id]) grouped[tx.party_id] = [];
         grouped[tx.party_id].push(tx);
       });
@@ -171,7 +178,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       if (rangeEnd) query = query.lte('date', format(rangeEnd, 'yyyy-MM-dd'));
     }
     const { data } = await query;
-    if (data) setAllTransactions(data as Transaction[]);
+    if (data) setAllTransactions(data as unknown as Transaction[]);
   };
 
   const partiesWithBalance: PartyWithBalance[] = useMemo(() => {
@@ -247,6 +254,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
       payment_mode: txType === 'payment' ? txPaymentMode : null,
+      truck_details: txType === 'petroleum' && txTruckDetails.length > 0 ? txTruckDetails.filter(t => t.truck_number || t.litres) : null,
     };
     const { error } = await supabase.from('credit_party_transactions').insert(insertData);
     if (error) { toast.error('Failed to add'); return; }
@@ -268,6 +276,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       fuel_type: txType === 'petroleum' && txFuelType ? txFuelType : null,
       rate_per_litre: txType === 'petroleum' && txRatePerLitre ? parseFloat(txRatePerLitre) : null,
       payment_mode: txType === 'payment' ? txPaymentMode : null,
+      truck_details: txType === 'petroleum' && txTruckDetails.length > 0 ? txTruckDetails.filter(t => t.truck_number || t.litres) : null,
     };
     const { error } = await supabase.from('credit_party_transactions').update(updateData).eq('id', editingTx.id);
     if (error) { toast.error('Failed to update'); return; }
@@ -289,7 +298,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   };
 
   const resetTxForm = () => {
-    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false); setTxPaymentMode('cash');
+    setTxAmount(''); setTxLitres(''); setTxRatePerLitre(''); setTxTyreName(''); setTxNotes(''); setTxDate(new Date()); setTxType('petroleum'); setTxFuelType(''); setTxManualAmount(false); setTxPaymentMode('cash'); setTxTruckDetails([]);
   };
 
   const openEditTx = (tx: Transaction) => {
@@ -304,6 +313,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     setTxFuelType((tx.fuel_type as 'diesel' | 'petrol') || '');
     setTxManualAmount(true);
     setTxPaymentMode((tx.payment_mode as 'upi' | 'bank_transfer' | 'cash') || 'cash');
+    setTxTruckDetails(Array.isArray(tx.truck_details) ? tx.truck_details : []);
   };
 
   const openEditParty = (party: CreditParty) => {
@@ -478,6 +488,33 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Litres *</Label><Input type="number" value={txLitres} onChange={(e) => setTxLitres(e.target.value)} placeholder="0.00" className="mt-1.5 font-mono" /></div>
               <div><Label className="text-xs">Rate/Litre (₹)</Label><Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Auto" className="mt-1.5 font-mono" /></div>
+            </div>
+          )}
+          {txType === 'petroleum' && (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Truck Details (Optional)</Label>
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
+                  onClick={() => setTxTruckDetails([...txTruckDetails, { truck_number: '', litres: '' }])}
+                ><Plus className="h-3 w-3 mr-1" />Add Truck</Button>
+              </div>
+              {txTruckDetails.map((truck, idx) => (
+                <div key={idx} className="flex items-center gap-2 mt-2">
+                  <Input value={truck.truck_number} onChange={(e) => {
+                    const updated = [...txTruckDetails];
+                    updated[idx] = { ...updated[idx], truck_number: e.target.value };
+                    setTxTruckDetails(updated);
+                  }} placeholder="Truck No." className="flex-1 h-9 text-xs" />
+                  <Input type="number" value={truck.litres} onChange={(e) => {
+                    const updated = [...txTruckDetails];
+                    updated[idx] = { ...updated[idx], litres: e.target.value };
+                    setTxTruckDetails(updated);
+                  }} placeholder="Litres" className="w-24 h-9 text-xs font-mono" />
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                    onClick={() => setTxTruckDetails(txTruckDetails.filter((_, i) => i !== idx))}
+                  ><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                </div>
+              ))}
             </div>
           )}
           <div>
@@ -784,6 +821,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                         {tx.rate_per_litre && <span> @ ₹{tx.rate_per_litre}/L</span>}
                         {tx.tyre_name && <span>{tx.tyre_name}</span>}
                         {tx.notes && <span className="italic ml-1">· {tx.notes}</span>}
+                        {Array.isArray(tx.truck_details) && tx.truck_details.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            <span className="text-[10px] font-semibold text-muted-foreground/70">🚛 {tx.truck_details.length} truck{tx.truck_details.length > 1 ? 's' : ''}</span>
+                            {tx.truck_details.map((t: TruckDetail, i: number) => (
+                              <div key={i} className="text-[10px]">{t.truck_number && <span className="font-mono">{t.truck_number}</span>}{t.litres ? ` · ${t.litres}L` : ''}</div>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-right font-mono font-bold text-sm text-destructive">{!isCredit ? `₹${Number(tx.amount).toLocaleString('en-IN')}` : ''}</td>
                       <td className="p-3 text-right font-mono font-bold text-sm text-green-600">{isCredit ? `₹${Number(tx.amount).toLocaleString('en-IN')}` : ''}</td>
@@ -837,6 +882,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
                             {tx.rate_per_litre && <span>@ ₹{tx.rate_per_litre}/L</span>}
                             {tx.tyre_name && <span>· {tx.tyre_name}</span>}
                           </div>
+                          {Array.isArray(tx.truck_details) && tx.truck_details.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1 flex-wrap text-[10px] text-muted-foreground/70">
+                              <span>🚛</span>
+                              {tx.truck_details.map((t: TruckDetail, i: number) => (
+                                <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-border/50">{t.truck_number || 'Truck'}{t.litres ? ` ${t.litres}L` : ''}</Badge>
+                              ))}
+                            </div>
+                          )}
                           {tx.notes && <p className="text-[11px] text-muted-foreground/70 mt-0.5 italic">{tx.notes}</p>}
                           <p className="text-[11px] font-mono text-muted-foreground/60 mt-0.5">Bal: <span className={tx.runningBalance > 0 ? 'text-destructive' : 'text-green-600'}>₹{tx.runningBalance.toLocaleString('en-IN')}</span></p>
                         </div>

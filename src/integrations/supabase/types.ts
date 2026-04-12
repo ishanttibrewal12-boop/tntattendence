@@ -365,6 +365,7 @@ export type Database = {
           payment_mode: string | null
           rate_per_litre: number | null
           transaction_type: string
+          truck_details: Json | null
           tyre_name: string | null
           updated_at: string
         }
@@ -380,6 +381,7 @@ export type Database = {
           payment_mode?: string | null
           rate_per_litre?: number | null
           transaction_type?: string
+          truck_details?: Json | null
           tyre_name?: string | null
           updated_at?: string
         }
@@ -395,6 +397,7 @@ export type Database = {
           payment_mode?: string | null
           rate_per_litre?: number | null
           transaction_type?: string
+          truck_details?: Json | null
           tyre_name?: string | null
           updated_at?: string
         }
