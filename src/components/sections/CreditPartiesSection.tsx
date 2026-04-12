@@ -345,6 +345,14 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const dieselLitres = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'diesel').reduce((s, t) => s + Number(t.litres || 0), 0);
   const petrolLitres = allTransactions.filter(t => t.transaction_type === 'petroleum' && t.fuel_type === 'petrol').reduce((s, t) => s + Number(t.litres || 0), 0);
   const tyreTotal = allTransactions.filter(t => t.transaction_type === 'tyre').reduce((s, t) => s + Number(t.amount), 0);
+  const truckStats = useMemo(() => {
+    const petroleumTxs = allTransactions.filter(t => t.transaction_type === 'petroleum' && Array.isArray(t.truck_details) && t.truck_details.length > 0);
+    const totalTruckEntries = petroleumTxs.reduce((s, t) => s + (t.truck_details?.length || 0), 0);
+    const uniqueTrucks = new Set<string>();
+    petroleumTxs.forEach(t => (t.truck_details || []).forEach((td: TruckDetail) => { if (td.truck_number) uniqueTrucks.add(td.truck_number.toUpperCase().trim()); }));
+    const totalTruckLitres = petroleumTxs.reduce((s, t) => s + (t.truck_details || []).reduce((ls: number, td: TruckDetail) => ls + Number(td.litres || 0), 0), 0);
+    return { totalTruckEntries, uniqueTrucks: uniqueTrucks.size, totalTruckLitres };
+  }, [allTransactions]);
 
   const getFuelTypeLabel = (tx: Transaction) => {
     if (tx.transaction_type !== 'petroleum') return null;
@@ -680,10 +688,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
 
         {/* Fuel & Tyre Breakdown */}
         {(dieselTotal > 0 || petrolTotal > 0 || tyreTotal > 0) && (
-          <div className="grid grid-cols-3 gap-2 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
             {dieselTotal > 0 && <Card className="border-blue-800/20 bg-blue-900/5"><CardContent className="p-3"><p className="text-[10px] font-semibold text-blue-400 uppercase">Diesel</p><p className="text-xs font-bold text-foreground mt-0.5">{formatCompactCurrency(dieselTotal)}</p><p className="text-[10px] text-muted-foreground">{dieselLitres.toFixed(1)} L</p></CardContent></Card>}
             {petrolTotal > 0 && <Card className="border-emerald-500/20 bg-emerald-500/5"><CardContent className="p-3"><p className="text-[10px] font-semibold text-emerald-400 uppercase">Petrol</p><p className="text-xs font-bold text-foreground mt-0.5">{formatCompactCurrency(petrolTotal)}</p><p className="text-[10px] text-muted-foreground">{petrolLitres.toFixed(1)} L</p></CardContent></Card>}
             {tyreTotal > 0 && <Card className="border-accent/20 bg-accent/5"><CardContent className="p-3"><p className="text-[10px] font-semibold text-accent uppercase">Tyre</p><p className="text-xs font-bold text-foreground mt-0.5">{formatCompactCurrency(tyreTotal)}</p></CardContent></Card>}
+            {truckStats.totalTruckEntries > 0 && <Card className="border-orange-500/20 bg-orange-500/5"><CardContent className="p-3"><p className="text-[10px] font-semibold text-orange-400 uppercase">🚛 Trucks</p><p className="text-xs font-bold text-foreground mt-0.5">{truckStats.totalTruckEntries} trips</p><p className="text-[10px] text-muted-foreground">{truckStats.uniqueTrucks} unique · {truckStats.totalTruckLitres.toFixed(1)} L</p></CardContent></Card>}
           </div>
         )}
 
