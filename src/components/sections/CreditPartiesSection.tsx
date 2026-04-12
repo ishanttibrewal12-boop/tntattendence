@@ -490,6 +490,33 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
               <div><Label className="text-xs">Rate/Litre (₹)</Label><Input type="number" value={txRatePerLitre} onChange={(e) => { setTxRatePerLitre(e.target.value); setTxManualAmount(false); }} placeholder="Auto" className="mt-1.5 font-mono" /></div>
             </div>
           )}
+          {txType === 'petroleum' && (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Truck Details (Optional)</Label>
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
+                  onClick={() => setTxTruckDetails([...txTruckDetails, { truck_number: '', litres: '' }])}
+                ><Plus className="h-3 w-3 mr-1" />Add Truck</Button>
+              </div>
+              {txTruckDetails.map((truck, idx) => (
+                <div key={idx} className="flex items-center gap-2 mt-2">
+                  <Input value={truck.truck_number} onChange={(e) => {
+                    const updated = [...txTruckDetails];
+                    updated[idx] = { ...updated[idx], truck_number: e.target.value };
+                    setTxTruckDetails(updated);
+                  }} placeholder="Truck No." className="flex-1 h-9 text-xs" />
+                  <Input type="number" value={truck.litres} onChange={(e) => {
+                    const updated = [...txTruckDetails];
+                    updated[idx] = { ...updated[idx], litres: e.target.value };
+                    setTxTruckDetails(updated);
+                  }} placeholder="Litres" className="w-24 h-9 text-xs font-mono" />
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                    onClick={() => setTxTruckDetails(txTruckDetails.filter((_, i) => i !== idx))}
+                  ><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                </div>
+              ))}
+            </div>
+          )}
           <div>
             <Label className="text-xs">Amount (₹) *
               {txType === 'petroleum' && txLitres && txRatePerLitre && !txManualAmount && (
