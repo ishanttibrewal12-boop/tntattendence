@@ -121,6 +121,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const [txCalendarOpen, setTxCalendarOpen] = useState(false);
   const [txManualAmount, setTxManualAmount] = useState(false);
   const [txPaymentMode, setTxPaymentMode] = useState<'upi' | 'bank_transfer' | 'cash'>('cash');
+  const [txTruckDetails, setTxTruckDetails] = useState<TruckDetail[]>([]);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
