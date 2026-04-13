@@ -392,16 +392,25 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     }
     doc.text(REPORT_FOOTER, 14, infoY);
     autoTable(doc, {
-      head: [['Date', 'Type', 'Fuel', 'Litres', 'Rate', 'Debit', 'Credit', 'Balance', 'Notes']],
-      body: ledger.map(t => [
-        format(new Date(t.date), 'dd/MM/yyyy'),
-        t.transaction_type === 'payment' ? 'Credit' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
-        getFuelTypeLabel(t) || '-', t.litres ? `${t.litres}` : '-', t.rate_per_litre ? `${t.rate_per_litre}` : '-',
-        t.transaction_type !== 'payment' ? formatCurrencyForPDF(Number(t.amount)) : '-',
-        t.transaction_type === 'payment' ? formatCurrencyForPDF(Number(t.amount)) : '-',
-        formatCurrencyForPDF(t.runningBalance), t.notes || '-',
-      ]),
-      startY: infoY + 6, styles: { fontSize: 6 },
+      head: [['Date', 'Type', 'Fuel', 'Litres', 'Rate', 'Debit', 'Credit', 'Balance', 'Mode', 'Tyre', 'Truck Details', 'Notes']],
+      body: ledger.map(t => {
+        const truckInfo = Array.isArray(t.truck_details) && t.truck_details.length > 0
+          ? (t.truck_details as TruckDetail[]).map((td: TruckDetail) => `${td.truck_number || '?'}${td.litres ? `: ${td.litres}L` : ''}`).join(', ')
+          : '-';
+        return [
+          format(new Date(t.date), 'dd/MM/yyyy'),
+          t.transaction_type === 'payment' ? 'Credit' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
+          getFuelTypeLabel(t) || '-', t.litres ? `${t.litres}` : '-', t.rate_per_litre ? `${t.rate_per_litre}` : '-',
+          t.transaction_type !== 'payment' ? formatCurrencyForPDF(Number(t.amount)) : '-',
+          t.transaction_type === 'payment' ? formatCurrencyForPDF(Number(t.amount)) : '-',
+          formatCurrencyForPDF(t.runningBalance),
+          t.payment_mode ? t.payment_mode.toUpperCase() : '-',
+          t.tyre_name || '-',
+          truckInfo,
+          t.notes || '-',
+        ];
+      }),
+      startY: infoY + 6, styles: { fontSize: 5.5 },
     });
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     addReportNotes(doc, finalY);
@@ -412,15 +421,24 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   const exportPartyExcel = () => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
-    const data = ledger.map(t => [
-      format(new Date(t.date), 'dd/MM/yyyy'),
-      t.transaction_type === 'payment' ? 'Credit' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
-      getFuelTypeLabel(t) || '-', t.litres || '', t.rate_per_litre || '',
-      t.transaction_type !== 'payment' ? Number(t.amount) : '',
-      t.transaction_type === 'payment' ? Number(t.amount) : '',
-      t.runningBalance, t.tyre_name || '', t.notes || '',
-    ]);
-    exportToExcel(data, ['Date', 'Type', 'Fuel', 'Litres', 'Rate/L', 'Debit', 'Credit', 'Balance', 'Tyre', 'Notes'], `ledger-${selectedParty.name}`, 'Ledger', `Credit Ledger: ${selectedParty.name}`);
+    const data = ledger.map(t => {
+      const truckInfo = Array.isArray(t.truck_details) && t.truck_details.length > 0
+        ? (t.truck_details as TruckDetail[]).map((td: TruckDetail) => `${td.truck_number || '?'}${td.litres ? `: ${td.litres}L` : ''}`).join(', ')
+        : '';
+      return [
+        format(new Date(t.date), 'dd/MM/yyyy'),
+        t.transaction_type === 'payment' ? 'Credit' : t.transaction_type === 'petroleum' ? 'Petroleum' : t.transaction_type === 'tyre' ? 'Tyre' : 'Debit',
+        getFuelTypeLabel(t) || '-', t.litres || '', t.rate_per_litre || '',
+        t.transaction_type !== 'payment' ? Number(t.amount) : '',
+        t.transaction_type === 'payment' ? Number(t.amount) : '',
+        t.runningBalance,
+        t.payment_mode ? t.payment_mode.toUpperCase() : '',
+        t.tyre_name || '',
+        truckInfo,
+        t.notes || '',
+      ];
+    });
+    exportToExcel(data, ['Date', 'Type', 'Fuel', 'Litres', 'Rate/L', 'Debit', 'Credit', 'Balance', 'Mode', 'Tyre', 'Truck Details', 'Notes'], `ledger-${selectedParty.name}`, 'Ledger', `Credit Ledger: ${selectedParty.name}`);
     toast.success('Excel downloaded');
   };
 
@@ -437,8 +455,15 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
       const sign = t.transaction_type === 'payment' ? '-' : '+';
       const typeLabel = t.transaction_type === 'payment' ? 'CR' : t.transaction_type === 'petroleum' ? 'Fuel' : t.transaction_type === 'tyre' ? 'Tyre' : 'DR';
       msg += `${format(new Date(t.date), 'dd MMM')}: ${typeLabel} ${sign}Rs.${Number(t.amount).toLocaleString('en-IN')} (Bal: Rs.${t.runningBalance.toLocaleString('en-IN')})`;
+      if (t.payment_mode) msg += ` [${t.payment_mode.toUpperCase()}]`;
       if (t.litres) msg += ` ${t.litres}L`;
+      if (t.rate_per_litre) msg += ` @Rs.${t.rate_per_litre}/L`;
       if (t.tyre_name) msg += ` ${t.tyre_name}`;
+      if (Array.isArray(t.truck_details) && t.truck_details.length > 0) {
+        const trucks = (t.truck_details as TruckDetail[]).map((td: TruckDetail) => `${td.truck_number || '?'}${td.litres ? `:${td.litres}L` : ''}`).join(', ');
+        msg += ` Trucks: ${trucks}`;
+      }
+      if (t.notes) msg += ` (${t.notes})`;
       msg += `\n`;
     });
     msg += `\n_${REPORT_FOOTER}_`;
