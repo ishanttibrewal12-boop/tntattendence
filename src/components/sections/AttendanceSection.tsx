@@ -534,6 +534,8 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
             <AlertDialogDescription>
               {confirmAction?.type === 'markAll' && confirmAction.status
                 ? `Mark all ${filteredStaff.length} staff as ${statusConfig[confirmAction.status].fullLabel}?`
+                : confirmAction?.type === 'markSelected' && confirmAction.status
+                ? `Mark ${selectedStaff.size} selected staff as ${statusConfig[confirmAction.status].fullLabel}?`
                 : 'Are you sure?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -542,6 +544,8 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
             <AlertDialogAction onClick={() => {
               if (confirmAction?.type === 'markAll' && confirmAction.status) {
                 markAllAs(confirmAction.status);
+              } else if (confirmAction?.type === 'markSelected' && confirmAction.status) {
+                markSelectedAs(confirmAction.status);
               }
             }}>
               Confirm
