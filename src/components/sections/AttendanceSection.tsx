@@ -473,15 +473,26 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
                 return (
                   <div
                     key={staff.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card cursor-pointer active:scale-[0.98] transition-transform"
-                    onClick={() => handleQuickTap(staff.id)}
+                    className={`flex items-center justify-between p-3 rounded-lg border border-border bg-card transition-transform ${
+                      selectMode ? '' : 'cursor-pointer active:scale-[0.98]'
+                    } ${selectMode && selectedStaff.has(staff.id) ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => selectMode ? toggleStaffSelection(staff.id) : handleQuickTap(staff.id)}
                   >
-                    <span className="text-sm font-medium text-foreground truncate flex-1">{staff.name}</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {selectMode && (
+                        <Checkbox
+                          checked={selectedStaff.has(staff.id)}
+                          onCheckedChange={() => toggleStaffSelection(staff.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
+                      <span className="text-sm font-medium text-foreground truncate">{staff.name}</span>
+                    </div>
                     <div className="flex gap-1">
                       {(['1shift', '2shift', 'absent'] as AttendanceStatus[]).map((status) => (
                         <button
                           key={status}
-                          onClick={(e) => { e.stopPropagation(); updateAttendance(staff.id, currentStatus === status ? 'not_marked' : status); }}
+                          onClick={(e) => { e.stopPropagation(); if (!selectMode) updateAttendance(staff.id, currentStatus === status ? 'not_marked' : status); }}
                           className={`w-8 h-8 rounded-md text-xs font-bold flex items-center justify-center transition-colors ${
                             currentStatus === status
                               ? `${statusConfig[status].color} text-primary-foreground`
