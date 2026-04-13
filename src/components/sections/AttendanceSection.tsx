@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as CalendarIcon, Search, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -50,11 +51,13 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'markSelected' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
 
   const navigateDate = (direction: 'prev' | 'next') => {
     let newDate = direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
