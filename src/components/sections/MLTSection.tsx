@@ -223,11 +223,38 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   };
 
   const handleQuickTap = (staffId: string) => {
+    if (selectMode) {
+      setSelectedForBulk(prev => {
+        const next = new Set(prev);
+        if (next.has(staffId)) next.delete(staffId); else next.add(staffId);
+        return next;
+      });
+      return;
+    }
     const currentStatus = getStaffAttendance(staffId);
     if (!currentStatus) updateAttendance(staffId, '1shift');
     else if (currentStatus === '1shift') updateAttendance(staffId, '2shift');
     else if (currentStatus === '2shift') updateAttendance(staffId, 'absent');
     else updateAttendance(staffId, 'not_marked');
+  };
+
+  const markSelectedAs = async (status: AttendanceStatus) => {
+    if (selectedForBulk.size === 0) { toast.error('Select staff first'); return; }
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const ids = Array.from(selectedForBulk);
+    await supabase.from('mlt_attendance').delete().eq('date', dateStr).in('staff_id', ids);
+    if (status !== 'not_marked') {
+      const records = ids.map(staffId => ({
+        staff_id: staffId, date: dateStr,
+        status: status === 'absent' ? 'absent' : 'present',
+        shift_count: status === '2shift' ? 2 : 1,
+      }));
+      await supabase.from('mlt_attendance').insert(records);
+    }
+    toast.success(`${ids.length} staff updated`);
+    setSelectedForBulk(new Set());
+    setSelectMode(false);
+    fetchData();
   };
 
   const addAdvance = async () => {
