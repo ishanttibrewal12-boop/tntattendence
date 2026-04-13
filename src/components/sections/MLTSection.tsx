@@ -130,6 +130,8 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', category: 'driver' as 'driver' | 'khalasi', base_salary: '', shift_rate_28: '', shift_rate_30: '', shift_rate_31: '', notes: '', designation: '' });
   const [salaryData, setSalaryData] = useState<{[staffId: string]: { totalShifts: number, totalAdvance: number }}>();
   const [salaryRecords, setSalaryRecords] = useState<any[]>([]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedForBulk, setSelectedForBulk] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchData();
@@ -221,11 +223,38 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   };
 
   const handleQuickTap = (staffId: string) => {
+    if (selectMode) {
+      setSelectedForBulk(prev => {
+        const next = new Set(prev);
+        if (next.has(staffId)) next.delete(staffId); else next.add(staffId);
+        return next;
+      });
+      return;
+    }
     const currentStatus = getStaffAttendance(staffId);
     if (!currentStatus) updateAttendance(staffId, '1shift');
     else if (currentStatus === '1shift') updateAttendance(staffId, '2shift');
     else if (currentStatus === '2shift') updateAttendance(staffId, 'absent');
     else updateAttendance(staffId, 'not_marked');
+  };
+
+  const markSelectedAs = async (status: AttendanceStatus) => {
+    if (selectedForBulk.size === 0) { toast.error('Select staff first'); return; }
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const ids = Array.from(selectedForBulk);
+    await supabase.from('mlt_attendance').delete().eq('date', dateStr).in('staff_id', ids);
+    if (status !== 'not_marked') {
+      const records = ids.map(staffId => ({
+        staff_id: staffId, date: dateStr,
+        status: status === 'absent' ? 'absent' : 'present',
+        shift_count: status === '2shift' ? 2 : 1,
+      }));
+      await supabase.from('mlt_attendance').insert(records);
+    }
+    toast.success(`${ids.length} staff updated`);
+    setSelectedForBulk(new Set());
+    setSelectMode(false);
+    fetchData();
   };
 
   const addAdvance = async () => {
@@ -783,14 +812,38 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </div>
         <p className="text-xs text-muted-foreground">💡 Tap to cycle: 1 Shift → 2 Shifts → Absent → Clear</p>
 
+        {/* Select Mode Controls */}
+        <div className="flex flex-wrap gap-2">
+          <Button variant={selectMode ? 'default' : 'outline'} size="sm" onClick={() => { setSelectMode(!selectMode); setSelectedForBulk(new Set()); }}>
+            <Check className="h-4 w-4 mr-1" />{selectMode ? 'Cancel' : 'Select Mode'}
+          </Button>
+          {selectMode && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setSelectedForBulk(new Set(filteredStaff.map(s => s.id)))}>
+                Select All ({filteredStaff.length})
+              </Button>
+              <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => markSelectedAs('1shift')}>
+                Sel 1S
+              </Button>
+              <Button size="sm" onClick={() => markSelectedAs('2shift')}>Sel 2S</Button>
+              <Button variant="destructive" size="sm" onClick={() => markSelectedAs('absent')}>Sel Abs</Button>
+              <Button variant="secondary" size="sm" onClick={() => markSelectedAs('not_marked')}>Sel Clear</Button>
+            </>
+          )}
+        </div>
+
         {/* Staff Attendance List */}
         <div className="space-y-1.5 max-h-[55vh] overflow-y-auto smooth-scroll">
           {filteredStaff.map(staff => {
             const status = getStaffAttendance(staff.id);
+            const isSelected = selectedForBulk.has(staff.id);
             return (
-              <Card key={staff.id} className={`cursor-pointer active:scale-[0.98] transition-all border-0 shadow-sm ${status === '1shift' ? 'border-l-4 border-l-emerald-500' : status === '2shift' ? 'border-l-4 border-l-primary' : status === 'absent' ? 'border-l-4 border-l-destructive' : 'border-l-4 border-l-transparent'}`} onClick={() => handleQuickTap(staff.id)}>
+              <Card key={staff.id} className={`cursor-pointer active:scale-[0.98] transition-all border-0 shadow-sm ${selectMode && isSelected ? 'ring-2 ring-primary' : ''} ${status === '1shift' ? 'border-l-4 border-l-emerald-500' : status === '2shift' ? 'border-l-4 border-l-primary' : status === 'absent' ? 'border-l-4 border-l-destructive' : 'border-l-4 border-l-transparent'}`} onClick={() => handleQuickTap(staff.id)}>
                 <CardContent className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {selectMode && (
+                      <Checkbox checked={isSelected} onCheckedChange={() => handleQuickTap(staff.id)} className="shrink-0" />
+                    )}
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
                       {staff.photo_url ? <img src={staff.photo_url} alt="" className="w-full h-full object-cover" /> : <User className="h-4 w-4 text-muted-foreground" />}
                     </div>
