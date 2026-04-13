@@ -357,18 +357,58 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
           </div>
 
           <div className="grid grid-cols-4 gap-1 mb-4">
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
-              All 1S
+            {selectMode ? (
+              <>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: '1shift' }); }}>
+                  Sel 1S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: '2shift' }); }}>
+                  Sel 2S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: 'absent' }); }}>
+                  Sel Abs
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: 'not_marked' }); }}>
+                  Sel Clear
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
+                  All 1S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
+                  All 2S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
+                  All Abs
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
+                  Clear
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Select Mode Toggle */}
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant={selectMode ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs"
+              onClick={() => { setSelectMode(!selectMode); setSelectedStaff(new Set()); }}
+            >
+              <CheckSquare className="h-3.5 w-3.5 mr-1" />
+              {selectMode ? 'Exit Select' : 'Select Mode'}
             </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
-              All 2S
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
-              All Abs
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
-              Clear
-            </Button>
+            {selectMode && (
+              <>
+                <Button variant="outline" size="sm" className="text-xs" onClick={toggleSelectAll}>
+                  {selectedStaff.size === getFilteredStaff().length ? 'Deselect All' : 'Select All'}
+                </Button>
+                <span className="text-xs text-muted-foreground">{selectedStaff.size} selected</span>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-2 mb-6">
