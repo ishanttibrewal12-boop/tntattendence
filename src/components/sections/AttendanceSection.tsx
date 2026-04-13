@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Share2, Calendar as CalendarIcon, Search, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -50,11 +51,13 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'markAll' | 'markSelected' | 'update' | 'clear'; status?: AttendanceStatus; staffId?: string } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
 
   const navigateDate = (direction: 'prev' | 'next') => {
     let newDate = direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1);
@@ -150,6 +153,52 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
     toast.success(status === 'not_marked' ? 'All attendance cleared' : `All marked as ${statusConfig[status].fullLabel}`);
     fetchData();
     setConfirmAction(null);
+  };
+
+  const markSelectedAs = async (status: AttendanceStatus) => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const ids = Array.from(selectedStaff);
+    if (ids.length === 0) return;
+
+    await supabase.from('attendance').delete().eq('date', dateStr).in('staff_id', ids);
+    
+    if (status !== 'not_marked') {
+      const dbStatus: 'absent' | 'present' = status === 'absent' ? 'absent' : 'present';
+      const shiftCount = status === '2shift' ? 2 : 1;
+
+      const records = ids.map((staffId) => ({
+        staff_id: staffId,
+        date: dateStr,
+        status: dbStatus,
+        shift_count: shiftCount,
+      }));
+
+      await supabase.from('attendance').insert(records);
+    }
+    
+    toast.success(`${ids.length} staff marked as ${status === 'not_marked' ? 'cleared' : statusConfig[status].fullLabel}`);
+    setSelectedStaff(new Set());
+    setSelectMode(false);
+    fetchData();
+    setConfirmAction(null);
+  };
+
+  const toggleStaffSelection = (staffId: string) => {
+    setSelectedStaff(prev => {
+      const next = new Set(prev);
+      if (next.has(staffId)) next.delete(staffId);
+      else next.add(staffId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const filtered = getFilteredStaff();
+    if (selectedStaff.size === filtered.length) {
+      setSelectedStaff(new Set());
+    } else {
+      setSelectedStaff(new Set(filtered.map(s => s.id)));
+    }
   };
 
   const getStaffAttendance = (staffId: string): AttendanceStatus | null => {
@@ -308,18 +357,58 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
           </div>
 
           <div className="grid grid-cols-4 gap-1 mb-4">
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
-              All 1S
+            {selectMode ? (
+              <>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: '1shift' }); }}>
+                  Sel 1S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: '2shift' }); }}>
+                  Sel 2S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: 'absent' }); }}>
+                  Sel Abs
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { if (selectedStaff.size === 0) { toast.error('Select staff first'); return; } setConfirmAction({ type: 'markSelected', status: 'not_marked' }); }}>
+                  Sel Clear
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '1shift' })}>
+                  All 1S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
+                  All 2S
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
+                  All Abs
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
+                  Clear
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Select Mode Toggle */}
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant={selectMode ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs"
+              onClick={() => { setSelectMode(!selectMode); setSelectedStaff(new Set()); }}
+            >
+              <CheckSquare className="h-3.5 w-3.5 mr-1" />
+              {selectMode ? 'Exit Select' : 'Select Mode'}
             </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: '2shift' })}>
-              All 2S
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'absent' })}>
-              All Abs
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmAction({ type: 'markAll', status: 'not_marked' })}>
-              Clear
-            </Button>
+            {selectMode && (
+              <>
+                <Button variant="outline" size="sm" className="text-xs" onClick={toggleSelectAll}>
+                  {selectedStaff.size === getFilteredStaff().length ? 'Deselect All' : 'Select All'}
+                </Button>
+                <span className="text-xs text-muted-foreground">{selectedStaff.size} selected</span>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-2 mb-6">
@@ -384,15 +473,26 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
                 return (
                   <div
                     key={staff.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card cursor-pointer active:scale-[0.98] transition-transform"
-                    onClick={() => handleQuickTap(staff.id)}
+                    className={`flex items-center justify-between p-3 rounded-lg border border-border bg-card transition-transform ${
+                      selectMode ? '' : 'cursor-pointer active:scale-[0.98]'
+                    } ${selectMode && selectedStaff.has(staff.id) ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => selectMode ? toggleStaffSelection(staff.id) : handleQuickTap(staff.id)}
                   >
-                    <span className="text-sm font-medium text-foreground truncate flex-1">{staff.name}</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {selectMode && (
+                        <Checkbox
+                          checked={selectedStaff.has(staff.id)}
+                          onCheckedChange={() => toggleStaffSelection(staff.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
+                      <span className="text-sm font-medium text-foreground truncate">{staff.name}</span>
+                    </div>
                     <div className="flex gap-1">
                       {(['1shift', '2shift', 'absent'] as AttendanceStatus[]).map((status) => (
                         <button
                           key={status}
-                          onClick={(e) => { e.stopPropagation(); updateAttendance(staff.id, currentStatus === status ? 'not_marked' : status); }}
+                          onClick={(e) => { e.stopPropagation(); if (!selectMode) updateAttendance(staff.id, currentStatus === status ? 'not_marked' : status); }}
                           className={`w-8 h-8 rounded-md text-xs font-bold flex items-center justify-center transition-colors ${
                             currentStatus === status
                               ? `${statusConfig[status].color} text-primary-foreground`
@@ -434,6 +534,8 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
             <AlertDialogDescription>
               {confirmAction?.type === 'markAll' && confirmAction.status
                 ? `Mark all ${filteredStaff.length} staff as ${statusConfig[confirmAction.status].fullLabel}?`
+                : confirmAction?.type === 'markSelected' && confirmAction.status
+                ? `Mark ${selectedStaff.size} selected staff as ${statusConfig[confirmAction.status].fullLabel}?`
                 : 'Are you sure?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -442,6 +544,8 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
             <AlertDialogAction onClick={() => {
               if (confirmAction?.type === 'markAll' && confirmAction.status) {
                 markAllAs(confirmAction.status);
+              } else if (confirmAction?.type === 'markSelected' && confirmAction.status) {
+                markSelectedAs(confirmAction.status);
               }
             }}>
               Confirm
