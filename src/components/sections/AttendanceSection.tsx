@@ -155,6 +155,52 @@ const AttendanceSection = ({ onBack, category }: AttendanceSectionProps) => {
     setConfirmAction(null);
   };
 
+  const markSelectedAs = async (status: AttendanceStatus) => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const ids = Array.from(selectedStaff);
+    if (ids.length === 0) return;
+
+    await supabase.from('attendance').delete().eq('date', dateStr).in('staff_id', ids);
+    
+    if (status !== 'not_marked') {
+      const dbStatus: 'absent' | 'present' = status === 'absent' ? 'absent' : 'present';
+      const shiftCount = status === '2shift' ? 2 : 1;
+
+      const records = ids.map((staffId) => ({
+        staff_id: staffId,
+        date: dateStr,
+        status: dbStatus,
+        shift_count: shiftCount,
+      }));
+
+      await supabase.from('attendance').insert(records);
+    }
+    
+    toast.success(`${ids.length} staff marked as ${status === 'not_marked' ? 'cleared' : statusConfig[status].fullLabel}`);
+    setSelectedStaff(new Set());
+    setSelectMode(false);
+    fetchData();
+    setConfirmAction(null);
+  };
+
+  const toggleStaffSelection = (staffId: string) => {
+    setSelectedStaff(prev => {
+      const next = new Set(prev);
+      if (next.has(staffId)) next.delete(staffId);
+      else next.add(staffId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const filtered = getFilteredStaff();
+    if (selectedStaff.size === filtered.length) {
+      setSelectedStaff(new Set());
+    } else {
+      setSelectedStaff(new Set(filtered.map(s => s.id)));
+    }
+  };
+
   const getStaffAttendance = (staffId: string): AttendanceStatus | null => {
     const record = attendance.find((a) => a.staff_id === staffId);
     if (!record) return null;
