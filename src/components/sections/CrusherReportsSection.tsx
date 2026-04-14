@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ArrowLeft, Plus, FileText, Calendar, Download, Share2, Trash2, Filter, ChevronRight, Pencil, Truck, Mountain, Package, IndianRupee, Hash, TrendingUp } from 'lucide-react';
-import { exportToExcel, REPORT_NOTE_ENGLISH, REPORT_NOTE_HINDI, REPORT_FOOTER } from '@/lib/exportUtils';
+import { exportToExcel, REPORT_NOTE_ENGLISH, REPORT_FOOTER } from '@/lib/exportUtils';
 import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
