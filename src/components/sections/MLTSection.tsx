@@ -257,6 +257,23 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     fetchData();
   };
 
+  const markAllMLTAs = async (status: AttendanceStatus) => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const ids = filteredStaff.map(s => s.id);
+    if (ids.length === 0) return;
+    await supabase.from('mlt_attendance').delete().eq('date', dateStr).in('staff_id', ids);
+    if (status !== 'not_marked') {
+      const records = ids.map(staffId => ({
+        staff_id: staffId, date: dateStr,
+        status: status === 'absent' ? 'absent' : 'present',
+        shift_count: status === '2shift' ? 2 : 1,
+      }));
+      await supabase.from('mlt_attendance').insert(records);
+    }
+    toast.success(`All ${ids.length} staff marked as ${status === 'not_marked' ? 'cleared' : status === '1shift' ? '1 Shift' : status === '2shift' ? '2 Shifts' : 'Absent'}`);
+    fetchData();
+  };
+
   const addAdvance = async () => {
     if (!advanceStaffId || !advanceAmount) { toast.error('Staff and amount are required'); return; }
     const { error } = await supabase.from('mlt_advances').insert({
