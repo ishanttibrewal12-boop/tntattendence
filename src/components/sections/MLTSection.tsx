@@ -132,6 +132,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [salaryRecords, setSalaryRecords] = useState<any[]>([]);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedForBulk, setSelectedForBulk] = useState<Set<string>>(new Set());
+  const [confirmBulkAction, setConfirmBulkAction] = useState<AttendanceStatus | null>(null);
 
   useEffect(() => {
     fetchData();
