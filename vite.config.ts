@@ -40,11 +40,12 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/~oauth/],
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/node_modules/],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}'],
+        globIgnores: ['**/node_modules/**'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/hcrzulunbiemwcdifnuh\.supabase\.co\/rest\/v1\/.*/i,
