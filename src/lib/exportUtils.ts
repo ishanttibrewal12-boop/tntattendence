@@ -2,10 +2,10 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-// Bilingual note to add to all exports - without any names
+// Note to add to all exports
 export const REPORT_NOTE_ENGLISH = 'Note: If you have any queries, contact 6203229118';
-export const REPORT_NOTE_HINDI = 'नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें';
 export const REPORT_FOOTER = 'Tibrewal Group';
+export const REPORT_PETROLEUM_NAME = 'Jai Shree Shyam Petroleum';
 
 // Excel export helper with bilingual notes
 export const createExcelWithNotes = (
@@ -30,10 +30,9 @@ export const addReportNotes = (doc: jsPDF, yPosition: number) => {
   doc.setFontSize(9);
   doc.setTextColor(100);
   doc.text(REPORT_NOTE_ENGLISH, 14, yPosition);
-  doc.text(REPORT_NOTE_HINDI, 14, yPosition + 6);
-  doc.text(REPORT_FOOTER, 14, yPosition + 14);
+  doc.text(REPORT_FOOTER, 14, yPosition + 8);
   
-  return yPosition + 20;
+  return yPosition + 14;
 };
 
 export const exportToExcel = (
@@ -60,7 +59,6 @@ export const exportToExcel = (
   // Add notes at the end
   wsData.push([]);
   wsData.push([REPORT_NOTE_ENGLISH]);
-  wsData.push([REPORT_NOTE_HINDI]);
   
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   

@@ -257,6 +257,23 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
     fetchData();
   };
 
+  const markAllMLTAs = async (status: AttendanceStatus) => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const ids = filteredStaff.map(s => s.id);
+    if (ids.length === 0) return;
+    await supabase.from('mlt_attendance').delete().eq('date', dateStr).in('staff_id', ids);
+    if (status !== 'not_marked') {
+      const records = ids.map(staffId => ({
+        staff_id: staffId, date: dateStr,
+        status: status === 'absent' ? 'absent' : 'present',
+        shift_count: status === '2shift' ? 2 : 1,
+      }));
+      await supabase.from('mlt_attendance').insert(records);
+    }
+    toast.success(`All ${ids.length} staff marked as ${status === 'not_marked' ? 'cleared' : status === '1shift' ? '1 Shift' : status === '2shift' ? '2 Shifts' : 'Absent'}`);
+    fetchData();
+  };
+
   const addAdvance = async () => {
     if (!advanceStaffId || !advanceAmount) { toast.error('Staff and amount are required'); return; }
     const { error } = await supabase.from('mlt_advances').insert({
@@ -812,8 +829,16 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </div>
         <p className="text-xs text-muted-foreground">💡 Tap to cycle: 1 Shift → 2 Shifts → Absent → Clear</p>
 
-        {/* Select Mode Controls */}
+        {/* Quick Mark All & Select Mode Controls */}
         <div className="flex flex-wrap gap-2">
+          {!selectMode && (
+            <>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('1shift')}>All 1S</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('2shift')}>All 2S</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('absent')}>All Abs</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('not_marked')}>Clear All</Button>
+            </>
+          )}
           <Button variant={selectMode ? 'default' : 'outline'} size="sm" onClick={() => { setSelectMode(!selectMode); setSelectedForBulk(new Set()); }}>
             <Check className="h-4 w-4 mr-1" />{selectMode ? 'Cancel' : 'Select Mode'}
           </Button>

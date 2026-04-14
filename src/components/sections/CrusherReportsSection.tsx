@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ArrowLeft, Plus, FileText, Calendar, Download, Share2, Trash2, Filter, ChevronRight, Pencil, Truck, Mountain, Package, IndianRupee, Hash, TrendingUp } from 'lucide-react';
-import { exportToExcel, REPORT_NOTE_ENGLISH, REPORT_NOTE_HINDI, REPORT_FOOTER } from '@/lib/exportUtils';
+import { exportToExcel, REPORT_NOTE_ENGLISH, REPORT_FOOTER } from '@/lib/exportUtils';
 import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -264,7 +264,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       if (d.rst_number) msg += ` | RST: ${d.rst_number}`;
       msg += '\n';
     });
-    msg += `\n${REPORT_NOTE_ENGLISH}\n${REPORT_NOTE_HINDI}`;
+    msg += `\n${REPORT_NOTE_ENGLISH}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -276,7 +276,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       if (b.rst_number) msg += ` | RST: ${b.rst_number}`;
       msg += '\n';
     });
-    msg += `\n${REPORT_NOTE_ENGLISH}\n${REPORT_NOTE_HINDI}`;
+    msg += `\n${REPORT_NOTE_ENGLISH}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -293,7 +293,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       startY: 42, styles: { fontSize: 8 },
     });
     const fy = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(8); doc.text(REPORT_NOTE_ENGLISH, 14, fy); doc.text(REPORT_NOTE_HINDI, 14, fy + 5);
+    doc.setFontSize(8); doc.text(REPORT_NOTE_ENGLISH, 14, fy);
     doc.save(`${title.replace(/\s/g, '_')}.pdf`);
   };
 
@@ -308,7 +308,7 @@ const CrusherReportsSection = ({ onBack }: CrusherReportsSectionProps) => {
       startY: 42, styles: { fontSize: 8 },
     });
     const fy = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(8); doc.text(REPORT_NOTE_ENGLISH, 14, fy); doc.text(REPORT_NOTE_HINDI, 14, fy + 5);
+    doc.setFontSize(8); doc.text(REPORT_NOTE_ENGLISH, 14, fy);
     doc.save(`${title.replace(/\s/g, '_')}.pdf`);
   };
 
