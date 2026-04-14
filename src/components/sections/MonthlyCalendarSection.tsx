@@ -184,7 +184,6 @@ const MonthlyCalendarSection = ({ onBack, category }: MonthlyCalendarSectionProp
       ...data,
       [],
       ['Note: If you have any queries, contact 6203229118'],
-      ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
     ];
     
     const ws = XLSX.utils.aoa_to_sheet(wsData);

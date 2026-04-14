@@ -298,7 +298,6 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
         ...attExcelData,
         [],
         ['Note: If you have any queries, contact 6203229118'],
-        ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
       ];
       const attWs = XLSX.utils.aoa_to_sheet(attWsData);
       XLSX.utils.book_append_sheet(attWb, attWs, 'Attendance');
@@ -321,7 +320,6 @@ const BackupSection = ({ onBack }: BackupSectionProps) => {
         ...advExcelData,
         [],
         ['Note: If you have any queries, contact 6203229118'],
-        ['नोट: यदि आपके कोई प्रश्न हैं, तो 6203229118 पर संपर्क करें'],
       ];
       const advWs = XLSX.utils.aoa_to_sheet(advWsData);
       XLSX.utils.book_append_sheet(advWb, advWs, 'Advances');
