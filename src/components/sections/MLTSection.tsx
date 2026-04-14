@@ -132,6 +132,7 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
   const [salaryRecords, setSalaryRecords] = useState<any[]>([]);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedForBulk, setSelectedForBulk] = useState<Set<string>>(new Set());
+  const [confirmBulkAction, setConfirmBulkAction] = useState<AttendanceStatus | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -833,10 +834,10 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         <div className="flex flex-wrap gap-2">
           {!selectMode && (
             <>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('1shift')}>All 1S</Button>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('2shift')}>All 2S</Button>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('absent')}>All Abs</Button>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('not_marked')}>Clear All</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmBulkAction('1shift')}>All 1S</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmBulkAction('2shift')}>All 2S</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmBulkAction('absent')}>All Abs</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => setConfirmBulkAction('not_marked')}>Clear All</Button>
             </>
           )}
           <Button variant={selectMode ? 'default' : 'outline'} size="sm" onClick={() => { setSelectMode(!selectMode); setSelectedForBulk(new Set()); }}>
@@ -1348,6 +1349,22 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={deleteType === 'staff' ? deleteSelectedStaff : deleteSelectedAdvances}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Mark All Confirmation */}
+      <AlertDialog open={!!confirmBulkAction} onOpenChange={(open) => { if (!open) setConfirmBulkAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mark all {filteredStaff.length} staff as {confirmBulkAction === '1shift' ? '1 Shift' : confirmBulkAction === '2shift' ? '2 Shifts' : confirmBulkAction === 'absent' ? 'Absent' : 'Cleared'}? This will overwrite existing attendance for today.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmBulkAction) { markAllMLTAs(confirmBulkAction); setConfirmBulkAction(null); } }}>Confirm</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
