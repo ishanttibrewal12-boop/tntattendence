@@ -829,8 +829,16 @@ const MLTSection = ({ onBack }: MLTSectionProps) => {
         </div>
         <p className="text-xs text-muted-foreground">💡 Tap to cycle: 1 Shift → 2 Shifts → Absent → Clear</p>
 
-        {/* Select Mode Controls */}
+        {/* Quick Mark All & Select Mode Controls */}
         <div className="flex flex-wrap gap-2">
+          {!selectMode && (
+            <>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('1shift')}>All 1S</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('2shift')}>All 2S</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('absent')}>All Abs</Button>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => markAllMLTAs('not_marked')}>Clear All</Button>
+            </>
+          )}
           <Button variant={selectMode ? 'default' : 'outline'} size="sm" onClick={() => { setSelectMode(!selectMode); setSelectedForBulk(new Set()); }}>
             <Check className="h-4 w-4 mr-1" />{selectMode ? 'Cancel' : 'Select Mode'}
           </Button>
