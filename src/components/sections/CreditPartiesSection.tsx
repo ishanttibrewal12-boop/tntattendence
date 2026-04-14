@@ -377,17 +377,56 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     return ledger;
   }, [allTransactions, ledgerFilter]);
 
-  const exportPartyPDF = () => {
+  const exportPartyPDF = async () => {
     if (!selectedParty) return;
     const ledger = getLedgerWithBalance();
     const doc = new jsPDF();
+    
+    // Helper to load image as base64
+    const loadImage = (url: string): Promise<string> => new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d')?.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve('');
+      img.src = url;
+    });
+
+    // Load logos
+    const [tibrewalLogo, bpLogo] = await Promise.all([
+      loadImage(tibrewalLogoUrl),
+      loadImage(bpLogoUrl),
+    ]);
+    
+    // Check if ledger has petroleum entries
+    const hasPetroleum = ledger.some(t => t.transaction_type === 'petroleum');
+    
+    let headerY = 12;
+    
+    // Add Tibrewal Group logo
+    if (tibrewalLogo) {
+      try { doc.addImage(tibrewalLogo, 'PNG', 14, headerY, 20, 20); } catch {}
+    }
+    
+    // Add BP logo if petroleum entries exist
+    if (hasPetroleum && bpLogo) {
+      try { doc.addImage(bpLogo, 'PNG', 170, headerY, 20, 20); } catch {}
+    }
+    
+    const textX = tibrewalLogo ? 38 : 14;
     doc.setFontSize(16);
-    doc.text(`Credit Ledger: ${selectedParty.name}`, 14, 15);
+    doc.text(`Credit Ledger: ${selectedParty.name}`, textX, headerY + 6);
     doc.setFontSize(10);
     const period = viewMode === 'all' ? 'All Time' : viewMode === 'range' ? `${rangeStart ? format(rangeStart, 'dd MMM yyyy') : '...'} to ${rangeEnd ? format(rangeEnd, 'dd MMM yyyy') : '...'}` : `${months[selectedMonth - 1]} ${selectedYear}`;
-    doc.text(period, 14, 22);
-    doc.text(`Debit: ${formatCurrencyForPDF(totalDebits)} | Credit: ${formatCurrencyForPDF(totalCredits)} | Pending: ${formatCurrencyForPDF(pendingBalance)}`, 14, 30);
-    let infoY = 36;
+    doc.text(period, textX, headerY + 13);
+    doc.text(`Debit: ${formatCurrencyForPDF(totalDebits)} | Credit: ${formatCurrencyForPDF(totalCredits)} | Pending: ${formatCurrencyForPDF(pendingBalance)}`, textX, headerY + 20);
+    
+    let infoY = headerY + 26;
     if (dieselTotal > 0 || petrolTotal > 0) {
       doc.text(`Diesel: ${dieselLitres.toFixed(1)}L = ${formatCurrencyForPDF(dieselTotal)} | Petrol: ${petrolLitres.toFixed(1)}L = ${formatCurrencyForPDF(petrolTotal)}`, 14, infoY);
       infoY += 6;
@@ -416,6 +455,19 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
     });
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     addReportNotes(doc, finalY);
+    
+    // Add Jai Shree Shyam Petroleum at the bottom if petroleum entries
+    if (hasPetroleum) {
+      const noteY = finalY + 20;
+      const pageH = doc.internal.pageSize.height;
+      if (noteY < pageH - 20) {
+        doc.setFontSize(11);
+        doc.setTextColor(0, 51, 153);
+        doc.text(REPORT_PETROLEUM_NAME, 14, noteY);
+        doc.setTextColor(0);
+      }
+    }
+    
     doc.save(`ledger-${selectedParty.name}.pdf`);
     toast.success('PDF downloaded');
   };
