@@ -527,7 +527,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   // ===== SHARED DIALOGS =====
   const renderTransactionDialog = () => (
     <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl ${txType === 'payment' ? 'bg-green-500/10' : 'bg-primary/10'}`}>
@@ -539,7 +539,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             </div>
           </div>
         </DialogHeader>
-        <div className="space-y-4 mt-2">
+        <div className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
           <div>
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</Label>
             <div className="grid grid-cols-4 gap-1.5 mt-2">
