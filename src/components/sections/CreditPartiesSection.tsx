@@ -539,7 +539,7 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             </div>
           </div>
         </DialogHeader>
-        <div className="space-y-4 mt-2">
+        <div className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
           <div>
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</Label>
             <div className="grid grid-cols-4 gap-1.5 mt-2">
