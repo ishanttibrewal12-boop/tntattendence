@@ -670,9 +670,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             <div><Label className="text-xs">Notes</Label><Input value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Optional" className="mt-1.5 h-10" /></div>
           </div>
         </div>
-        <DialogFooter className="mt-2">
+        <DialogFooter className="px-5 py-3 border-t border-border/50 shrink-0 safe-area-bottom bg-background">
           <Button onClick={editingTx ? updateTransaction : addTransaction}
-            className={`w-full h-11 text-sm font-semibold ${txType === 'payment' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            className={`w-full h-12 text-sm font-semibold ${txType === 'payment' ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >{editingTx ? 'Update Entry' : txType === 'payment' ? '✓ Record Payment' : '+ Add Entry'}</Button>
         </DialogFooter>
       </DialogContent>
