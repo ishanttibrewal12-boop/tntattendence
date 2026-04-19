@@ -527,8 +527,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   // ===== SHARED DIALOGS =====
   const renderTransactionDialog = () => (
     <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
-      <DialogContent className="max-w-md max-h-[90vh] flex flex-col overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
+      <DialogContent
+        className="max-w-md w-[calc(100vw-1rem)] sm:w-full p-0 gap-0 flex flex-col overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-lg rounded-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl ${txType === 'payment' ? 'bg-green-500/10' : 'bg-primary/10'}`}>
               {txType === 'payment' ? <Banknote className="h-5 w-5 text-green-600" /> : <CreditCard className="h-5 w-5 text-primary" />}
@@ -539,7 +542,10 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             </div>
           </div>
         </DialogHeader>
-        <div className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
+        <div
+          className="space-y-4 overflow-y-auto overflow-touch flex-1 px-5 py-4"
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           <div>
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</Label>
             <div className="grid grid-cols-4 gap-1.5 mt-2">
