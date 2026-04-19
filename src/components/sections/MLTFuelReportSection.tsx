@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -298,25 +299,24 @@ const MLTFuelReportSection = ({ onBack }: Props) => {
         </>
       )}
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Add Fuel Record</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Truck Number *</Label><Input placeholder="e.g. JH 10 AB 1234" value={form.truck_number} onChange={e => setForm(f => ({ ...f, truck_number: e.target.value }))} /></div>
-            <div><Label>Fuel (Litres) *</Label><Input type="number" placeholder="0" value={form.fuel_litres} onChange={e => setForm(f => ({ ...f, fuel_litres: e.target.value }))} /></div>
-            <div><Label>Amount (₹)</Label><Input type="number" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
-            <div><Label>Date *</Label>
-              <Popover open={formCalendarOpen} onOpenChange={setFormCalendarOpen}>
-                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start">{format(form.date, 'dd MMM yyyy')}</Button></PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.date} onSelect={d => { if (d) { setForm(f => ({ ...f, date: d })); setFormCalendarOpen(false); } }} /></PopoverContent>
-              </Popover>
-            </div>
-            <div><Label>Driver Name</Label><Input placeholder="Driver name" value={form.driver_name} onChange={e => setForm(f => ({ ...f, driver_name: e.target.value }))} /></div>
-            <div><Label>Notes</Label><Input placeholder="Any notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
-          </div>
-          <DialogFooter><Button onClick={addRecord}>Save</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MobileFriendlyDialog
+        open={showAdd}
+        onOpenChange={setShowAdd}
+        header={<DialogTitle className="text-base">Add Fuel Record</DialogTitle>}
+        footer={<Button onClick={addRecord} className="w-full h-12 text-sm font-semibold">Save Record</Button>}
+      >
+        <div><Label className="text-xs">Truck Number *</Label><Input placeholder="e.g. JH 10 AB 1234" value={form.truck_number} onChange={e => setForm(f => ({ ...f, truck_number: e.target.value }))} className="mt-1.5 h-11" /></div>
+        <div><Label className="text-xs">Fuel (Litres) *</Label><Input type="number" inputMode="decimal" placeholder="0" value={form.fuel_litres} onChange={e => setForm(f => ({ ...f, fuel_litres: e.target.value }))} className="mt-1.5 h-11 font-mono" /></div>
+        <div><Label className="text-xs">Amount (₹)</Label><Input type="number" inputMode="decimal" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="mt-1.5 h-11 font-mono" /></div>
+        <div><Label className="text-xs">Date *</Label>
+          <Popover open={formCalendarOpen} onOpenChange={setFormCalendarOpen}>
+            <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start mt-1.5 h-11">{format(form.date, 'dd MMM yyyy')}</Button></PopoverTrigger>
+            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.date} onSelect={d => { if (d) { setForm(f => ({ ...f, date: d })); setFormCalendarOpen(false); } }} className="pointer-events-auto" /></PopoverContent>
+          </Popover>
+        </div>
+        <div><Label className="text-xs">Driver Name</Label><Input placeholder="Driver name" value={form.driver_name} onChange={e => setForm(f => ({ ...f, driver_name: e.target.value }))} className="mt-1.5 h-11" /></div>
+        <div><Label className="text-xs">Notes</Label><Input placeholder="Any notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="mt-1.5 h-11" /></div>
+      </MobileFriendlyDialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
