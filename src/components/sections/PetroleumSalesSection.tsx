@@ -349,46 +349,45 @@ const PetroleumSalesSection = ({ onBack }: PetroleumSalesSectionProps) => {
       )}
 
       {/* Add Sale Dialog */}
-      <Dialog open={showAddSale} onOpenChange={setShowAddSale}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Sale</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Amount (₹) *</Label>
-              <Input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Enter amount" />
-            </div>
-            <div>
-              <Label>Type</Label>
-              <Select value={newSaleType} onValueChange={(v) => setNewSaleType(v as 'upi' | 'cash')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Date</Label>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {format(newDate, 'dd MMM yyyy')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={newDate} onSelect={(d) => { if (d) setNewDate(d); setCalendarOpen(false); }} initialFocus />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Textarea value={newNotes} onChange={(e) => setNewNotes(e.target.value)} placeholder="Optional notes" />
-            </div>
-          </div>
-          <DialogFooter><Button onClick={addSale}>Add Sale</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MobileFriendlyDialog
+        open={showAddSale}
+        onOpenChange={setShowAddSale}
+        header={<DialogTitle className="text-base">Add Sale</DialogTitle>}
+        footer={<Button onClick={addSale} className="w-full h-12 text-sm font-semibold">Add Sale</Button>}
+      >
+        <div>
+          <Label className="text-xs">Amount (₹) *</Label>
+          <Input type="number" inputMode="decimal" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Enter amount" className="mt-1.5 h-11 font-mono text-base" />
+        </div>
+        <div>
+          <Label className="text-xs">Type</Label>
+          <Select value={newSaleType} onValueChange={(v) => setNewSaleType(v as 'upi' | 'cash')}>
+            <SelectTrigger className="mt-1.5 h-11"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upi">UPI</SelectItem>
+              <SelectItem value="cash">Cash</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Date</Label>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start mt-1.5 h-11">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {format(newDate, 'dd MMM yyyy')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar mode="single" selected={newDate} onSelect={(d) => { if (d) setNewDate(d); setCalendarOpen(false); }} initialFocus className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div>
+          <Label className="text-xs">Notes</Label>
+          <Textarea value={newNotes} onChange={(e) => setNewNotes(e.target.value)} placeholder="Optional notes" className="mt-1.5 min-h-[80px]" />
+        </div>
+      </MobileFriendlyDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
