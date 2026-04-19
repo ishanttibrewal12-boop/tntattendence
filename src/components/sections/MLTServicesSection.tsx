@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -301,26 +302,25 @@ const MLTServicesSection = ({ onBack }: Props) => {
       )}
 
       {/* Add Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Add Service Record</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Truck Number *</Label><Input placeholder="e.g. JH 10 AB 1234" value={form.truck_number} onChange={e => setForm(f => ({ ...f, truck_number: e.target.value }))} /></div>
-            <div><Label>Driver Name</Label><Input placeholder="Driver name" value={form.driver_name} onChange={e => setForm(f => ({ ...f, driver_name: e.target.value }))} /></div>
-            <div><Label>Service Place *</Label><Input placeholder="Workshop/location" value={form.service_place} onChange={e => setForm(f => ({ ...f, service_place: e.target.value }))} /></div>
-            <div><Label>Work Description *</Label><Textarea placeholder="What was done" value={form.work_description} onChange={e => setForm(f => ({ ...f, work_description: e.target.value }))} /></div>
-            <div><Label>Amount (₹) *</Label><Input type="number" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
-            <div><Label>Date *</Label>
-              <Popover open={formCalendarOpen} onOpenChange={setFormCalendarOpen}>
-                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start">{format(form.date, 'dd MMM yyyy')}</Button></PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.date} onSelect={d => { if (d) { setForm(f => ({ ...f, date: d })); setFormCalendarOpen(false); } }} /></PopoverContent>
-              </Popover>
-            </div>
-            <div><Label>Notes</Label><Input placeholder="Any notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
-          </div>
-          <DialogFooter><Button onClick={addService}>Save</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MobileFriendlyDialog
+        open={showAdd}
+        onOpenChange={setShowAdd}
+        header={<DialogTitle className="text-base">Add Service Record</DialogTitle>}
+        footer={<Button onClick={addService} className="w-full h-12 text-sm font-semibold">Save Record</Button>}
+      >
+        <div><Label className="text-xs">Truck Number *</Label><Input placeholder="e.g. JH 10 AB 1234" value={form.truck_number} onChange={e => setForm(f => ({ ...f, truck_number: e.target.value }))} className="mt-1.5 h-11" /></div>
+        <div><Label className="text-xs">Driver Name</Label><Input placeholder="Driver name" value={form.driver_name} onChange={e => setForm(f => ({ ...f, driver_name: e.target.value }))} className="mt-1.5 h-11" /></div>
+        <div><Label className="text-xs">Service Place *</Label><Input placeholder="Workshop/location" value={form.service_place} onChange={e => setForm(f => ({ ...f, service_place: e.target.value }))} className="mt-1.5 h-11" /></div>
+        <div><Label className="text-xs">Work Description *</Label><Textarea placeholder="What was done" value={form.work_description} onChange={e => setForm(f => ({ ...f, work_description: e.target.value }))} className="mt-1.5 min-h-[80px]" /></div>
+        <div><Label className="text-xs">Amount (₹) *</Label><Input type="number" inputMode="decimal" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="mt-1.5 h-11 font-mono" /></div>
+        <div><Label className="text-xs">Date *</Label>
+          <Popover open={formCalendarOpen} onOpenChange={setFormCalendarOpen}>
+            <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start mt-1.5 h-11">{format(form.date, 'dd MMM yyyy')}</Button></PopoverTrigger>
+            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.date} onSelect={d => { if (d) { setForm(f => ({ ...f, date: d })); setFormCalendarOpen(false); } }} className="pointer-events-auto" /></PopoverContent>
+          </Popover>
+        </div>
+        <div><Label className="text-xs">Notes</Label><Input placeholder="Any notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="mt-1.5 h-11" /></div>
+      </MobileFriendlyDialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
