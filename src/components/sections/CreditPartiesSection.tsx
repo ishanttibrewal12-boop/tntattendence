@@ -527,8 +527,11 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
   // ===== SHARED DIALOGS =====
   const renderTransactionDialog = () => (
     <Dialog open={showAddTransaction || !!editingTx} onOpenChange={(open) => { if (!open) { setShowAddTransaction(false); setEditingTx(null); resetTxForm(); } }}>
-      <DialogContent className="max-w-md max-h-[90vh] flex flex-col overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
+      <DialogContent
+        className="max-w-md w-[calc(100vw-1rem)] sm:w-full p-0 gap-0 flex flex-col overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-lg rounded-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl ${txType === 'payment' ? 'bg-green-500/10' : 'bg-primary/10'}`}>
               {txType === 'payment' ? <Banknote className="h-5 w-5 text-green-600" /> : <CreditCard className="h-5 w-5 text-primary" />}
@@ -539,7 +542,10 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             </div>
           </div>
         </DialogHeader>
-        <div className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
+        <div
+          className="space-y-4 overflow-y-auto overflow-touch flex-1 px-5 py-4"
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           <div>
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</Label>
             <div className="grid grid-cols-4 gap-1.5 mt-2">
@@ -579,29 +585,37 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           )}
           {txType === 'petroleum' && (
             <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Truck Details (Optional)</Label>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  Truck Details (Optional)
+                  {txTruckDetails.length > 0 && (
+                    <Badge variant="secondary" className="h-5 px-2 text-[10px] font-bold">{txTruckDetails.length}</Badge>
+                  )}
+                </Label>
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs shrink-0"
                   onClick={() => setTxTruckDetails([...txTruckDetails, { truck_number: '', litres: '' }])}
-                ><Plus className="h-3 w-3 mr-1" />Add Truck</Button>
+                ><Plus className="h-3.5 w-3.5 mr-1" />Add Truck</Button>
               </div>
-              {txTruckDetails.map((truck, idx) => (
-                <div key={idx} className="flex items-center gap-2 mt-2">
-                  <Input value={truck.truck_number} onChange={(e) => {
-                    const updated = [...txTruckDetails];
-                    updated[idx] = { ...updated[idx], truck_number: e.target.value };
-                    setTxTruckDetails(updated);
-                  }} placeholder="Truck No." className="flex-1 h-9 text-xs" />
-                  <Input type="number" value={truck.litres} onChange={(e) => {
-                    const updated = [...txTruckDetails];
-                    updated[idx] = { ...updated[idx], litres: e.target.value };
-                    setTxTruckDetails(updated);
-                  }} placeholder="Litres" className="w-24 h-9 text-xs font-mono" />
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                    onClick={() => setTxTruckDetails(txTruckDetails.filter((_, i) => i !== idx))}
-                  ><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                </div>
-              ))}
+              <div className="space-y-2 mt-2">
+                {txTruckDetails.map((truck, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <span className="text-[10px] font-bold text-muted-foreground w-5 text-center shrink-0">#{idx + 1}</span>
+                    <Input value={truck.truck_number} onChange={(e) => {
+                      const updated = [...txTruckDetails];
+                      updated[idx] = { ...updated[idx], truck_number: e.target.value };
+                      setTxTruckDetails(updated);
+                    }} placeholder="Truck No." className="flex-1 h-10 text-sm" />
+                    <Input type="number" inputMode="decimal" value={truck.litres} onChange={(e) => {
+                      const updated = [...txTruckDetails];
+                      updated[idx] = { ...updated[idx], litres: e.target.value };
+                      setTxTruckDetails(updated);
+                    }} placeholder="Litres" className="w-20 h-10 text-sm font-mono" />
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-destructive/10"
+                      onClick={() => setTxTruckDetails(txTruckDetails.filter((_, i) => i !== idx))}
+                    ><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <div>
@@ -656,9 +670,9 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
             <div><Label className="text-xs">Notes</Label><Input value={txNotes} onChange={(e) => setTxNotes(e.target.value)} placeholder="Optional" className="mt-1.5 h-10" /></div>
           </div>
         </div>
-        <DialogFooter className="mt-2">
+        <DialogFooter className="px-5 py-3 border-t border-border/50 shrink-0 safe-area-bottom bg-background">
           <Button onClick={editingTx ? updateTransaction : addTransaction}
-            className={`w-full h-11 text-sm font-semibold ${txType === 'payment' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            className={`w-full h-12 text-sm font-semibold ${txType === 'payment' ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >{editingTx ? 'Update Entry' : txType === 'payment' ? '✓ Record Payment' : '+ Add Entry'}</Button>
         </DialogFooter>
       </DialogContent>
