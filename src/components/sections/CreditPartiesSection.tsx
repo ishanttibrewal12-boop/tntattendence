@@ -585,29 +585,37 @@ const CreditPartiesSection = ({ onBack }: CreditPartiesSectionProps) => {
           )}
           {txType === 'petroleum' && (
             <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Truck Details (Optional)</Label>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  Truck Details (Optional)
+                  {txTruckDetails.length > 0 && (
+                    <Badge variant="secondary" className="h-5 px-2 text-[10px] font-bold">{txTruckDetails.length}</Badge>
+                  )}
+                </Label>
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs shrink-0"
                   onClick={() => setTxTruckDetails([...txTruckDetails, { truck_number: '', litres: '' }])}
-                ><Plus className="h-3 w-3 mr-1" />Add Truck</Button>
+                ><Plus className="h-3.5 w-3.5 mr-1" />Add Truck</Button>
               </div>
-              {txTruckDetails.map((truck, idx) => (
-                <div key={idx} className="flex items-center gap-2 mt-2">
-                  <Input value={truck.truck_number} onChange={(e) => {
-                    const updated = [...txTruckDetails];
-                    updated[idx] = { ...updated[idx], truck_number: e.target.value };
-                    setTxTruckDetails(updated);
-                  }} placeholder="Truck No." className="flex-1 h-9 text-xs" />
-                  <Input type="number" value={truck.litres} onChange={(e) => {
-                    const updated = [...txTruckDetails];
-                    updated[idx] = { ...updated[idx], litres: e.target.value };
-                    setTxTruckDetails(updated);
-                  }} placeholder="Litres" className="w-24 h-9 text-xs font-mono" />
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                    onClick={() => setTxTruckDetails(txTruckDetails.filter((_, i) => i !== idx))}
-                  ><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                </div>
-              ))}
+              <div className="space-y-2 mt-2">
+                {txTruckDetails.map((truck, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <span className="text-[10px] font-bold text-muted-foreground w-5 text-center shrink-0">#{idx + 1}</span>
+                    <Input value={truck.truck_number} onChange={(e) => {
+                      const updated = [...txTruckDetails];
+                      updated[idx] = { ...updated[idx], truck_number: e.target.value };
+                      setTxTruckDetails(updated);
+                    }} placeholder="Truck No." className="flex-1 h-10 text-sm" />
+                    <Input type="number" inputMode="decimal" value={truck.litres} onChange={(e) => {
+                      const updated = [...txTruckDetails];
+                      updated[idx] = { ...updated[idx], litres: e.target.value };
+                      setTxTruckDetails(updated);
+                    }} placeholder="Litres" className="w-20 h-10 text-sm font-mono" />
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-destructive/10"
+                      onClick={() => setTxTruckDetails(txTruckDetails.filter((_, i) => i !== idx))}
+                    ><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <div>
