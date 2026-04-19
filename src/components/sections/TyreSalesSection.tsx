@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -210,23 +211,22 @@ const TyreSalesSection = ({ onBack }: TyreSalesSectionProps) => {
       )}
 
       {/* Add Sale Dialog */}
-      <Dialog open={showAddSale} onOpenChange={setShowAddSale}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Tyre Sale</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Amount (₹) *</Label><Input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Enter amount" /></div>
-            <div>
-              <Label>Date</Label>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="h-4 w-4 mr-2" />{format(newDate, 'dd MMM yyyy')}</Button></PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={newDate} onSelect={(d) => { if (d) setNewDate(d); setCalendarOpen(false); }} initialFocus /></PopoverContent>
-              </Popover>
-            </div>
-            <div><Label>Notes</Label><Textarea value={newNotes} onChange={(e) => setNewNotes(e.target.value)} placeholder="Optional (e.g. tyre name/type)" /></div>
-          </div>
-          <DialogFooter><Button onClick={addSale}>Add Sale</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MobileFriendlyDialog
+        open={showAddSale}
+        onOpenChange={setShowAddSale}
+        header={<DialogTitle className="text-base">Add Tyre Sale</DialogTitle>}
+        footer={<Button onClick={addSale} className="w-full h-12 text-sm font-semibold">Add Sale</Button>}
+      >
+        <div><Label className="text-xs">Amount (₹) *</Label><Input type="number" inputMode="decimal" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Enter amount" className="mt-1.5 h-11 font-mono text-base" /></div>
+        <div>
+          <Label className="text-xs">Date</Label>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start mt-1.5 h-11"><CalendarIcon className="h-4 w-4 mr-2" />{format(newDate, 'dd MMM yyyy')}</Button></PopoverTrigger>
+            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={newDate} onSelect={(d) => { if (d) setNewDate(d); setCalendarOpen(false); }} initialFocus className="pointer-events-auto" /></PopoverContent>
+          </Popover>
+        </div>
+        <div><Label className="text-xs">Notes</Label><Textarea value={newNotes} onChange={(e) => setNewNotes(e.target.value)} placeholder="Optional (e.g. tyre name/type)" className="mt-1.5 min-h-[80px]" /></div>
+      </MobileFriendlyDialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>

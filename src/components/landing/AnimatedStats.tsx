@@ -41,7 +41,7 @@ const CountUp = ({ target, suffix, prefix }: { target: number; suffix: string; p
   }, [target]);
 
   return (
-    <span ref={ref} className="text-3xl md:text-4xl font-extrabold text-white tabular-nums">
+    <span ref={ref} className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tabular-nums leading-none block">
       {prefix}{count}{suffix}
     </span>
   );
@@ -67,18 +67,18 @@ const AnimatedStats = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 md:py-28 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #080b12 0%, #121828 100%)' }}>
+    <section ref={sectionRef} className="py-16 md:py-28 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #080b12 0%, #121828 100%)' }}>
       {/* Decorative glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, #f97316, transparent 70%)' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04] pointer-events-none" style={{ background: 'radial-gradient(circle, #f97316, transparent 70%)' }} />
 
       <div className="max-w-5xl mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 md:gap-8">
           {stats.map((stat, i) => {
             const Icon = stat.icon;
             return (
               <div
                 key={i}
-                className="stat-card text-center p-6 rounded-2xl border transition-all duration-500 group"
+                className="stat-card text-center p-4 sm:p-6 rounded-2xl border transition-all duration-500 group flex flex-col items-center justify-start min-h-[170px] sm:min-h-[200px]"
                 style={{
                   background: 'rgba(255,255,255,0.03)',
                   borderColor: 'rgba(255,255,255,0.06)',
@@ -94,15 +94,17 @@ const AnimatedStats = () => {
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors duration-300" style={{ background: 'rgba(249,115,22,0.1)' }}>
-                  <Icon className="h-7 w-7" style={{ color: '#f97316' }} />
+                <div className="w-11 h-11 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-xl flex items-center justify-center transition-colors duration-300 shrink-0" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                  <Icon className="h-5 w-5 sm:h-7 sm:w-7" style={{ color: '#f97316' }} />
                 </div>
-                {stat.useCounter ? (
-                  <CountUp target={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
-                ) : (
-                  <span className="text-3xl md:text-4xl font-extrabold text-white">{stat.text}</span>
-                )}
-                <p className="text-xs mt-2 uppercase tracking-widest font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>{stat.label}</p>
+                <div className="flex items-center justify-center min-h-[2rem] sm:min-h-[2.5rem]">
+                  {stat.useCounter ? (
+                    <CountUp target={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
+                  ) : (
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white leading-none">{stat.text}</span>
+                  )}
+                </div>
+                <p className="text-[10px] sm:text-xs mt-2 uppercase tracking-wider sm:tracking-widest font-semibold leading-tight break-words" style={{ color: 'rgba(255,255,255,0.45)' }}>{stat.label}</p>
               </div>
             );
           })}
