@@ -506,9 +506,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
     return `${stem}_${Date.now()}${ext}`;
   };
 
-  // Decision per conflicting item id: skip | replace | keep
-  type ConflictAction = 'skip' | 'replace' | 'keep';
-  interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; existingId: string; }
+  // Decisions are passed in from the conflict resolver dialog
 
   const handleBulkMove = async (
     targetFolderId: string | null,
