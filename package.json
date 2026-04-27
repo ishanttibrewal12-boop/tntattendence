@@ -60,6 +60,7 @@
     "framer-motion": "^12.38.0",
     "gsap": "^3.14.2",
     "html-docx-js-typescript": "^0.1.5",
+    "hyperformula": "^3.2.0",
     "input-otp": "^1.4.2",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
