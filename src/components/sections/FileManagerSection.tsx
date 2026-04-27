@@ -1143,3 +1143,110 @@ const FileRow = ({
 };
 
 export default FileManagerSection;
+
+// ===== Conflict resolver =====
+interface ConflictResolverProps {
+  state: MoveConflictsState | null;
+  loading: boolean;
+  onCancel: () => void;
+  onResolve: (decisions: Record<string, ConflictAction>) => void;
+}
+const ConflictResolverDialog = ({ state, loading, onCancel, onResolve }: ConflictResolverProps) => {
+  const [decisions, setDecisions] = useState<Record<string, ConflictAction>>({});
+  const open = !!state;
+
+  useEffect(() => {
+    if (state) {
+      const initial: Record<string, ConflictAction> = {};
+      state.conflicts.forEach((c) => { initial[c.id] = 'keep'; });
+      setDecisions(initial);
+    }
+  }, [state]);
+
+  if (!state) return null;
+
+  const setAll = (action: ConflictAction) => {
+    const next: Record<string, ConflictAction> = {};
+    state.conflicts.forEach((c) => { next[c.id] = action; });
+    setDecisions(next);
+  };
+
+  const optionBtn = (id: string, action: ConflictAction, label: string, color: string) => (
+    <button
+      onClick={() => setDecisions((d) => ({ ...d, [id]: action }))}
+      className={`flex-1 min-w-0 h-9 px-2 rounded-md border text-xs font-medium transition-colors ${
+        decisions[id] === action
+          ? `${color} text-white border-transparent`
+          : 'bg-background hover:bg-muted text-foreground'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <MobileFriendlyDialog
+      open={open}
+      onOpenChange={(o) => { if (!o) onCancel(); }}
+      header={
+        <DialogTitle className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          {state.conflicts.length} name conflict{state.conflicts.length > 1 ? 's' : ''}
+        </DialogTitle>
+      }
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+          <Button className="flex-1 h-11" onClick={() => onResolve(decisions)} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MoveRight className="h-4 w-4 mr-2" />}
+            Apply &amp; Move
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Some items already exist in the destination folder. Choose what to do for each:
+        </p>
+
+        <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-muted/40 border">
+          <span className="text-xs font-medium self-center mr-1">Apply to all:</span>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAll('skip')}>
+            Skip all
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAll('replace')}>
+            Replace all
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAll('keep')}>
+            Keep both for all
+          </Button>
+        </div>
+
+        <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+          {state.conflicts.map((c) => (
+            <div key={c.id} className="border rounded-lg p-2.5 bg-card">
+              <div className="flex items-center gap-2 mb-2">
+                {c.type === 'folder'
+                  ? <Folder className="h-4 w-4 text-amber-500 shrink-0" />
+                  : <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <span className="text-sm font-medium truncate flex-1">{c.name}</span>
+              </div>
+              <div className="flex gap-1.5">
+                {optionBtn(c.id, 'skip', 'Skip', 'bg-muted-foreground')}
+                {optionBtn(c.id, 'replace', 'Replace', 'bg-destructive')}
+                {optionBtn(c.id, 'keep', 'Keep both', 'bg-primary')}
+              </div>
+              {decisions[c.id] === 'replace' && (
+                <p className="text-[10px] text-destructive mt-1.5">
+                  ⚠ Existing {c.type} will be permanently deleted.
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </MobileFriendlyDialog>
+  );
+};
