@@ -4,6 +4,7 @@ import {
   ChevronRight, Star, Share2, Pencil, FileText, FileSpreadsheet,
   FileImage, File as FileIcon, Home as HomeIcon, Archive, Loader2, Edit3,
   History, ListChecks, X, MoveRight, CheckSquare, Square, ArchiveRestore,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,6 +48,10 @@ interface FileNode {
 
 interface BreadcrumbItem { id: string | null; name: string; }
 interface FileManagerSectionProps { onBack: () => void; }
+
+type ConflictAction = 'skip' | 'replace' | 'keep';
+interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; existingId: string; }
+interface MoveConflictsState { targetFolderId: string | null; conflicts: ConflictItem[]; }
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
@@ -109,6 +114,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
+  const [moveConflicts, setMoveConflicts] = useState<MoveConflictsState | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
@@ -488,20 +494,128 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
     }
   };
 
-  const handleBulkMove = async (targetFolderId: string | null) => {
+  // Returns next free name like "Report (2).docx"
+  const nextAvailableName = (base: string, existingNames: Set<string>): string => {
+    if (!existingNames.has(base)) return base;
+    const dot = base.lastIndexOf('.');
+    const stem = dot > 0 ? base.slice(0, dot) : base;
+    const ext = dot > 0 ? base.slice(dot) : '';
+    for (let i = 2; i < 1000; i++) {
+      const candidate = `${stem} (${i})${ext}`;
+      if (!existingNames.has(candidate)) return candidate;
+    }
+    return `${stem}_${Date.now()}${ext}`;
+  };
+
+  // Decisions are passed in from the conflict resolver dialog
+
+  const handleBulkMove = async (
+    targetFolderId: string | null,
+    decisions?: Record<string, ConflictAction>,
+  ) => {
     if (selectedItems.length === 0) return;
     setMoveLoading(true);
     try {
-      const ids = selectedItems
-        .filter((i) => i.id !== targetFolderId) // never move into self
-        .map((i) => i.id);
-      const { error } = await supabase.from('file_metadata').update({
-        parent_id: targetFolderId,
-        updated_at: new Date().toISOString(),
-      }).in('id', ids);
-      if (error) throw error;
-      toast.success(`Moved ${ids.length} item${ids.length > 1 ? 's' : ''}`);
+      // Prevent moving a folder into itself / its descendants
+      const movable = selectedItems.filter((i) => i.id !== targetFolderId);
+
+      // Fetch existing names in the target folder to detect conflicts
+      let existingQuery = supabase.from('file_metadata').select('id,name,type');
+      existingQuery = targetFolderId === null
+        ? existingQuery.is('parent_id', null)
+        : existingQuery.eq('parent_id', targetFolderId);
+      const { data: existing } = await existingQuery;
+      const existingByName = new Map<string, { id: string; type: string }>();
+      const existingNameSet = new Set<string>();
+      (existing || []).forEach((e: any) => {
+        // Skip the items being moved themselves (e.g. moving within same folder)
+        if (movable.some((m) => m.id === e.id)) return;
+        existingByName.set(e.name, { id: e.id, type: e.type });
+        existingNameSet.add(e.name);
+      });
+
+      // First pass — find conflicts
+      const conflicts: ConflictItem[] = [];
+      for (const item of movable) {
+        const hit = existingByName.get(item.name);
+        if (hit) {
+          conflicts.push({ id: item.id, name: item.name, type: item.type, existingId: hit.id });
+        }
+      }
+
+      // If conflicts exist and we don't have decisions yet → open resolver
+      if (conflicts.length > 0 && !decisions) {
+        setMoveLoading(false);
+        setMoveConflicts({ targetFolderId, conflicts });
+        return;
+      }
+
+      // Apply decisions
+      const namesToReserve = new Set(existingNameSet);
+      const updates: { id: string; name?: string }[] = [];
+      const toReplaceIds: { id: string; type: string }[] = [];
+      let skipped = 0;
+
+      for (const item of movable) {
+        const conflict = conflicts.find((c) => c.id === item.id);
+        if (!conflict) { updates.push({ id: item.id }); namesToReserve.add(item.name); continue; }
+        const action = decisions?.[item.id] ?? 'skip';
+        if (action === 'skip') { skipped++; continue; }
+        if (action === 'replace') {
+          toReplaceIds.push({ id: conflict.existingId, type: conflict.type });
+          updates.push({ id: item.id });
+          namesToReserve.add(item.name);
+        } else { // keep both
+          const newName = nextAvailableName(item.name, namesToReserve);
+          updates.push({ id: item.id, name: newName });
+          namesToReserve.add(newName);
+        }
+      }
+
+      // Perform replacements (delete existing, including storage where applicable)
+      for (const r of toReplaceIds) {
+        if (r.type === 'file') {
+          const { data: f } = await supabase.from('file_metadata')
+            .select('storage_path').eq('id', r.id).maybeSingle();
+          if (f?.storage_path) {
+            await supabase.storage.from('files').remove([f.storage_path]);
+            await removeVersionsForFile(r.id);
+          }
+        } else {
+          const childPaths = await collectStoragePaths(r.id);
+          if (childPaths.length) await supabase.storage.from('files').remove(childPaths);
+        }
+        await supabase.from('file_metadata').delete().eq('id', r.id);
+      }
+
+      // Move + optional rename in a few targeted updates
+      const stamp = new Date().toISOString();
+      const sameNameIds = updates.filter((u) => !u.name).map((u) => u.id);
+      if (sameNameIds.length) {
+        const { error } = await supabase.from('file_metadata').update({
+          parent_id: targetFolderId, updated_at: stamp,
+        }).in('id', sameNameIds);
+        if (error) throw error;
+      }
+      for (const u of updates.filter((x) => x.name)) {
+        const { error } = await supabase.from('file_metadata').update({
+          parent_id: targetFolderId, name: u.name, updated_at: stamp,
+        }).eq('id', u.id);
+        if (error) throw error;
+      }
+
+      const movedCount = updates.length;
+      if (movedCount > 0) {
+        toast.success(
+          `Moved ${movedCount} item${movedCount > 1 ? 's' : ''}` +
+          (skipped ? ` · ${skipped} skipped` : '') +
+          (toReplaceIds.length ? ` · ${toReplaceIds.length} replaced` : '')
+        );
+      } else {
+        toast.info('No items moved');
+      }
       setMoveDialogOpen(false);
+      setMoveConflicts(null);
       setSelectedIds(new Set());
       setSelectMode(false);
       fetchItems();
@@ -752,10 +866,21 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       {/* Move dialog */}
       <MoveDialog
         open={moveDialogOpen}
-        onOpenChange={setMoveDialogOpen}
+        onOpenChange={(open) => { setMoveDialogOpen(open); if (!open) setMoveConflicts(null); }}
         loading={moveLoading}
         excludeIds={selectedIds}
-        onMove={handleBulkMove}
+        onMove={(folderId) => handleBulkMove(folderId)}
+      />
+
+      {/* Conflict resolver */}
+      <ConflictResolverDialog
+        state={moveConflicts}
+        loading={moveLoading}
+        onCancel={() => setMoveConflicts(null)}
+        onResolve={(decisions) => {
+          if (!moveConflicts) return;
+          handleBulkMove(moveConflicts.targetFolderId, decisions);
+        }}
       />
 
       {/* Editors & Sub-dialogs (lazy) */}
@@ -1019,3 +1144,110 @@ const FileRow = ({
 };
 
 export default FileManagerSection;
+
+// ===== Conflict resolver =====
+interface ConflictResolverProps {
+  state: MoveConflictsState | null;
+  loading: boolean;
+  onCancel: () => void;
+  onResolve: (decisions: Record<string, ConflictAction>) => void;
+}
+const ConflictResolverDialog = ({ state, loading, onCancel, onResolve }: ConflictResolverProps) => {
+  const [decisions, setDecisions] = useState<Record<string, ConflictAction>>({});
+  const open = !!state;
+
+  useEffect(() => {
+    if (state) {
+      const initial: Record<string, ConflictAction> = {};
+      state.conflicts.forEach((c) => { initial[c.id] = 'keep'; });
+      setDecisions(initial);
+    }
+  }, [state]);
+
+  if (!state) return null;
+
+  const setAll = (action: ConflictAction) => {
+    const next: Record<string, ConflictAction> = {};
+    state.conflicts.forEach((c) => { next[c.id] = action; });
+    setDecisions(next);
+  };
+
+  const optionBtn = (id: string, action: ConflictAction, label: string, color: string) => (
+    <button
+      onClick={() => setDecisions((d) => ({ ...d, [id]: action }))}
+      className={`flex-1 min-w-0 h-9 px-2 rounded-md border text-xs font-medium transition-colors ${
+        decisions[id] === action
+          ? `${color} text-white border-transparent`
+          : 'bg-background hover:bg-muted text-foreground'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <MobileFriendlyDialog
+      open={open}
+      onOpenChange={(o) => { if (!o) onCancel(); }}
+      header={
+        <DialogTitle className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          {state.conflicts.length} name conflict{state.conflicts.length > 1 ? 's' : ''}
+        </DialogTitle>
+      }
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+          <Button className="flex-1 h-11" onClick={() => onResolve(decisions)} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MoveRight className="h-4 w-4 mr-2" />}
+            Apply &amp; Move
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Some items already exist in the destination folder. Choose what to do for each:
+        </p>
+
+        <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-muted/40 border">
+          <span className="text-xs font-medium self-center mr-1">Apply to all:</span>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAll('skip')}>
+            Skip all
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAll('replace')}>
+            Replace all
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAll('keep')}>
+            Keep both for all
+          </Button>
+        </div>
+
+        <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+          {state.conflicts.map((c) => (
+            <div key={c.id} className="border rounded-lg p-2.5 bg-card">
+              <div className="flex items-center gap-2 mb-2">
+                {c.type === 'folder'
+                  ? <Folder className="h-4 w-4 text-amber-500 shrink-0" />
+                  : <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <span className="text-sm font-medium truncate flex-1">{c.name}</span>
+              </div>
+              <div className="flex gap-1.5">
+                {optionBtn(c.id, 'skip', 'Skip', 'bg-muted-foreground')}
+                {optionBtn(c.id, 'replace', 'Replace', 'bg-destructive')}
+                {optionBtn(c.id, 'keep', 'Keep both', 'bg-primary')}
+              </div>
+              {decisions[c.id] === 'replace' && (
+                <p className="text-[10px] text-destructive mt-1.5">
+                  ⚠ Existing {c.type} will be permanently deleted.
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </MobileFriendlyDialog>
+  );
+};
