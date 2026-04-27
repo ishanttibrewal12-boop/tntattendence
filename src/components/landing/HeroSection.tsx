@@ -16,30 +16,35 @@ const HeroSection = () => {
     const content = contentRef.current;
     if (!section || !content) return;
 
+    // Disable scroll-driven parallax on touch devices to keep scrolling smooth
+    const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+      || window.innerWidth < 768;
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline();
-      // Don't animate opacity on hero-title (LCP element) — keeps it visible for fast paint
       tl.from('.hero-logo', { opacity: 0, scale: 0.7, duration: 0.8, ease: 'back.out(1.7)' })
         .from('.hero-title', { y: 30, duration: 0.5, ease: 'power3.out' }, '-=0.3')
         .from('.hero-subtitle', { opacity: 0, y: 30, duration: 0.6, ease: 'power3.out' }, '-=0.3')
         .from('.hero-line', { scaleX: 0, duration: 0.5, ease: 'power2.out' }, '-=0.2')
         .from('.hero-desc', { opacity: 0, y: 20, duration: 0.5, ease: 'power3.out' }, '-=0.2');
 
-      gsap.to('.hero-media', {
-        y: 150, scale: 1.12, ease: 'none',
-        scrollTrigger: { trigger: section, start: 'top top', end: 'bottom top', scrub: true },
-      });
-
-      gsap.to(content, {
-        y: 80, opacity: 0, ease: 'none',
-        scrollTrigger: { trigger: section, start: 'top top', end: '60% top', scrub: true },
-      });
-
-      if (overlayRef.current) {
-        gsap.to(overlayRef.current, {
-          opacity: 1, ease: 'none',
+      if (!isTouch) {
+        gsap.to('.hero-media', {
+          y: 150, scale: 1.12, ease: 'none',
           scrollTrigger: { trigger: section, start: 'top top', end: 'bottom top', scrub: true },
         });
+
+        gsap.to(content, {
+          y: 80, opacity: 0, ease: 'none',
+          scrollTrigger: { trigger: section, start: 'top top', end: '60% top', scrub: true },
+        });
+
+        if (overlayRef.current) {
+          gsap.to(overlayRef.current, {
+            opacity: 1, ease: 'none',
+            scrollTrigger: { trigger: section, start: 'top top', end: 'bottom top', scrub: true },
+          });
+        }
       }
     }, section);
 
