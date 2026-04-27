@@ -1116,7 +1116,10 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       {/* New file (Word/Excel) */}
       <NewFileDialog
         open={newFileOpen}
-        onOpenChange={setNewFileOpen}
+        onOpenChange={(open) => {
+          setNewFileOpen(open);
+          if (!open) setNewFileTroubleshooting(null);
+        }}
         onCreate={handleCreateNewFile}
         onCreateLocalFirst={handleCreateLocalFirst}
         onManualTemplateUpload={handleManualTemplateUpload}
