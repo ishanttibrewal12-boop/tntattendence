@@ -57,18 +57,18 @@ const HeroSection = () => {
       <div className="absolute inset-0 z-[1]" style={{ background: 'linear-gradient(180deg, rgba(11,31,51,0.70) 0%, rgba(11,31,51,0.80) 50%, rgba(11,31,51,0.92) 100%)' }} />
       <div ref={overlayRef} className="absolute inset-0 z-[2] opacity-0" style={{ background: '#0a0d14' }} />
 
-      <div ref={contentRef} className="relative z-10 w-full max-w-5xl mx-auto px-6 md:px-12 py-20 will-change-transform">
-        <img src={companyLogo} alt="Tibrewal Group" className="hero-logo h-20 w-auto mb-8 object-contain drop-shadow-lg" fetchPriority="high" width={80} height={80} />
-        <h1 className="hero-title text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-tight text-white" style={{ contentVisibility: 'auto' }}>TIBREWAL GROUP</h1>
-        <p className="hero-subtitle text-lg md:text-xl font-medium mb-8 text-white/70">A Prominent Industrial Business Group</p>
-        <div className="hero-line w-16 h-1 rounded-full mb-10 origin-left bg-orange-500" />
-        <p className="hero-desc text-sm max-w-lg leading-relaxed mb-8 text-white/50">
+      <div ref={contentRef} className="relative z-10 w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 py-16 sm:py-20 will-change-transform">
+        <img src={companyLogo} alt="Tibrewal Group" className="hero-logo h-16 sm:h-20 w-auto mb-6 sm:mb-8 object-contain drop-shadow-lg" fetchPriority="high" width={80} height={80} />
+        <h1 className="hero-title hero-title-mobile text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 leading-[1.1] sm:leading-tight text-white" style={{ contentVisibility: 'auto' }}>TIBREWAL GROUP</h1>
+        <p className="hero-subtitle hero-subtitle-mobile text-base sm:text-lg md:text-xl font-medium mb-6 sm:mb-8 text-white/70 leading-relaxed">A Prominent Industrial Business Group</p>
+        <div className="hero-line w-16 h-1 rounded-full mb-8 sm:mb-10 origin-left bg-orange-500" />
+        <p className="hero-desc text-sm sm:text-base max-w-lg leading-relaxed mb-8 text-white/55 section-body-mobile">
           Mining • Stone Crushing • Petroleum • Tyres • Agro Processing<br />
           Established 2013 — Jharkhand, India
         </p>
 
         {/* Navigation Links */}
-        <div className="hero-desc flex flex-wrap gap-3 mb-10">
+        <div className="hero-desc flex flex-wrap gap-2 sm:gap-3 mb-10">
           {[
             { label: 'About', id: 'about' },
             { label: 'Companies', id: 'companies' },
@@ -80,7 +80,7 @@ const HeroSection = () => {
             <button
               key={link.id}
               onClick={() => document.getElementById(link.id)?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider border transition-all duration-300 hover:scale-105"
+              className="px-4 sm:px-5 py-2 rounded-full text-[11px] sm:text-xs font-semibold uppercase tracking-wider border transition-all duration-300 hover:scale-105"
               style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)' }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.color = '#f97316'; e.currentTarget.style.background = 'rgba(249,115,22,0.1)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
