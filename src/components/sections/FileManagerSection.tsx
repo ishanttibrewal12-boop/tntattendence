@@ -48,6 +48,10 @@ interface FileNode {
 interface BreadcrumbItem { id: string | null; name: string; }
 interface FileManagerSectionProps { onBack: () => void; }
 
+type ConflictAction = 'skip' | 'replace' | 'keep';
+interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; existingId: string; }
+interface MoveConflictsState { targetFolderId: string | null; conflicts: ConflictItem[]; }
+
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];
