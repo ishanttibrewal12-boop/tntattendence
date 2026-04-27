@@ -605,6 +605,53 @@ export type Database = {
           },
         ]
       }
+      file_versions: {
+        Row: {
+          created_at: string
+          file_id: string
+          id: string
+          mime_type: string | null
+          note: string | null
+          saved_by: string | null
+          saved_by_role: string | null
+          size_bytes: number
+          storage_path: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          file_id: string
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          saved_by?: string | null
+          saved_by_role?: string | null
+          size_bytes?: number
+          storage_path: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          file_id?: string
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          saved_by?: string | null
+          saved_by_role?: string | null
+          size_bytes?: number
+          storage_path?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_versions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "file_metadata"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mlt_advances: {
         Row: {
           amount: number
