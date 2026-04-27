@@ -136,6 +136,10 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
+    /* Prevent the URL bar / pull-to-refresh from intercepting touch scroll */
+    overscroll-behavior-y: none;
+    /* Hint to the browser that vertical scrolling is the primary touch action */
+    touch-action: pan-y;
   }
 
   body {
@@ -143,6 +147,9 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    /* Improve readability of long-form text on small screens */
+    text-rendering: optimizeLegibility;
   }
 
   /* Premium scrollbar */
@@ -267,5 +274,33 @@
   .overflow-touch {
     -webkit-overflow-scrolling: touch;
     overflow-y: auto;
+  }
+
+  /* Disable global smooth scrolling on touch devices — it conflicts with momentum scrolling and feels sluggish */
+  @media (hover: none) and (pointer: coarse) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Mobile typography helpers — better line-height and tighter padding for small phones */
+  @media (max-width: 480px) {
+    .hero-title-mobile {
+      font-size: clamp(1.75rem, 8vw, 2.5rem) !important;
+      line-height: 1.15 !important;
+      letter-spacing: -0.02em;
+    }
+    .hero-subtitle-mobile {
+      font-size: 1rem !important;
+      line-height: 1.5 !important;
+    }
+    .section-heading-mobile {
+      font-size: clamp(1.5rem, 6vw, 2rem) !important;
+      line-height: 1.2 !important;
+      letter-spacing: -0.01em;
+    }
+    .section-body-mobile {
+      line-height: 1.65 !important;
+    }
   }
 }

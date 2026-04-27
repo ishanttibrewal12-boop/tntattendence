@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -182,47 +183,44 @@ const StaffSection = ({ onBack, category }: StaffSectionProps) => {
       </Card>
 
       {/* Add Button */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open);
-        if (!open) resetForm();
-      }}>
-        <DialogTrigger asChild>
-          <Button className="w-full mb-4">
-            <Plus className="h-4 w-4 mr-2" />
-            Add {categoryTitle}Staff
+      <Button className="w-full mb-4 h-11" onClick={() => { resetForm(); setDialogOpen(true); }}>
+        <Plus className="h-4 w-4 mr-2" />
+        Add {categoryTitle}Staff
+      </Button>
+      <MobileFriendlyDialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) resetForm();
+        }}
+        header={<DialogTitle>{editingStaff ? 'Edit Staff' : `Add New ${categoryTitle}Staff`}</DialogTitle>}
+        footer={
+          <Button onClick={() => editingStaff ? handleSubmit() : setConfirmAdd(true)} className="w-full h-11">
+            {editingStaff ? 'Update Staff' : 'Add Staff'}
           </Button>
-        </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingStaff ? 'Edit Staff' : `Add New ${categoryTitle}Staff`}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label>Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" />
-            </div>
-            <div>
-              <Label>Phone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Enter phone number" />
-            </div>
-            <div>
-              <Label>Address</Label>
-              <Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter address" className="min-h-[60px]" />
-            </div>
-            <div>
-              <Label>Base Salary (₹)</Label>
-              <Input type="number" value={baseSalary} onChange={(e) => setBaseSalary(e.target.value)} placeholder="Enter monthly salary" />
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes about this staff..." className="min-h-[60px]" />
-            </div>
-            <Button onClick={() => editingStaff ? handleSubmit() : setConfirmAdd(true)} className="w-full">
-              {editingStaff ? 'Update Staff' : 'Add Staff'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <div>
+          <Label>Name *</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" className="h-10" />
+        </div>
+        <div>
+          <Label>Phone</Label>
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Enter phone number" className="h-10" />
+        </div>
+        <div>
+          <Label>Address</Label>
+          <Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter address" className="min-h-[60px]" />
+        </div>
+        <div>
+          <Label>Base Salary (₹)</Label>
+          <Input type="number" value={baseSalary} onChange={(e) => setBaseSalary(e.target.value)} placeholder="Enter monthly salary" className="h-10" />
+        </div>
+        <div>
+          <Label>Notes</Label>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes about this staff..." className="min-h-[60px]" />
+        </div>
+      </MobileFriendlyDialog>
 
       {/* Search */}
       <div className="mb-4">
