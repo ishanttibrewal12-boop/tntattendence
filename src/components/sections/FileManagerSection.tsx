@@ -928,6 +928,13 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* New file (Word/Excel) */}
+      <NewFileDialog
+        open={newFileOpen}
+        onOpenChange={setNewFileOpen}
+        onCreate={handleCreateNewFile}
+      />
+
       {/* Move dialog */}
       <MoveDialog
         open={moveDialogOpen}
