@@ -749,6 +749,9 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
         )}
       </div>
 
+      {/* Build status banner — only shows when stale or update ready */}
+      <BuildStatusBanner />
+
       {/* List */}
       {isLoading ? (
         <div className="space-y-2">
