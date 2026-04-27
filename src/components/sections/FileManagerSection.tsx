@@ -488,20 +488,130 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
     }
   };
 
-  const handleBulkMove = async (targetFolderId: string | null) => {
+  // Returns next free name like "Report (2).docx"
+  const nextAvailableName = (base: string, existingNames: Set<string>): string => {
+    if (!existingNames.has(base)) return base;
+    const dot = base.lastIndexOf('.');
+    const stem = dot > 0 ? base.slice(0, dot) : base;
+    const ext = dot > 0 ? base.slice(dot) : '';
+    for (let i = 2; i < 1000; i++) {
+      const candidate = `${stem} (${i})${ext}`;
+      if (!existingNames.has(candidate)) return candidate;
+    }
+    return `${stem}_${Date.now()}${ext}`;
+  };
+
+  // Decision per conflicting item id: skip | replace | keep
+  type ConflictAction = 'skip' | 'replace' | 'keep';
+  interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; existingId: string; }
+
+  const handleBulkMove = async (
+    targetFolderId: string | null,
+    decisions?: Record<string, ConflictAction>,
+  ) => {
     if (selectedItems.length === 0) return;
     setMoveLoading(true);
     try {
-      const ids = selectedItems
-        .filter((i) => i.id !== targetFolderId) // never move into self
-        .map((i) => i.id);
-      const { error } = await supabase.from('file_metadata').update({
-        parent_id: targetFolderId,
-        updated_at: new Date().toISOString(),
-      }).in('id', ids);
-      if (error) throw error;
-      toast.success(`Moved ${ids.length} item${ids.length > 1 ? 's' : ''}`);
+      // Prevent moving a folder into itself / its descendants
+      const movable = selectedItems.filter((i) => i.id !== targetFolderId);
+
+      // Fetch existing names in the target folder to detect conflicts
+      let existingQuery = supabase.from('file_metadata').select('id,name,type');
+      existingQuery = targetFolderId === null
+        ? existingQuery.is('parent_id', null)
+        : existingQuery.eq('parent_id', targetFolderId);
+      const { data: existing } = await existingQuery;
+      const existingByName = new Map<string, { id: string; type: string }>();
+      const existingNameSet = new Set<string>();
+      (existing || []).forEach((e: any) => {
+        // Skip the items being moved themselves (e.g. moving within same folder)
+        if (movable.some((m) => m.id === e.id)) return;
+        existingByName.set(e.name, { id: e.id, type: e.type });
+        existingNameSet.add(e.name);
+      });
+
+      // First pass — find conflicts
+      const conflicts: ConflictItem[] = [];
+      for (const item of movable) {
+        const hit = existingByName.get(item.name);
+        if (hit) {
+          conflicts.push({ id: item.id, name: item.name, type: item.type, existingId: hit.id });
+        }
+      }
+
+      // If conflicts exist and we don't have decisions yet → open resolver
+      if (conflicts.length > 0 && !decisions) {
+        setMoveLoading(false);
+        setMoveConflicts({ targetFolderId, conflicts });
+        return;
+      }
+
+      // Apply decisions
+      const namesToReserve = new Set(existingNameSet);
+      const updates: { id: string; name?: string }[] = [];
+      const toReplaceIds: { id: string; type: string }[] = [];
+      let skipped = 0;
+
+      for (const item of movable) {
+        const conflict = conflicts.find((c) => c.id === item.id);
+        if (!conflict) { updates.push({ id: item.id }); namesToReserve.add(item.name); continue; }
+        const action = decisions?.[item.id] ?? 'skip';
+        if (action === 'skip') { skipped++; continue; }
+        if (action === 'replace') {
+          toReplaceIds.push({ id: conflict.existingId, type: conflict.type });
+          updates.push({ id: item.id });
+          namesToReserve.add(item.name);
+        } else { // keep both
+          const newName = nextAvailableName(item.name, namesToReserve);
+          updates.push({ id: item.id, name: newName });
+          namesToReserve.add(newName);
+        }
+      }
+
+      // Perform replacements (delete existing, including storage where applicable)
+      for (const r of toReplaceIds) {
+        if (r.type === 'file') {
+          const { data: f } = await supabase.from('file_metadata')
+            .select('storage_path').eq('id', r.id).maybeSingle();
+          if (f?.storage_path) {
+            await supabase.storage.from('files').remove([f.storage_path]);
+            await removeVersionsForFile(r.id);
+          }
+        } else {
+          const childPaths = await collectStoragePaths(r.id);
+          if (childPaths.length) await supabase.storage.from('files').remove(childPaths);
+        }
+        await supabase.from('file_metadata').delete().eq('id', r.id);
+      }
+
+      // Move + optional rename in a few targeted updates
+      const stamp = new Date().toISOString();
+      const sameNameIds = updates.filter((u) => !u.name).map((u) => u.id);
+      if (sameNameIds.length) {
+        const { error } = await supabase.from('file_metadata').update({
+          parent_id: targetFolderId, updated_at: stamp,
+        }).in('id', sameNameIds);
+        if (error) throw error;
+      }
+      for (const u of updates.filter((x) => x.name)) {
+        const { error } = await supabase.from('file_metadata').update({
+          parent_id: targetFolderId, name: u.name, updated_at: stamp,
+        }).eq('id', u.id);
+        if (error) throw error;
+      }
+
+      const movedCount = updates.length;
+      if (movedCount > 0) {
+        toast.success(
+          `Moved ${movedCount} item${movedCount > 1 ? 's' : ''}` +
+          (skipped ? ` · ${skipped} skipped` : '') +
+          (toReplaceIds.length ? ` · ${toReplaceIds.length} replaced` : '')
+        );
+      } else {
+        toast.info('No items moved');
+      }
       setMoveDialogOpen(false);
+      setMoveConflicts(null);
       setSelectedIds(new Set());
       setSelectMode(false);
       fetchItems();
