@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -151,56 +152,61 @@ const VehicleManagementSection = ({ onBack }: VehicleManagementProps) => {
       )}
 
       <div className="flex gap-2 mb-4">
-        <Dialog open={isAddVehicleOpen} onOpenChange={setIsAddVehicleOpen}>
-          <DialogTrigger asChild><Button size="sm" className="flex-1"><Plus className="h-4 w-4 mr-1" /> Add Vehicle</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Add Vehicle</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Truck Number *</Label><Input value={newVehicle.truck_number} onChange={e => setNewVehicle({...newVehicle, truck_number: e.target.value})} placeholder="JH 05 AB 1234" /></div>
-              <div><Label>Driver Name</Label><Input value={newVehicle.driver_name} onChange={e => setNewVehicle({...newVehicle, driver_name: e.target.value})} /></div>
-              <div><Label>Insurance Expiry</Label><Input type="date" value={newVehicle.insurance_expiry} onChange={e => setNewVehicle({...newVehicle, insurance_expiry: e.target.value})} /></div>
-              <div><Label>Fitness Expiry</Label><Input type="date" value={newVehicle.fitness_expiry} onChange={e => setNewVehicle({...newVehicle, fitness_expiry: e.target.value})} /></div>
-              <div><Label>Notes</Label><Textarea value={newVehicle.notes} onChange={e => setNewVehicle({...newVehicle, notes: e.target.value})} /></div>
-              <Button className="w-full" onClick={handleAddVehicle}>Save</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-        <Dialog open={isAddMaintenanceOpen} onOpenChange={setIsAddMaintenanceOpen}>
-          <DialogTrigger asChild><Button variant="outline" size="sm"><Wrench className="h-4 w-4 mr-1" /> Maintenance</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Add Maintenance Record</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Vehicle *</Label>
-                <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newMaintenance.vehicle_id} onChange={e => setNewMaintenance({...newMaintenance, vehicle_id: e.target.value})}>
-                  <option value="">Select</option>
-                  {vehicles.map(v => <option key={v.id} value={v.id}>{v.truck_number}</option>)}
-                </select>
-              </div>
-              <div><Label>Type *</Label><Input value={newMaintenance.maintenance_type} onChange={e => setNewMaintenance({...newMaintenance, maintenance_type: e.target.value})} placeholder="Oil change, tyre, etc." /></div>
-              <div><Label>Description</Label><Textarea value={newMaintenance.description} onChange={e => setNewMaintenance({...newMaintenance, description: e.target.value})} /></div>
-              <div><Label>Cost (₹)</Label><Input type="number" value={newMaintenance.cost} onChange={e => setNewMaintenance({...newMaintenance, cost: e.target.value})} /></div>
-              <div><Label>Date</Label><Input type="date" value={newMaintenance.date} onChange={e => setNewMaintenance({...newMaintenance, date: e.target.value})} /></div>
-              <div><Label>Next Due Date</Label><Input type="date" value={newMaintenance.next_due_date} onChange={e => setNewMaintenance({...newMaintenance, next_due_date: e.target.value})} /></div>
-              <Button className="w-full" onClick={handleAddMaintenance}>Save</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" className="flex-1 h-10" onClick={() => setIsAddVehicleOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" /> Add Vehicle
+        </Button>
+        <Button variant="outline" size="sm" className="h-10" onClick={() => setIsAddMaintenanceOpen(true)}>
+          <Wrench className="h-4 w-4 mr-1" /> Maintenance
+        </Button>
       </div>
 
+      {/* Add Vehicle Dialog */}
+      <MobileFriendlyDialog
+        open={isAddVehicleOpen}
+        onOpenChange={setIsAddVehicleOpen}
+        header={<DialogTitle>Add Vehicle</DialogTitle>}
+        footer={<Button className="w-full h-11" onClick={handleAddVehicle}>Save</Button>}
+      >
+        <div><Label>Truck Number *</Label><Input className="h-10" value={newVehicle.truck_number} onChange={e => setNewVehicle({...newVehicle, truck_number: e.target.value})} placeholder="JH 05 AB 1234" /></div>
+        <div><Label>Driver Name</Label><Input className="h-10" value={newVehicle.driver_name} onChange={e => setNewVehicle({...newVehicle, driver_name: e.target.value})} /></div>
+        <div><Label>Insurance Expiry</Label><Input className="h-10" type="date" value={newVehicle.insurance_expiry} onChange={e => setNewVehicle({...newVehicle, insurance_expiry: e.target.value})} /></div>
+        <div><Label>Fitness Expiry</Label><Input className="h-10" type="date" value={newVehicle.fitness_expiry} onChange={e => setNewVehicle({...newVehicle, fitness_expiry: e.target.value})} /></div>
+        <div><Label>Notes</Label><Textarea value={newVehicle.notes} onChange={e => setNewVehicle({...newVehicle, notes: e.target.value})} /></div>
+      </MobileFriendlyDialog>
+
+      {/* Add Maintenance Dialog */}
+      <MobileFriendlyDialog
+        open={isAddMaintenanceOpen}
+        onOpenChange={setIsAddMaintenanceOpen}
+        header={<DialogTitle>Add Maintenance Record</DialogTitle>}
+        footer={<Button className="w-full h-11" onClick={handleAddMaintenance}>Save</Button>}
+      >
+        <div><Label>Vehicle *</Label>
+          <select className="w-full rounded-md border border-input bg-background px-3 h-10 text-sm" value={newMaintenance.vehicle_id} onChange={e => setNewMaintenance({...newMaintenance, vehicle_id: e.target.value})}>
+            <option value="">Select</option>
+            {vehicles.map(v => <option key={v.id} value={v.id}>{v.truck_number}</option>)}
+          </select>
+        </div>
+        <div><Label>Type *</Label><Input className="h-10" value={newMaintenance.maintenance_type} onChange={e => setNewMaintenance({...newMaintenance, maintenance_type: e.target.value})} placeholder="Oil change, tyre, etc." /></div>
+        <div><Label>Description</Label><Textarea value={newMaintenance.description} onChange={e => setNewMaintenance({...newMaintenance, description: e.target.value})} /></div>
+        <div><Label>Cost (₹)</Label><Input className="h-10" type="number" value={newMaintenance.cost} onChange={e => setNewMaintenance({...newMaintenance, cost: e.target.value})} /></div>
+        <div><Label>Date</Label><Input className="h-10" type="date" value={newMaintenance.date} onChange={e => setNewMaintenance({...newMaintenance, date: e.target.value})} /></div>
+        <div><Label>Next Due Date</Label><Input className="h-10" type="date" value={newMaintenance.next_due_date} onChange={e => setNewMaintenance({...newMaintenance, next_due_date: e.target.value})} /></div>
+      </MobileFriendlyDialog>
+
       {/* Edit Vehicle Dialog */}
-      <Dialog open={isEditVehicleOpen} onOpenChange={setIsEditVehicleOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Vehicle</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Truck Number</Label><Input value={editVehicleForm.truck_number} onChange={e => setEditVehicleForm({...editVehicleForm, truck_number: e.target.value})} /></div>
-            <div><Label>Driver Name</Label><Input value={editVehicleForm.driver_name} onChange={e => setEditVehicleForm({...editVehicleForm, driver_name: e.target.value})} /></div>
-            <div><Label>Insurance Expiry</Label><Input type="date" value={editVehicleForm.insurance_expiry} onChange={e => setEditVehicleForm({...editVehicleForm, insurance_expiry: e.target.value})} /></div>
-            <div><Label>Fitness Expiry</Label><Input type="date" value={editVehicleForm.fitness_expiry} onChange={e => setEditVehicleForm({...editVehicleForm, fitness_expiry: e.target.value})} /></div>
-            <div><Label>Notes</Label><Textarea value={editVehicleForm.notes} onChange={e => setEditVehicleForm({...editVehicleForm, notes: e.target.value})} /></div>
-            <Button className="w-full" onClick={handleEditVehicle}>Update Vehicle</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MobileFriendlyDialog
+        open={isEditVehicleOpen}
+        onOpenChange={setIsEditVehicleOpen}
+        header={<DialogTitle>Edit Vehicle</DialogTitle>}
+        footer={<Button className="w-full h-11" onClick={handleEditVehicle}>Update Vehicle</Button>}
+      >
+        <div><Label>Truck Number</Label><Input className="h-10" value={editVehicleForm.truck_number} onChange={e => setEditVehicleForm({...editVehicleForm, truck_number: e.target.value})} /></div>
+        <div><Label>Driver Name</Label><Input className="h-10" value={editVehicleForm.driver_name} onChange={e => setEditVehicleForm({...editVehicleForm, driver_name: e.target.value})} /></div>
+        <div><Label>Insurance Expiry</Label><Input className="h-10" type="date" value={editVehicleForm.insurance_expiry} onChange={e => setEditVehicleForm({...editVehicleForm, insurance_expiry: e.target.value})} /></div>
+        <div><Label>Fitness Expiry</Label><Input className="h-10" type="date" value={editVehicleForm.fitness_expiry} onChange={e => setEditVehicleForm({...editVehicleForm, fitness_expiry: e.target.value})} /></div>
+        <div><Label>Notes</Label><Textarea value={editVehicleForm.notes} onChange={e => setEditVehicleForm({...editVehicleForm, notes: e.target.value})} /></div>
+      </MobileFriendlyDialog>
 
       <Tabs defaultValue="vehicles">
         <TabsList className="w-full"><TabsTrigger value="vehicles" className="flex-1">Vehicles</TabsTrigger><TabsTrigger value="history" className="flex-1">History</TabsTrigger><TabsTrigger value="fuel" className="flex-1">Fuel</TabsTrigger></TabsList>
