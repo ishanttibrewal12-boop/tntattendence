@@ -359,6 +359,7 @@ const Home = () => {
             <div className="pt-4 pb-1.5">
               <p className="px-3 text-[9px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.15em]">Tools</p>
             </div>
+            <SidebarNavItem icon={User} label="My Profile" active={activeSection === 'profile'} onClick={() => navigateToSection('profile')} />
             <SidebarNavItem icon={Folder} label="File Manager" active={activeSection === 'file-manager'} onClick={() => navigateToSection('file-manager')} />
             <SidebarNavItem icon={Calculator} label="Calculator" active={activeSection === 'calculator'} onClick={() => navigateToSection('calculator')} />
             <SidebarNavItem icon={Image} label="Photo Gallery" active={activeSection === 'photo-gallery'} onClick={() => navigateToSection('photo-gallery')} />
@@ -373,13 +374,19 @@ const Home = () => {
       {/* User section */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-sidebar-accent flex items-center justify-center">
-            <span className="text-xs font-bold text-sidebar-primary">{user?.full_name?.charAt(0)}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-sidebar-foreground truncate">{user?.full_name}</p>
-            <p className="text-[10px] text-sidebar-foreground/40 capitalize font-medium">{user?.role?.replace('_', ' ')}</p>
-          </div>
+          <button
+            onClick={() => navigateToSection('profile')}
+            className="flex items-center gap-3 flex-1 min-w-0 hover:bg-sidebar-accent/50 rounded-lg p-1 -m-1 transition-colors"
+            title="View profile"
+          >
+            <div className="h-9 w-9 rounded-lg bg-sidebar-accent flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-sidebar-primary">{user?.full_name?.charAt(0)}</span>
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-xs font-semibold text-sidebar-foreground truncate">{user?.full_name}</p>
+              <p className="text-[10px] text-sidebar-foreground/40 capitalize font-medium">{user?.role?.replace('_', ' ')}</p>
+            </div>
+          </button>
           <motion.div whileTap={{ scale: 0.9 }}>
             <Button variant="ghost" size="icon" onClick={requestLogout} className="h-8 w-8 hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-destructive">
               <LogOut className="h-4 w-4" />
@@ -416,7 +423,13 @@ const Home = () => {
           </div>
         )}
         {!isMobile && (
-          <span className="text-xs font-semibold text-foreground/70">{user?.full_name}</span>
+          <button
+            onClick={() => navigateToSection('profile')}
+            className="text-xs font-semibold text-foreground/70 hover:text-foreground transition-colors"
+            title="View profile"
+          >
+            {user?.full_name}
+          </button>
         )}
         {isMobile && (
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={requestLogout}>
@@ -437,6 +450,7 @@ const Home = () => {
       'monthly-calendar': 'Monthly Report',
       'bulk-import': 'Import/Export',
       'staff-profile': 'Staff Profiles',
+      'profile': 'My Profile',
       'settings': 'Settings',
       'daily-report': 'Daily Report',
       'calculator': 'Calculator',
@@ -502,6 +516,7 @@ const Home = () => {
           {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
           {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
           {activeSection === 'file-manager' && <FileManagerSection onBack={onBack} />}
+          {activeSection === 'profile' && <ProfileSection onBack={onBack} onNavigate={(s) => navigateToSection(s as SectionType)} />}
         </Suspense>
       </PageTransition>
     );
