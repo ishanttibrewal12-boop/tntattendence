@@ -136,6 +136,10 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
+    /* Prevent the URL bar / pull-to-refresh from intercepting touch scroll */
+    overscroll-behavior-y: none;
+    /* Hint to the browser that vertical scrolling is the primary touch action */
+    touch-action: pan-y;
   }
 
   body {
@@ -143,6 +147,9 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    /* Improve readability of long-form text on small screens */
+    text-rendering: optimizeLegibility;
   }
 
   /* Premium scrollbar */
