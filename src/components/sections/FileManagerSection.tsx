@@ -865,10 +865,21 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       {/* Move dialog */}
       <MoveDialog
         open={moveDialogOpen}
-        onOpenChange={setMoveDialogOpen}
+        onOpenChange={(open) => { setMoveDialogOpen(open); if (!open) setMoveConflicts(null); }}
         loading={moveLoading}
         excludeIds={selectedIds}
-        onMove={handleBulkMove}
+        onMove={(folderId) => handleBulkMove(folderId)}
+      />
+
+      {/* Conflict resolver */}
+      <ConflictResolverDialog
+        state={moveConflicts}
+        loading={moveLoading}
+        onCancel={() => setMoveConflicts(null)}
+        onResolve={(decisions) => {
+          if (!moveConflicts) return;
+          handleBulkMove(moveConflicts.targetFolderId, decisions);
+        }}
       />
 
       {/* Editors & Sub-dialogs (lazy) */}
