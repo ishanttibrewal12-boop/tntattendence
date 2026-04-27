@@ -1,40 +1,68 @@
+## Goal
 
+Add a small, always-visible **Build Status indicator** at the top of the File Manager that instantly tells you whether you are running the freshest build or a stale PWA-cached version — so you never have to guess after a hard refresh.
 
-# Automatic Daily Database Backup Feature
+## What you'll see
 
-## What This Does
-Adds an automatic daily backup system that runs every day in the background and saves a complete copy of your critical data (staff, attendance, advances, payroll, petroleum, MLT, reminders, settings) as a JSON file to secure cloud storage. You'll also be able to see backup history and download past backups from the Settings page.
+A compact pill-badge in the File Manager header (next to the breadcrumbs / search bar), with three possible states:
 
-## How It Works
-1. A scheduled backend function runs once every day (e.g., at 2:00 AM)
-2. It fetches all critical tables and saves the data as a JSON file in a private storage bucket
-3. Old backups beyond 30 days are automatically cleaned up to save space
-4. The Settings page gets a new "Auto Backups" section showing backup history with download buttons
+```text
+[ ● Live build · v20260427-1542 · just now ]      green   = fresh
+[ ● Cached build · v20260427-1140 · 4h old ]      amber   = stale SW cache
+[ ● Update ready · click to reload ]              blue    = new SW waiting
+```
 
-## Technical Details
+Tapping the pill opens a small popover with:
+- **Build version** (timestamp baked in at build time)
+- **Loaded at** (when this tab booted)
+- **Service Worker status** (active / waiting / none / unregistered-in-preview)
+- **Last server check** (relative time)
+- Buttons: **Check for updates**, **Hard reload**, **Clear cache & reload**
 
-### 1. Create a `daily_backups` storage bucket
-- A private storage bucket to store the JSON backup files
-- RLS policies to allow the backend function (service role) to write and the app to read
+## How "fresh vs cached" is detected
 
-### 2. Create a `backup_logs` database table
-- Tracks each backup: timestamp, file path, size, status (success/failed), and error message if any
-- Helps display backup history in the UI
+1. **Build stamp** — Vite injects `__BUILD_ID__` (a timestamp) at build time via `define` in `vite.config.ts`. This value is frozen into the JS bundle.
+2. **Server probe** — On mount and every 60s, the indicator fetches `/index.html?ts=<now>` with `cache: 'no-store'` and parses a `<meta name="build-id">` tag.
+   - If the server's build ID **matches** `__BUILD_ID__` → green "Live build".
+   - If they **differ** → blue "Update ready" (a newer deploy exists; user is on older JS).
+3. **Service Worker check** — `navigator.serviceWorker.getRegistration()`:
+   - If a SW is **active and controlling** the page → amber "Cached build" tag added.
+   - If `registration.waiting` exists → blue "Update ready, click to reload" (calls `skipWaiting` + `location.reload()` on click).
+   - In Lovable preview / iframe (already unregistered in `main.tsx`) → shows "No SW (preview)".
 
-### 3. Create an Edge Function: `daily-backup`
-- Fetches all critical tables: `staff`, `attendance`, `advances`, `payroll`, `mlt_staff`, `mlt_attendance`, `mlt_advances`, `petroleum_sales`, `petroleum_payments`, `reminders`, `app_settings`, `credit_parties`, `credit_party_transactions`, `tyre_sales`, `dispatch_reports`, `bolder_reports`, `mlt_services`, `mlt_fuel_reports`, `salary_records`, `daily_photos`
-- Creates a versioned JSON blob with timestamp
-- Uploads to `daily_backups` bucket with filename like `backup-2026-02-28.json`
-- Logs the result in `backup_logs` table
-- Cleans up backups older than 30 days
+This combination removes the ambiguity: green = definitely fresh JS, amber = served by SW cache, blue = newer build available.
 
-### 4. Schedule the function with pg_cron
-- Uses `pg_cron` + `pg_net` extensions to call the edge function daily at 2:00 AM IST
+## Actions in the popover
 
-### 5. Update Settings UI
-- Add an "Automatic Backups" card in `SettingsSection.tsx`
-- Shows last backup date/time and status
-- Lists recent backups (last 10) with download buttons
-- A "Run Backup Now" button for manual trigger
-- Toggle to enable/disable auto backups (stored in `app_settings`)
+- **Check for updates** — re-runs the server probe immediately.
+- **Hard reload** — `location.reload()` with a cache-busting query param.
+- **Clear cache & reload** — calls `caches.keys()` → `caches.delete()` for all caches, unregisters any SW, then reloads. This is the nuclear option for stuck PWA cache.
 
+## Files to add / change
+
+**New**
+- `src/components/file-manager/BuildStatusIndicator.tsx` — the pill + popover UI, polling logic, SW inspection, and reload actions.
+- `src/lib/build-info.ts` — exports `BUILD_ID` (from `__BUILD_ID__`) and a helper `fetchServerBuildId()`.
+
+**Edited**
+- `vite.config.ts` — add `define: { __BUILD_ID__: JSON.stringify(new Date().toISOString()) }` and a TypeScript declaration.
+- `index.html` — add `<meta name="build-id" content="%BUILD_ID%">`; Vite's `transformIndexHtml` hook fills `%BUILD_ID%` with the same value.
+- `src/vite-env.d.ts` — declare `const __BUILD_ID__: string;`.
+- `src/components/sections/FileManagerSection.tsx` — render `<BuildStatusIndicator />` in the header row, right of the search input on desktop and as a full-width strip on mobile.
+
+## Mobile considerations
+
+- Pill collapses to just the colored dot + status word on screens < 480px.
+- Popover uses the existing `MobileFriendlyDialog` pattern so it slides up as a sheet on phones.
+- All buttons are 44px tall to stay touch-friendly.
+
+## Out of scope
+
+- No changes to the actual service worker behavior or caching strategy — only **observation and one-click recovery**.
+- Indicator is scoped to the File Manager view as you requested; can later be promoted to global header if useful.
+
+## Acceptance
+
+- After a fresh deploy, opening File Manager shows green "Live build" within ~2s.
+- If you keep the tab open and a new deploy happens, within 60s the pill turns blue "Update ready"; one click reloads cleanly.
+- If the SW is serving stale assets, the pill shows amber and "Clear cache & reload" guarantees a clean reboot.

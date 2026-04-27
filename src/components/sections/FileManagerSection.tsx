@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import JSZip from 'jszip';
 import { downloadQueue } from '@/lib/file-manager/downloadQueue';
+import BuildStatusIndicator from '@/components/file-manager/BuildStatusIndicator';
 
 const DocxEditor = lazy(() => import('@/components/file-editors/DocxEditor'));
 const XlsxEditor = lazy(() => import('@/components/file-editors/XlsxEditor'));
@@ -660,22 +661,30 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
 
       {/* Sticky toolbar */}
       <div className="sticky top-0 z-20 -mx-4 lg:mx-0 px-4 lg:px-0 pt-1 pb-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b lg:border-0 mb-3">
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-1 mb-3 text-sm overflow-x-auto whitespace-nowrap" style={{ WebkitOverflowScrolling: 'touch' as any }}>
-          {breadcrumbs.map((crumb, index) => (
-            <div key={`${crumb.id ?? 'root'}-${index}`} className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => navigateToBreadcrumb(index)}
-                className={`px-2.5 py-1.5 rounded hover:bg-muted/60 active:bg-muted transition-colors flex items-center gap-1.5 min-h-[36px] ${
-                  index === breadcrumbs.length - 1 ? 'font-medium text-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                {index === 0 && <HomeIcon className="h-3.5 w-3.5" />}
-                {crumb.name}
-              </button>
-              {index < breadcrumbs.length - 1 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />}
-            </div>
-          ))}
+        {/* Breadcrumbs + Build status */}
+        <div className="flex items-start gap-2 mb-3">
+          <div
+            className="flex items-center gap-1 text-sm overflow-x-auto whitespace-nowrap flex-1 min-w-0"
+            style={{ WebkitOverflowScrolling: 'touch' as any }}
+          >
+            {breadcrumbs.map((crumb, index) => (
+              <div key={`${crumb.id ?? 'root'}-${index}`} className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => navigateToBreadcrumb(index)}
+                  className={`px-2.5 py-1.5 rounded hover:bg-muted/60 active:bg-muted transition-colors flex items-center gap-1.5 min-h-[36px] ${
+                    index === breadcrumbs.length - 1 ? 'font-medium text-foreground' : 'text-muted-foreground'
+                  }`}
+                >
+                  {index === 0 && <HomeIcon className="h-3.5 w-3.5" />}
+                  {crumb.name}
+                </button>
+                {index < breadcrumbs.length - 1 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />}
+              </div>
+            ))}
+          </div>
+          <div className="shrink-0 pt-0.5">
+            <BuildStatusIndicator />
+          </div>
         </div>
 
         {/* Search */}

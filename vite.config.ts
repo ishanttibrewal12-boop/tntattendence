@@ -1,11 +1,33 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Build identifier baked into the bundle and into index.html so the
+// running app can detect when a newer deploy is available (used by the
+// File Manager Build Status indicator).
+const BUILD_ID = new Date().toISOString();
+
+const buildIdHtmlPlugin = (): Plugin => ({
+  name: "inject-build-id-meta",
+  transformIndexHtml(html) {
+    const meta = `<meta name="build-id" content="${BUILD_ID}">`;
+    if (html.includes('name="build-id"')) {
+      return html.replace(
+        /<meta\s+name="build-id"[^>]*>/,
+        meta,
+      );
+    }
+    return html.replace(/<head>/i, `<head>\n    ${meta}`);
+  },
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -15,6 +37,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    buildIdHtmlPlugin(),
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
