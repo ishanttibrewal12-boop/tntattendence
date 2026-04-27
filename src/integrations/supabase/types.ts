@@ -552,6 +552,59 @@ export type Database = {
         }
         Relationships: []
       }
+      file_metadata: {
+        Row: {
+          created_at: string
+          id: string
+          is_starred: boolean | null
+          mime_type: string | null
+          name: string
+          parent_id: string | null
+          size_bytes: number | null
+          storage_path: string | null
+          type: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_role: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_starred?: boolean | null
+          mime_type?: string | null
+          name: string
+          parent_id?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          type: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_role?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_starred?: boolean | null
+          mime_type?: string | null
+          name?: string
+          parent_id?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          type?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_metadata_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "file_metadata"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mlt_advances: {
         Row: {
           amount: number
