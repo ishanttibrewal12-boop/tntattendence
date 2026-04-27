@@ -234,7 +234,8 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   }) => {
     const validation = await validateGeneratedFile({ kind, blob });
     if (!validation.valid) {
-      throw makeCreateError('build blob', validation.message);
+      const message = 'message' in validation ? validation.message : 'Generated file validation failed.';
+      throw makeCreateError('build blob', message);
     }
 
     const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -372,7 +373,10 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       const localSpec = makeSimplifiedNewFileSpec(spec);
       const built = await buildNewFile(localSpec);
       const validation = await validateGeneratedFile({ kind: localSpec.kind, blob: built.blob });
-      if (!validation.valid) throw makeCreateError('build blob', validation.message);
+      if (!validation.valid) {
+        const message = 'message' in validation ? validation.message : 'Generated file validation failed.';
+        throw makeCreateError('build blob', message);
+      }
 
       downloadBlobLocally(built.blob, built.fileName);
       toast.success('Blank file downloaded locally', {
