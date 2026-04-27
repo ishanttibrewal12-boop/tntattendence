@@ -7,6 +7,7 @@ import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { snapshotCurrentVersion } from '@/lib/file-manager/versionSnapshot';
 import {
   Save, Loader2, Plus, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
   Trash2, FileSpreadsheet,
@@ -258,6 +259,8 @@ export function XlsxEditor({ open, onOpenChange, storagePath, fileName, onSaved 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Snapshot current contents before overwrite
+      await snapshotCurrentVersion(storagePath, fileName);
       const wb = XLSX.utils.book_new();
       sheets.forEach((s) => {
         const ws: XLSX.WorkSheet = {};
@@ -321,7 +324,7 @@ export function XlsxEditor({ open, onOpenChange, storagePath, fileName, onSaved 
         size_bytes: blob.size,
         updated_at: new Date().toISOString(),
       }).eq('storage_path', storagePath);
-      toast.success('Spreadsheet saved');
+      toast.success('Spreadsheet saved · history updated');
       onSaved?.();
     } catch (err) {
       console.error(err);
