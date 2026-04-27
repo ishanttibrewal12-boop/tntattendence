@@ -4,7 +4,7 @@ import {
   ChevronRight, Star, Share2, Pencil, FileText, FileSpreadsheet,
   FileImage, File as FileIcon, Home as HomeIcon, Archive, Loader2, Edit3,
   History, ListChecks, X, MoveRight, CheckSquare, Square, ArchiveRestore,
-  AlertTriangle,
+  AlertTriangle, FilePlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,8 @@ import JSZip from 'jszip';
 import { downloadQueue } from '@/lib/file-manager/downloadQueue';
 import BuildStatusIndicator from '@/components/file-manager/BuildStatusIndicator';
 import BuildStatusBanner from '@/components/file-manager/BuildStatusBanner';
+import NewFileDialog from '@/components/file-manager/NewFileDialog';
+import { buildNewFile, type NewFileSpec } from '@/lib/file-manager/createBlankFile';
 
 const DocxEditor = lazy(() => import('@/components/file-editors/DocxEditor'));
 const XlsxEditor = lazy(() => import('@/components/file-editors/XlsxEditor'));
@@ -99,6 +101,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFileOpen, setNewFileOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<FileNode | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<FileNode | null>(null);
@@ -170,6 +173,51 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
     setNewFolderName('');
     fetchItems();
   };
+
+  const handleCreateNewFile = async (spec: NewFileSpec) => {
+    try {
+      const { blob, fileName, mime } = await buildNewFile(spec);
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('files')
+        .upload(storagePath, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: mime,
+        });
+      if (uploadError) throw uploadError;
+
+      const { data: meta, error: metaError } = await supabase
+        .from('file_metadata')
+        .insert({
+          name: fileName,
+          type: 'file',
+          parent_id: currentFolder,
+          storage_path: storagePath,
+          mime_type: mime,
+          size_bytes: blob.size,
+          uploaded_by: user?.username || null,
+          uploaded_by_role: user?.role || null,
+        })
+        .select()
+        .single();
+      if (metaError) throw metaError;
+
+      toast.success(`Created "${fileName}"`, { description: 'Opening editor…' });
+      await fetchItems();
+
+      // Auto-open the matching editor
+      const node = meta as FileNode;
+      if (spec.kind === 'docx') setDocxEditor(node);
+      else setXlsxEditor(node);
+    } catch (err) {
+      console.error('Create file error', err);
+      toast.error('Failed to create file');
+    }
+  };
+
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -722,6 +770,10 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
               {uploading ? 'Uploading…' : 'Upload'}
             </Button>
             <Button size="sm" variant="outline" className="h-11 flex-1 sm:flex-initial min-w-[110px]"
+              onClick={() => setNewFileOpen(true)}>
+              <FilePlus className="h-4 w-4 mr-2" /> New
+            </Button>
+            <Button size="sm" variant="outline" className="h-11 flex-1 sm:flex-initial min-w-[110px]"
               onClick={() => setNewFolderOpen(true)}>
               <FolderPlus className="h-4 w-4 mr-2" /> Folder
             </Button>
@@ -875,6 +927,13 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New file (Word/Excel) */}
+      <NewFileDialog
+        open={newFileOpen}
+        onOpenChange={setNewFileOpen}
+        onCreate={handleCreateNewFile}
+      />
 
       {/* Move dialog */}
       <MoveDialog
