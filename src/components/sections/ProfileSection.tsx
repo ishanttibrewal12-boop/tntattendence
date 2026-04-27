@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft, LogOut, ShieldCheck, Calendar as CalendarIcon, UserPlus,
   CalendarDays, Wallet, DollarSign, Clock, Users, Folder, Settings as SettingsIcon,
-  KeyRound, RefreshCw,
+  KeyRound, RefreshCw, FileSpreadsheet, FileText, Sparkles, FileDown, Loader2,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { buildTodaySalarySlips, saveBlob } from '@/lib/profile/payrollDocs';
+import BulkSalaryDialog from '@/components/profile/BulkSalaryDialog';
+import ReportRangeDialog from '@/components/profile/ReportRangeDialog';
 
 interface ProfileSectionProps {
   onBack: () => void;
@@ -48,6 +52,11 @@ const ProfileSection = ({ onBack, onNavigate }: ProfileSectionProps) => {
     todayAttendance: 0,
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [slipsBusy, setSlipsBusy] = useState(false);
+
+  const isManager = user?.role === 'manager';
 
   const loadStats = async () => {
     setLoadingStats(true);
@@ -71,6 +80,18 @@ const ProfileSection = ({ onBack, onNavigate }: ProfileSectionProps) => {
   useEffect(() => {
     loadStats();
   }, []);
+
+  const handleSalarySlips = async () => {
+    setSlipsBusy(true);
+    try {
+      const { xlsx, docx, dateStr, count } = await buildTodaySalarySlips();
+      saveBlob(xlsx, `salary-slips-${dateStr}.xlsx`);
+      saveBlob(docx, `salary-slips-${dateStr}.docx`);
+      toast.success(`Generated slips for ${count} active staff`);
+    } catch (e) {
+      console.error(e); toast.error('Could not generate salary slips');
+    } finally { setSlipsBusy(false); }
+  };
 
   const initials = useMemo(() => {
     const n = user?.full_name || user?.username || '?';
@@ -169,6 +190,65 @@ const ProfileSection = ({ onBack, onNavigate }: ProfileSectionProps) => {
         </Button>
       </div>
 
+      {/* Manager-only payroll & document actions */}
+      {isManager && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">Payroll &amp; Documents</h3>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Bulk-edit wages for 200+ workers, generate salary slips, and download Word/Excel reports for any date range.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Button
+                variant="outline"
+                className="h-auto py-3 flex flex-col items-start gap-1 text-left"
+                onClick={() => setBulkOpen(true)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-semibold">Bulk Salary Update</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-normal whitespace-normal">
+                  Download → edit → re-upload
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto py-3 flex flex-col items-start gap-1 text-left"
+                onClick={handleSalarySlips}
+                disabled={slipsBusy}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  {slipsBusy
+                    ? <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                    : <FileText className="h-4 w-4 text-amber-600" />}
+                  <span className="text-sm font-semibold">Today's Salary Slips</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-normal whitespace-normal">
+                  Excel workbook + Word doc
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto py-3 flex flex-col items-start gap-1 text-left"
+                onClick={() => setReportOpen(true)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <FileDown className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-semibold">Range Report</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-normal whitespace-normal">
+                  Attendance · Advances · Payroll
+                </span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick links */}
       <div>
         <h3 className="text-sm font-semibold mb-2.5">Quick links</h3>
@@ -207,6 +287,9 @@ const ProfileSection = ({ onBack, onNavigate }: ProfileSectionProps) => {
           </div>
         </CardContent>
       </Card>
+
+      <BulkSalaryDialog open={bulkOpen} onOpenChange={setBulkOpen} />
+      <ReportRangeDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );
 };
