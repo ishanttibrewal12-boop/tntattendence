@@ -28,8 +28,15 @@ import JSZip from 'jszip';
 import { downloadQueue } from '@/lib/file-manager/downloadQueue';
 import BuildStatusIndicator from '@/components/file-manager/BuildStatusIndicator';
 import BuildStatusBanner from '@/components/file-manager/BuildStatusBanner';
-import NewFileDialog from '@/components/file-manager/NewFileDialog';
-import { buildNewFile, type NewFileSpec } from '@/lib/file-manager/createBlankFile';
+import NewFileDialog, { type NewFileTroubleshootingState } from '@/components/file-manager/NewFileDialog';
+import {
+  buildNewFile,
+  DOCX_MIME,
+  XLSX_MIME,
+  makeSimplifiedNewFileSpec,
+  type NewFileSpec,
+  validateGeneratedFile,
+} from '@/lib/file-manager/createBlankFile';
 
 const DocxEditor = lazy(() => import('@/components/file-editors/DocxEditor'));
 const XlsxEditor = lazy(() => import('@/components/file-editors/XlsxEditor'));
@@ -56,6 +63,9 @@ interface FileManagerSectionProps { onBack: () => void; }
 type ConflictAction = 'skip' | 'replace' | 'keep';
 interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; existingId: string; }
 interface MoveConflictsState { targetFolderId: string | null; conflicts: ConflictItem[]; }
+
+type FileCreateStep = 'build blob' | 'upload' | 'metadata';
+type FileCreateError = Error & { step: FileCreateStep };
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
@@ -113,6 +123,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   const [historyTarget, setHistoryTarget] = useState<FileNode | null>(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
+  const [newFileTroubleshooting, setNewFileTroubleshooting] = useState<NewFileTroubleshootingState | null>(null);
   // Bulk selection
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
