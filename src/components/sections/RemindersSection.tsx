@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
+import { DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -121,84 +122,82 @@ const RemindersSection = ({ onBack }: RemindersSectionProps) => {
     <div className="p-4 lg:p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg lg:text-xl font-bold text-foreground">Reminders</h1>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Add
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add
+        </Button>
+        <MobileFriendlyDialog
+          open={dialogOpen}
+          onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}
+          header={<DialogTitle>Add Reminder</DialogTitle>}
+          footer={
+            <Button onClick={addReminder} className="w-full h-11">
+              Add Reminder
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Reminder</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div>
-                <Label>Title</Label>
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Reminder title..."
-                />
-              </div>
+          }
+        >
+          <div>
+            <Label>Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Reminder title..."
+              className="h-10"
+            />
+          </div>
 
-              <div>
-                <Label>Message (Optional)</Label>
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Additional details..."
-                  className="min-h-[80px]"
-                />
-              </div>
+          <div>
+            <Label>Message (Optional)</Label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Additional details..."
+              className="min-h-[80px]"
+            />
+          </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label>Date</Label>
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !selectedDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(selectedDate, 'dd MMM')}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => {
-                          if (date) setSelectedDate(date);
-                          setCalendarOpen(false);
-                        }}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <Label>Time</Label>
-                  <Input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>Date</Label>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-10",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(selectedDate, 'dd MMM')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) setSelectedDate(date);
+                      setCalendarOpen(false);
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
                   />
-                </div>
-              </div>
-
-              <Button onClick={addReminder} className="w-full">
-                Add Reminder
-              </Button>
+                </PopoverContent>
+              </Popover>
             </div>
-          </DialogContent>
-        </Dialog>
+
+            <div>
+              <Label>Time</Label>
+              <Input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="h-10"
+              />
+            </div>
+          </div>
+        </MobileFriendlyDialog>
       </div>
 
       {isLoading ? (
