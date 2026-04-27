@@ -4,6 +4,7 @@ import {
   ChevronRight, Star, Share2, Pencil, FileText, FileSpreadsheet,
   FileImage, File as FileIcon, Home as HomeIcon, Archive, Loader2, Edit3,
   History, ListChecks, X, MoveRight, CheckSquare, Square, ArchiveRestore,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
