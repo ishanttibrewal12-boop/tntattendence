@@ -174,6 +174,51 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
     fetchItems();
   };
 
+  const handleCreateNewFile = async (spec: NewFileSpec) => {
+    try {
+      const { blob, fileName, mime } = await buildNewFile(spec);
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('files')
+        .upload(storagePath, blob, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: mime,
+        });
+      if (uploadError) throw uploadError;
+
+      const { data: meta, error: metaError } = await supabase
+        .from('file_metadata')
+        .insert({
+          name: fileName,
+          type: 'file',
+          parent_id: currentFolder,
+          storage_path: storagePath,
+          mime_type: mime,
+          size_bytes: blob.size,
+          uploaded_by: user?.username || null,
+          uploaded_by_role: user?.role || null,
+        })
+        .select()
+        .single();
+      if (metaError) throw metaError;
+
+      toast.success(`Created "${fileName}"`, { description: 'Opening editor…' });
+      await fetchItems();
+
+      // Auto-open the matching editor
+      const node = meta as FileNode;
+      if (spec.kind === 'docx') setDocxEditor(node);
+      else setXlsxEditor(node);
+    } catch (err) {
+      console.error('Create file error', err);
+      toast.error('Failed to create file');
+    }
+  };
+
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
