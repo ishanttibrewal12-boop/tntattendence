@@ -27,6 +27,7 @@ import { useAppAuth } from '@/contexts/AppAuthContext';
 import JSZip from 'jszip';
 import { downloadQueue } from '@/lib/file-manager/downloadQueue';
 import BuildStatusIndicator from '@/components/file-manager/BuildStatusIndicator';
+import BuildStatusBanner from '@/components/file-manager/BuildStatusBanner';
 
 const DocxEditor = lazy(() => import('@/components/file-editors/DocxEditor'));
 const XlsxEditor = lazy(() => import('@/components/file-editors/XlsxEditor'));
