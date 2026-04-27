@@ -101,6 +101,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFileOpen, setNewFileOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<FileNode | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<FileNode | null>(null);
