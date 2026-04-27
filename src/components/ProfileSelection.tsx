@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Lock, Eye, EyeOff, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,23 @@ const LandingContent = () => {
   const { login } = useAppAuth();
   const { toast } = useToast();
   const { colors } = useLandingTheme();
+
+  useEffect(() => {
+    document.body.style.removeProperty('pointer-events');
+
+    if (!showLogin) {
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      document.body.removeAttribute('data-scroll-locked');
+    }
+
+    return () => {
+      document.body.style.removeProperty('pointer-events');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      document.body.removeAttribute('data-scroll-locked');
+    };
+  }, [showLogin]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
