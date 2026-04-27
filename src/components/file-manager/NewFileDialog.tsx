@@ -3,6 +3,9 @@ import { FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -10,6 +13,7 @@ import type {
   DocxTemplate,
   XlsxTemplate,
   NewFileSpec,
+  AttendanceCategory,
 } from '@/lib/file-manager/createBlankFile';
 
 interface NewFileDialogProps {
@@ -28,7 +32,7 @@ const DOCX_TEMPLATES: { id: DocxTemplate; title: string; desc: string }[] = [
 
 const XLSX_TEMPLATES: { id: XlsxTemplate; title: string; desc: string }[] = [
   { id: 'blank', title: 'Blank sheet', desc: 'Empty spreadsheet' },
-  { id: 'attendance-sheet', title: 'Attendance sheet', desc: '31 days · auto P/H/A counts' },
+  { id: 'attendance-sheet', title: 'Attendance sheet', desc: 'Pre-filled with active staff' },
   { id: 'salary-sheet', title: 'Salary sheet', desc: 'Shifts × Rate − Advances' },
 ];
 
@@ -37,6 +41,8 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
   const [template, setTemplate] = useState<DocxTemplate | XlsxTemplate>('blank');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [attDate, setAttDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [attCategory, setAttCategory] = useState<AttendanceCategory>('all');
 
   useEffect(() => {
     if (open) {
@@ -44,10 +50,13 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
       setTemplate('blank');
       setName('');
       setBusy(false);
+      setAttDate(new Date().toISOString().slice(0, 10));
+      setAttCategory('all');
     }
   }, [open]);
 
   const templates = kind === 'docx' ? DOCX_TEMPLATES : XLSX_TEMPLATES;
+  const showAttendanceOpts = kind === 'xlsx' && template === 'attendance-sheet';
 
   const handleKindChange = (next: Kind) => {
     setKind(next);
@@ -57,10 +66,15 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
   const handleCreate = async () => {
     setBusy(true);
     try {
+      const defaultName = showAttendanceOpts
+        ? `Attendance ${attCategory.toUpperCase()} ${attDate}`
+        : kind === 'docx' ? 'Untitled Document' : 'Untitled Sheet';
       await onCreate({
         kind,
         template,
-        baseName: name.trim() || (kind === 'docx' ? 'Untitled Document' : 'Untitled Sheet'),
+        baseName: name.trim() || defaultName,
+        attendanceDate: showAttendanceOpts ? attDate : undefined,
+        attendanceCategory: showAttendanceOpts ? attCategory : undefined,
       });
       onOpenChange(false);
     } finally {
@@ -140,6 +154,37 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
           </div>
         </div>
 
+        {/* Attendance template options */}
+        {showAttendanceOpts && (
+          <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+            <div>
+              <Label className="text-xs">Date</Label>
+              <Input
+                type="date"
+                className="h-10 mt-1"
+                value={attDate}
+                onChange={(e) => setAttDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Category</Label>
+              <Select value={attCategory} onValueChange={(v) => setAttCategory(v as AttendanceCategory)}>
+                <SelectTrigger className="h-10 mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All staff</SelectItem>
+                  <SelectItem value="petroleum">Petroleum</SelectItem>
+                  <SelectItem value="crusher">Crusher</SelectItem>
+                  <SelectItem value="office">Office</SelectItem>
+                  <SelectItem value="mlt">MLT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="col-span-2 text-[11px] text-muted-foreground">
+              Active staff for this category will be pre-filled in the sheet.
+            </p>
+          </div>
+        )}
+
         {/* Name */}
         <div>
           <Label>File name</Label>
@@ -148,7 +193,11 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
             className="h-11 mt-1"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={kind === 'docx' ? 'e.g. Invoice April 2026' : 'e.g. Attendance April 2026'}
+            placeholder={
+              showAttendanceOpts
+                ? `Attendance ${attCategory.toUpperCase()} ${attDate}`
+                : kind === 'docx' ? 'e.g. Invoice April 2026' : 'e.g. Salary April 2026'
+            }
             onKeyDown={(e) => e.key === 'Enter' && !busy && handleCreate()}
           />
           <p className="text-[11px] text-muted-foreground mt-1">
