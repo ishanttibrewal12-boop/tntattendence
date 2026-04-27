@@ -4,7 +4,7 @@ import {
   ChevronRight, Star, Share2, Pencil, FileText, FileSpreadsheet,
   FileImage, File as FileIcon, Home as HomeIcon, Archive, Loader2, Edit3,
   History, ListChecks, X, MoveRight, CheckSquare, Square, ArchiveRestore,
-  AlertTriangle,
+  AlertTriangle, FilePlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,8 @@ import JSZip from 'jszip';
 import { downloadQueue } from '@/lib/file-manager/downloadQueue';
 import BuildStatusIndicator from '@/components/file-manager/BuildStatusIndicator';
 import BuildStatusBanner from '@/components/file-manager/BuildStatusBanner';
+import NewFileDialog from '@/components/file-manager/NewFileDialog';
+import { buildNewFile, type NewFileSpec } from '@/lib/file-manager/createBlankFile';
 
 const DocxEditor = lazy(() => import('@/components/file-editors/DocxEditor'));
 const XlsxEditor = lazy(() => import('@/components/file-editors/XlsxEditor'));
