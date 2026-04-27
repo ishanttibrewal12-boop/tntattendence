@@ -28,8 +28,15 @@ import JSZip from 'jszip';
 import { downloadQueue } from '@/lib/file-manager/downloadQueue';
 import BuildStatusIndicator from '@/components/file-manager/BuildStatusIndicator';
 import BuildStatusBanner from '@/components/file-manager/BuildStatusBanner';
-import NewFileDialog from '@/components/file-manager/NewFileDialog';
-import { buildNewFile, type NewFileSpec } from '@/lib/file-manager/createBlankFile';
+import NewFileDialog, { type NewFileTroubleshootingState } from '@/components/file-manager/NewFileDialog';
+import {
+  buildNewFile,
+  DOCX_MIME,
+  XLSX_MIME,
+  makeSimplifiedNewFileSpec,
+  type NewFileSpec,
+  validateGeneratedFile,
+} from '@/lib/file-manager/createBlankFile';
 
 const DocxEditor = lazy(() => import('@/components/file-editors/DocxEditor'));
 const XlsxEditor = lazy(() => import('@/components/file-editors/XlsxEditor'));
@@ -56,6 +63,9 @@ interface FileManagerSectionProps { onBack: () => void; }
 type ConflictAction = 'skip' | 'replace' | 'keep';
 interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; existingId: string; }
 interface MoveConflictsState { targetFolderId: string | null; conflicts: ConflictItem[]; }
+
+type FileCreateStep = 'build blob' | 'upload' | 'metadata';
+type FileCreateError = Error & { step: FileCreateStep };
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
@@ -113,6 +123,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   const [historyTarget, setHistoryTarget] = useState<FileNode | null>(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
+  const [newFileTroubleshooting, setNewFileTroubleshooting] = useState<NewFileTroubleshootingState | null>(null);
   // Bulk selection
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -174,56 +185,221 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
     fetchItems();
   };
 
-  const handleCreateNewFile = async (spec: NewFileSpec) => {
+  const makeCreateError = (step: FileCreateStep, error: unknown): FileCreateError => {
+    const message = error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : 'Unknown error';
+    const wrapped = new Error(message) as FileCreateError;
+    wrapped.step = step;
+    return wrapped;
+  };
+
+  const showCreateErrorToast = (kind: 'docx' | 'xlsx', step: FileCreateStep, message: string) => {
+    toast.error(`Failed to create ${kind === 'docx' ? 'Word' : 'Excel'} file`, {
+      description: `Step: ${step} · Error: ${message}`,
+    });
+  };
+
+  const openGeneratedFileEditor = (node: FileNode, kind: 'docx' | 'xlsx', openInEditor = true) => {
+    if (!openInEditor) return;
+    if (kind === 'docx') setDocxEditor(node);
+    else setXlsxEditor(node);
+  };
+
+  const downloadBlobLocally = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const persistCreatedBlob = async ({
+    blob,
+    fileName,
+    mime,
+    kind,
+    openInEditor,
+  }: {
+    blob: Blob;
+    fileName: string;
+    mime: string;
+    kind: 'docx' | 'xlsx';
+    openInEditor?: boolean;
+  }) => {
+    const validation = await validateGeneratedFile({ kind, blob });
+    if (!validation.valid) {
+      const message = 'message' in validation ? validation.message : 'Generated file validation failed.';
+      throw makeCreateError('build blob', message);
+    }
+
+    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('files')
+      .upload(storagePath, blob, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: mime,
+      });
+    if (uploadError) {
+      console.error('[NewFile] Storage upload failed:', uploadError);
+      throw makeCreateError('upload', uploadError);
+    }
+
+    const { data: meta, error: metaError } = await supabase
+      .from('file_metadata')
+      .insert({
+        name: fileName,
+        type: 'file',
+        parent_id: currentFolder,
+        storage_path: storagePath,
+        mime_type: mime,
+        size_bytes: blob.size,
+        uploaded_by: user?.username || null,
+        uploaded_by_role: user?.role || null,
+      })
+      .select()
+      .single();
+    if (metaError) {
+      console.error('[NewFile] Metadata insert failed:', metaError);
+      await supabase.storage.from('files').remove([storagePath]);
+      throw makeCreateError('metadata', metaError);
+    }
+
+    await fetchItems();
+    const node = meta as FileNode;
+    openGeneratedFileEditor(node, kind, openInEditor);
+    toast.success(`Created "${fileName}"`, {
+      description: openInEditor ? 'Validated and opening editor…' : 'Validated and saved.',
+    });
+    return node;
+  };
+
+  const createAndPersistSpec = async (spec: NewFileSpec) => {
     try {
       console.log('[NewFile] Building blob for spec:', spec);
-      const { blob, fileName, mime } = await buildNewFile(spec);
-      console.log('[NewFile] Blob built:', { fileName, mime, size: blob.size });
+      const built = await buildNewFile(spec);
+      console.log('[NewFile] Blob built:', { fileName: built.fileName, mime: built.mime, size: built.blob.size });
+      await persistCreatedBlob({
+        ...built,
+        kind: spec.kind,
+        openInEditor: spec.openInEditor,
+      });
+      return true;
+    } catch (error) {
+      throw error instanceof Error && 'step' in error
+        ? error
+        : makeCreateError('build blob', error);
+    }
+  };
 
-      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const storagePath = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+  const handleCreateNewFile = async (spec: NewFileSpec): Promise<boolean> => {
+    setNewFileTroubleshooting(null);
+    try {
+      await createAndPersistSpec(spec);
+      return true;
+    } catch (error) {
+      const firstError = error as FileCreateError;
+      console.error('[NewFile] Create file error', firstError);
+      showCreateErrorToast(spec.kind, firstError.step, firstError.message);
 
-      const { error: uploadError } = await supabase.storage
-        .from('files')
-        .upload(storagePath, blob, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: mime,
+      try {
+        await createAndPersistSpec(makeSimplifiedNewFileSpec(spec));
+        toast.success('Simplified retry worked', {
+          description: `The original file failed at ${firstError.step}, so a blank ${spec.kind === 'docx' ? 'Word' : 'Excel'} file was created instead.`,
         });
-      if (uploadError) {
-        console.error('[NewFile] Storage upload failed:', uploadError);
-        throw uploadError;
+        return true;
+      } catch (retryError) {
+        const finalRetryError = retryError as FileCreateError;
+        console.error('[NewFile] Simplified retry failed', finalRetryError);
+        setNewFileTroubleshooting({
+          step: firstError.step,
+          message: firstError.message,
+          expectedKind: spec.kind,
+          retryAttempted: true,
+          retryFailed: true,
+          retryMessage: `${finalRetryError.step}: ${finalRetryError.message}`,
+        });
+        return false;
       }
-      console.log('[NewFile] Uploaded to storage:', storagePath);
+    }
+  };
 
-      const { data: meta, error: metaError } = await supabase
-        .from('file_metadata')
-        .insert({
-          name: fileName,
-          type: 'file',
-          parent_id: currentFolder,
-          storage_path: storagePath,
-          mime_type: mime,
-          size_bytes: blob.size,
-          uploaded_by: user?.username || null,
-          uploaded_by_role: user?.role || null,
-        })
-        .select()
-        .single();
-      if (metaError) {
-        console.error('[NewFile] Metadata insert failed:', metaError);
-        throw metaError;
+  const handleManualTemplateUpload = async (
+    file: File,
+    kind: 'docx' | 'xlsx',
+    openInEditor: boolean,
+  ): Promise<boolean> => {
+    const validExtension = kind === 'docx' ? /\.docx$/i : /\.(xlsx|xls)$/i;
+    if (!validExtension.test(file.name)) {
+      toast.error(`Please upload a ${kind === 'docx' ? '.docx' : '.xlsx'} file`);
+      return false;
+    }
+
+    setNewFileTroubleshooting(null);
+    try {
+      await persistCreatedBlob({
+        blob: file,
+        fileName: file.name,
+        mime: kind === 'docx' ? DOCX_MIME : XLSX_MIME,
+        kind,
+        openInEditor,
+      });
+      return true;
+    } catch (error) {
+      const createError = error as FileCreateError;
+      console.error('[NewFile] Manual template upload failed', createError);
+      showCreateErrorToast(kind, createError.step, createError.message);
+      setNewFileTroubleshooting({
+        step: createError.step,
+        message: createError.message,
+        expectedKind: kind,
+        retryAttempted: false,
+      });
+      return false;
+    }
+  };
+
+  const handleCreateLocalFirst = async (spec: NewFileSpec): Promise<boolean> => {
+    setNewFileTroubleshooting(null);
+    try {
+      const localSpec = makeSimplifiedNewFileSpec(spec);
+      const built = await buildNewFile(localSpec);
+      const validation = await validateGeneratedFile({ kind: localSpec.kind, blob: built.blob });
+      if (!validation.valid) {
+        const message = 'message' in validation ? validation.message : 'Generated file validation failed.';
+        throw makeCreateError('build blob', message);
       }
 
-      toast.success(`Created "${fileName}"`, { description: 'Opening editor…' });
-      await fetchItems();
+      downloadBlobLocally(built.blob, built.fileName);
+      toast.success('Blank file downloaded locally', {
+        description: 'The same validated file is being uploaded to ERP now.',
+      });
 
-      const node = meta as FileNode;
-      if (spec.kind === 'docx') setDocxEditor(node);
-      else setXlsxEditor(node);
-    } catch (err: any) {
-      console.error('[NewFile] Create file error', err);
-      toast.error(`Failed to create file: ${err?.message || 'unknown error'}`);
+      await persistCreatedBlob({
+        ...built,
+        kind: localSpec.kind,
+        openInEditor: localSpec.openInEditor,
+      });
+      return true;
+    } catch (error) {
+      const createError = error as FileCreateError;
+      console.error('[NewFile] Local-first create failed', createError);
+      showCreateErrorToast(spec.kind, createError.step, createError.message);
+      setNewFileTroubleshooting({
+        step: createError.step,
+        message: createError.message,
+        expectedKind: spec.kind,
+        retryAttempted: false,
+      });
+      return false;
     }
   };
 
@@ -940,8 +1116,14 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       {/* New file (Word/Excel) */}
       <NewFileDialog
         open={newFileOpen}
-        onOpenChange={setNewFileOpen}
+        onOpenChange={(open) => {
+          setNewFileOpen(open);
+          if (!open) setNewFileTroubleshooting(null);
+        }}
         onCreate={handleCreateNewFile}
+        onCreateLocalFirst={handleCreateLocalFirst}
+        onManualTemplateUpload={handleManualTemplateUpload}
+        troubleshooting={newFileTroubleshooting}
       />
 
       {/* Move dialog */}

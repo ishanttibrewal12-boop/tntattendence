@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { AlertTriangle, Download, FileText, FileSpreadsheet, Loader2, RefreshCw, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -19,10 +20,22 @@ import type {
 interface NewFileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (spec: NewFileSpec) => Promise<void> | void;
+  onCreate: (spec: NewFileSpec) => Promise<boolean> | boolean;
+  onCreateLocalFirst: (spec: NewFileSpec) => Promise<boolean> | boolean;
+  onManualTemplateUpload: (file: File, kind: Kind, openInEditor: boolean) => Promise<boolean> | boolean;
+  troubleshooting: NewFileTroubleshootingState | null;
 }
 
 type Kind = 'docx' | 'xlsx';
+
+export interface NewFileTroubleshootingState {
+  step: string;
+  message: string;
+  expectedKind: Kind;
+  retryAttempted: boolean;
+  retryFailed?: boolean;
+  retryMessage?: string;
+}
 
 const DOCX_TEMPLATES: { id: DocxTemplate; title: string; desc: string }[] = [
   { id: 'blank', title: 'Blank document', desc: 'Empty Word document' },
@@ -36,13 +49,22 @@ const XLSX_TEMPLATES: { id: XlsxTemplate; title: string; desc: string }[] = [
   { id: 'salary-sheet', title: 'Salary sheet', desc: 'Shifts × Rate − Advances' },
 ];
 
-const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => {
+const NewFileDialog = ({
+  open,
+  onOpenChange,
+  onCreate,
+  onCreateLocalFirst,
+  onManualTemplateUpload,
+  troubleshooting,
+}: NewFileDialogProps) => {
   const [kind, setKind] = useState<Kind>('docx');
   const [template, setTemplate] = useState<DocxTemplate | XlsxTemplate>('blank');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [attDate, setAttDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [attCategory, setAttCategory] = useState<AttendanceCategory>('all');
+  const [openInEditor, setOpenInEditor] = useState(true);
+  const manualUploadRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -52,6 +74,7 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
       setBusy(false);
       setAttDate(new Date().toISOString().slice(0, 10));
       setAttCategory('all');
+      setOpenInEditor(true);
     }
   }, [open]);
 
@@ -63,21 +86,53 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
     setTemplate('blank');
   };
 
+  const buildSpec = (): NewFileSpec => {
+    const defaultName = showAttendanceOpts
+      ? `Attendance ${attCategory.toUpperCase()} ${attDate}`
+      : kind === 'docx' ? 'Untitled Document' : 'Untitled Sheet';
+
+    return {
+      kind,
+      template,
+      baseName: name.trim() || defaultName,
+      attendanceDate: showAttendanceOpts ? attDate : undefined,
+      attendanceCategory: showAttendanceOpts ? attCategory : undefined,
+      openInEditor,
+    };
+  };
+
   const handleCreate = async () => {
     setBusy(true);
     try {
-      const defaultName = showAttendanceOpts
-        ? `Attendance ${attCategory.toUpperCase()} ${attDate}`
-        : kind === 'docx' ? 'Untitled Document' : 'Untitled Sheet';
-      await onCreate({
-        kind,
-        template,
-        baseName: name.trim() || defaultName,
-        attendanceDate: showAttendanceOpts ? attDate : undefined,
-        attendanceCategory: showAttendanceOpts ? attCategory : undefined,
-      });
-      onOpenChange(false);
+      const ok = await onCreate(buildSpec());
+      if (ok) onOpenChange(false);
     } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCreateLocalFirst = async () => {
+    setBusy(true);
+    try {
+      const ok = await onCreateLocalFirst({
+        ...buildSpec(),
+        template: 'blank',
+      });
+      if (ok) onOpenChange(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleManualFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const ok = await onManualTemplateUpload(file, kind, openInEditor);
+      if (ok) onOpenChange(false);
+    } finally {
+      e.target.value = '';
       setBusy(false);
     }
   };
@@ -88,10 +143,16 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
       onOpenChange={(o) => !busy && onOpenChange(o)}
       header={<DialogTitle>Create new file</DialogTitle>}
       footer={
-        <Button onClick={handleCreate} disabled={busy} className="w-full h-11">
-          {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          {busy ? 'Creating…' : `Create ${kind === 'docx' ? 'Document' : 'Sheet'}`}
-        </Button>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button type="button" variant="outline" onClick={handleCreateLocalFirst} disabled={busy} className="h-11 w-full">
+            {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Download blank first
+          </Button>
+          <Button onClick={handleCreate} disabled={busy} className="w-full h-11">
+            {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            {busy ? 'Creating…' : `Create ${kind === 'docx' ? 'Document' : 'Sheet'}`}
+          </Button>
+        </div>
       }
     >
       <div className="space-y-4">
@@ -204,6 +265,73 @@ const NewFileDialog = ({ open, onOpenChange, onCreate }: NewFileDialogProps) => 
             {kind === 'docx' ? '.docx' : '.xlsx'} extension is added automatically.
           </p>
         </div>
+
+        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3">
+          <Checkbox
+            id="open-in-editor"
+            checked={openInEditor}
+            onCheckedChange={(checked) => setOpenInEditor(Boolean(checked))}
+          />
+          <div className="space-y-1">
+            <Label htmlFor="open-in-editor" className="text-sm font-medium">
+              Open in built-in editor after validation
+            </Label>
+            <p className="text-[11px] text-muted-foreground">
+              The file is validated before upload and opened only if it can be read safely.
+            </p>
+          </div>
+        </div>
+
+        {troubleshooting && troubleshooting.expectedKind === kind && (
+          <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+              <div>
+                <p className="text-sm font-semibold">File creation troubleshooting</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Failed at <span className="font-medium text-foreground">{troubleshooting.step}</span>: {troubleshooting.message}
+                </p>
+              </div>
+            </div>
+
+            <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1">
+              <li>Check the browser console for the detailed file creation log.</li>
+              <li>Confirm you still have permission to upload and save files.</li>
+              <li>The app already tried a simplified blank generator after the first failure.</li>
+            </ul>
+
+            {troubleshooting.retryAttempted && (
+              <div className="rounded-md border border-border bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Simplified retry</span>
+                {troubleshooting.retryFailed
+                  ? ` failed: ${troubleshooting.retryMessage || 'Unknown error'}`
+                  : ' succeeded.'}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Button type="button" variant="outline" onClick={handleCreate} disabled={busy} className="h-10">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+              <Button type="button" variant="outline" onClick={() => manualUploadRef.current?.click()} disabled={busy} className="h-10">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload template
+              </Button>
+              <Button type="button" variant="outline" onClick={handleCreateLocalFirst} disabled={busy} className="h-10">
+                <Download className="h-4 w-4 mr-2" />
+                Local first
+              </Button>
+            </div>
+            <input
+              ref={manualUploadRef}
+              type="file"
+              className="hidden"
+              accept={kind === 'docx' ? '.docx' : '.xlsx,.xls'}
+              onChange={handleManualFilePick}
+            />
+          </div>
+        )}
       </div>
     </MobileFriendlyDialog>
   );

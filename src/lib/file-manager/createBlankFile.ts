@@ -7,6 +7,7 @@
  */
 
 import * as XLSX from 'xlsx';
+import mammoth from 'mammoth';
 import { asBlob } from 'html-docx-js-typescript';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -190,6 +191,49 @@ export interface NewFileSpec {
   baseName: string; // without extension
   attendanceDate?: string;
   attendanceCategory?: AttendanceCategory;
+  openInEditor?: boolean;
+}
+
+export function makeSimplifiedNewFileSpec(spec: NewFileSpec): NewFileSpec {
+  return {
+    ...spec,
+    template: 'blank',
+    baseName: `${spec.baseName || 'Untitled'} (Retry)`,
+  };
+}
+
+export async function validateGeneratedFile(params: {
+  kind: 'docx' | 'xlsx';
+  blob: Blob;
+}): Promise<{ valid: true } | { valid: false; message: string }> {
+  try {
+    const arrayBuffer = await params.blob.arrayBuffer();
+
+    if (params.kind === 'docx') {
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      if (result.messages.some((msg) => msg.type === 'error')) {
+        return {
+          valid: false,
+          message: result.messages.map((msg) => msg.message).join('; ') || 'Word file validation failed.',
+        };
+      }
+
+      return result.value !== undefined
+        ? { valid: true }
+        : { valid: false, message: 'Word file was generated but could not be opened for validation.' };
+    }
+
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true });
+    if (!workbook.SheetNames?.length) {
+      return { valid: false, message: 'Excel file was generated without any worksheets.' };
+    }
+    return { valid: true };
+  } catch (error: any) {
+    return {
+      valid: false,
+      message: error?.message || 'Generated file validation failed.',
+    };
+  }
 }
 
 export async function buildNewFile(spec: NewFileSpec): Promise<{
