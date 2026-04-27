@@ -770,6 +770,10 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
               {uploading ? 'Uploading…' : 'Upload'}
             </Button>
             <Button size="sm" variant="outline" className="h-11 flex-1 sm:flex-initial min-w-[110px]"
+              onClick={() => setNewFileOpen(true)}>
+              <FilePlus className="h-4 w-4 mr-2" /> New
+            </Button>
+            <Button size="sm" variant="outline" className="h-11 flex-1 sm:flex-initial min-w-[110px]"
               onClick={() => setNewFolderOpen(true)}>
               <FolderPlus className="h-4 w-4 mr-2" /> Folder
             </Button>
