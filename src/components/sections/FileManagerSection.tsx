@@ -176,7 +176,10 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
 
   const handleCreateNewFile = async (spec: NewFileSpec) => {
     try {
+      console.log('[NewFile] Building blob for spec:', spec);
       const { blob, fileName, mime } = await buildNewFile(spec);
+      console.log('[NewFile] Blob built:', { fileName, mime, size: blob.size });
+
       const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const storagePath = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
 
@@ -187,7 +190,11 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
           upsert: false,
           contentType: mime,
         });
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[NewFile] Storage upload failed:', uploadError);
+        throw uploadError;
+      }
+      console.log('[NewFile] Uploaded to storage:', storagePath);
 
       const { data: meta, error: metaError } = await supabase
         .from('file_metadata')
@@ -203,18 +210,20 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
         })
         .select()
         .single();
-      if (metaError) throw metaError;
+      if (metaError) {
+        console.error('[NewFile] Metadata insert failed:', metaError);
+        throw metaError;
+      }
 
       toast.success(`Created "${fileName}"`, { description: 'Opening editor…' });
       await fetchItems();
 
-      // Auto-open the matching editor
       const node = meta as FileNode;
       if (spec.kind === 'docx') setDocxEditor(node);
       else setXlsxEditor(node);
-    } catch (err) {
-      console.error('Create file error', err);
-      toast.error('Failed to create file');
+    } catch (err: any) {
+      console.error('[NewFile] Create file error', err);
+      toast.error(`Failed to create file: ${err?.message || 'unknown error'}`);
     }
   };
 
