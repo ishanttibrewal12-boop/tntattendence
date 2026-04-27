@@ -1114,6 +1114,9 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
         open={newFileOpen}
         onOpenChange={setNewFileOpen}
         onCreate={handleCreateNewFile}
+        onCreateLocalFirst={handleCreateLocalFirst}
+        onManualTemplateUpload={handleManualTemplateUpload}
+        troubleshooting={newFileTroubleshooting}
       />
 
       {/* Move dialog */}
