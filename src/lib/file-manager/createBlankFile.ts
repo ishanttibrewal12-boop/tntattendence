@@ -8,9 +8,11 @@
 
 import * as XLSX from 'xlsx';
 import { asBlob } from 'html-docx-js-typescript';
+import { supabase } from '@/integrations/supabase/client';
 
 export type DocxTemplate = 'blank' | 'invoice' | 'salary-slip';
 export type XlsxTemplate = 'blank' | 'attendance-sheet' | 'salary-sheet';
+export type AttendanceCategory = 'all' | 'petroleum' | 'crusher' | 'office' | 'mlt';
 
 export const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -82,34 +84,73 @@ export async function generateDocxBlob(
 }
 
 function buildSheet(rows: (string | number)[][]) {
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  return ws;
+  return XLSX.utils.aoa_to_sheet(rows);
 }
 
-export function generateXlsxBlob(template: XlsxTemplate = 'blank'): Blob {
+interface AttendanceOptions {
+  date?: string; // ISO yyyy-mm-dd
+  category?: AttendanceCategory;
+}
+
+async function fetchActiveStaffForCategory(category: AttendanceCategory) {
+  const out: { name: string; designation: string; category: string }[] = [];
+  if (category === 'mlt') {
+    const { data } = await supabase
+      .from('mlt_staff')
+      .select('name,designation,category')
+      .eq('is_active', true)
+      .order('name');
+    (data || []).forEach((s: any) =>
+      out.push({ name: s.name, designation: s.designation || '', category: `MLT · ${s.category || ''}` }),
+    );
+  } else {
+    let q = supabase
+      .from('staff')
+      .select('name,designation,category')
+      .eq('is_active', true)
+      .order('name');
+    if (category !== 'all') q = q.eq('category', category as any);
+    const { data } = await q;
+    (data || []).forEach((s: any) =>
+      out.push({ name: s.name, designation: s.designation || '', category: s.category || '' }),
+    );
+    if (category === 'all') {
+      const { data: mlt } = await supabase
+        .from('mlt_staff')
+        .select('name,designation,category')
+        .eq('is_active', true)
+        .order('name');
+      (mlt || []).forEach((s: any) =>
+        out.push({ name: s.name, designation: s.designation || '', category: `MLT · ${s.category || ''}` }),
+      );
+    }
+  }
+  return out;
+}
+
+export async function generateXlsxBlob(
+  template: XlsxTemplate = 'blank',
+  opts: AttendanceOptions = {},
+): Promise<Blob> {
   const wb = XLSX.utils.book_new();
 
   if (template === 'attendance-sheet') {
-    const header = ['S.No', 'Staff Name', 'Designation'];
-    const days: string[] = [];
-    for (let d = 1; d <= 31; d++) days.push(String(d));
-    const totals = ['Present', 'Half', 'Absent', 'Total Shifts'];
-    const fullHeader = [...header, ...days, ...totals];
-    const rows: (string | number)[][] = [fullHeader];
-    for (let i = 1; i <= 20; i++) {
-      const row: (string | number)[] = [i, '', ''];
-      for (let d = 0; d < 31; d++) row.push('');
-      // Excel-style summary formulas (placeholder columns; users adjust)
-      const startCol = XLSX.utils.encode_col(3); // D
-      const endCol = XLSX.utils.encode_col(33); // AH
-      const r = i + 1;
-      row.push({ f: `COUNTIF(${startCol}${r}:${endCol}${r},"P")` } as any);
-      row.push({ f: `COUNTIF(${startCol}${r}:${endCol}${r},"H")` } as any);
-      row.push({ f: `COUNTIF(${startCol}${r}:${endCol}${r},"A")` } as any);
-      row.push({ f: `${XLSX.utils.encode_col(34)}${r}+${XLSX.utils.encode_col(35)}${r}*0.5` } as any);
-      rows.push(row);
-    }
+    const staff = await fetchActiveStaffForCategory(opts.category || 'all');
+    const dateLabel = opts.date || new Date().toISOString().slice(0, 10);
+    const catLabel = (opts.category || 'all').toUpperCase();
+    const rows: (string | number)[][] = [
+      [`Attendance Sheet · ${catLabel} · ${dateLabel}`],
+      [],
+      ['S.No', 'Staff Name', 'Category', 'Designation', 'Status (P/H/A)', 'Shifts', 'Notes'],
+    ];
+    staff.forEach((s, i) => {
+      rows.push([i + 1, s.name, s.category, s.designation, '', '', '']);
+    });
+    if (staff.length === 0) rows.push(['', '(no active staff found)', '', '', '', '', '']);
     const ws = buildSheet(rows);
+    ws['!cols'] = [
+      { wch: 6 }, { wch: 26 }, { wch: 16 }, { wch: 18 }, { wch: 14 }, { wch: 8 }, { wch: 20 },
+    ];
     XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
   } else if (template === 'salary-sheet') {
     const rows: (string | number)[][] = [
@@ -147,6 +188,8 @@ export interface NewFileSpec {
   kind: 'docx' | 'xlsx';
   template: DocxTemplate | XlsxTemplate;
   baseName: string; // without extension
+  attendanceDate?: string;
+  attendanceCategory?: AttendanceCategory;
 }
 
 export async function buildNewFile(spec: NewFileSpec): Promise<{
@@ -161,6 +204,9 @@ export async function buildNewFile(spec: NewFileSpec): Promise<{
     const blob = await generateDocxBlob(spec.template as DocxTemplate);
     return { blob, fileName, mime: DOCX_MIME };
   }
-  const blob = generateXlsxBlob(spec.template as XlsxTemplate);
+  const blob = await generateXlsxBlob(spec.template as XlsxTemplate, {
+    date: spec.attendanceDate,
+    category: spec.attendanceCategory,
+  });
   return { blob, fileName, mime: XLSX_MIME };
 }
