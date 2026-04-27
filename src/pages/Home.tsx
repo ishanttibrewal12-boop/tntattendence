@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect, useCallback } from 'react';
-import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench, LayoutDashboard, Menu, X, TrendingUp, AlertTriangle, Zap, Home as HomeIcon } from 'lucide-react';
+import { Calendar, Wallet, UserPlus, CalendarDays, Upload, User, UserCog, Settings, FileText, Calculator, Image, Bell, Fuel, FolderArchive, CheckCircle, DollarSign, BarChart3, LogOut, Truck, CircleDot, CreditCard, ChevronRight, Users, Clock, Wrench, LayoutDashboard, Menu, X, TrendingUp, AlertTriangle, Zap, Home as HomeIcon, Folder } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/contexts/AppAuthContext';
@@ -41,8 +41,9 @@ const UserManagementSection = lazy(() => import('@/components/sections/UserManag
 const VehicleManagementSection = lazy(() => import('@/components/sections/VehicleManagementSection'));
 const InvoiceGeneratorSection = lazy(() => import('@/components/sections/InvoiceGeneratorSection'));
 const CrusherFuelAnalysisSection = lazy(() => import('@/components/sections/CrusherFuelAnalysisSection'));
+const FileManagerSection = lazy(() => import('@/components/sections/FileManagerSection'));
 
-type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | 'user-management' | 'vehicle-management' | 'invoice-generator' | 'crusher-fuel-analysis' | null;
+type SectionType = 'attendance' | 'advance-salary' | 'staff' | 'staff-details' | 'monthly-calendar' | 'bulk-import' | 'staff-profile' | 'settings' | 'daily-report' | 'calculator' | 'photo-gallery' | 'reminders' | 'mlt' | 'petroleum-sales' | 'backup' | 'paid-deducted' | 'salary' | 'yearly-data' | 'tyre-sales' | 'credit-parties' | 'crusher-reports' | 'mlt-services' | 'mlt-fuel-report' | 'user-management' | 'vehicle-management' | 'invoice-generator' | 'crusher-fuel-analysis' | 'file-manager' | null;
 
 type DepartmentType = 'petroleum' | 'crusher' | 'mlt' | 'tyres-office' | 'credit-parties' | 'crusher-reports' | null;
 
@@ -357,6 +358,7 @@ const Home = () => {
             <div className="pt-4 pb-1.5">
               <p className="px-3 text-[9px] font-bold text-sidebar-foreground/30 uppercase tracking-[0.15em]">Tools</p>
             </div>
+            <SidebarNavItem icon={Folder} label="File Manager" active={activeSection === 'file-manager'} onClick={() => navigateToSection('file-manager')} />
             <SidebarNavItem icon={Calculator} label="Calculator" active={activeSection === 'calculator'} onClick={() => navigateToSection('calculator')} />
             <SidebarNavItem icon={Image} label="Photo Gallery" active={activeSection === 'photo-gallery'} onClick={() => navigateToSection('photo-gallery')} />
             <SidebarNavItem icon={Bell} label="Reminders" active={activeSection === 'reminders'} onClick={() => navigateToSection('reminders')} />
@@ -498,6 +500,7 @@ const Home = () => {
           {activeSection === 'vehicle-management' && <VehicleManagementSection onBack={onBack} />}
           {activeSection === 'invoice-generator' && <InvoiceGeneratorSection onBack={onBack} />}
           {activeSection === 'crusher-fuel-analysis' && <CrusherFuelAnalysisSection onBack={onBack} />}
+          {activeSection === 'file-manager' && <FileManagerSection onBack={onBack} />}
         </Suspense>
       </PageTransition>
     );
