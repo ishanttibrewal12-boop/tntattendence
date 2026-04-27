@@ -1,169 +1,192 @@
-import { useEffect, useRef, useState } from 'react';
-import { Download, Upload, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Download, Upload, Loader2, CheckCircle2, AlertCircle, MinusCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  fetchAllActiveStaff, buildBulkWageTemplate, parseBulkWageFile,
-  diffWageRows, applyWageDiffs, saveBlob,
-  type BulkWageDiff, type ParsedWageRow, type StaffWageRow,
+  buildBulkSalaryTemplate,
+  parseBulkSalaryFile,
+  applyBulkSalaryUpdates,
+  saveBlob,
+  type BulkRowDiff,
 } from '@/lib/profile/payrollDocs';
 
-interface BulkSalaryDialogProps {
+interface Props {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (o: boolean) => void;
 }
 
-const fieldLabel: Record<string, string> = {
-  base_salary: 'Base Salary',
-  shift_rate: 'Shift Rate',
-  shift_rate_28: 'Rate (28d)',
-  shift_rate_30: 'Rate (30d)',
-  shift_rate_31: 'Rate (31d)',
-};
+const BulkSalaryDialog = ({ open, onOpenChange }: Props) => {
+  const [downloading, setDownloading] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [diffs, setDiffs] = useState<BulkRowDiff[] | null>(null);
 
-const BulkSalaryDialog = ({ open, onOpenChange }: BulkSalaryDialogProps) => {
-  const [busy, setBusy] = useState<'idle' | 'download' | 'parse' | 'save'>('idle');
-  const [staff, setStaff] = useState<StaffWageRow[]>([]);
-  const [parsed, setParsed] = useState<ParsedWageRow[]>([]);
-  const [diffs, setDiffs] = useState<BulkWageDiff[]>([]);
-  const [missing, setMissing] = useState<ParsedWageRow[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!open) {
-      setParsed([]); setDiffs([]); setMissing([]); setBusy('idle');
-    }
-  }, [open]);
+  const reset = () => setDiffs(null);
 
   const handleDownload = async () => {
-    setBusy('download');
+    setDownloading(true);
     try {
-      const list = await fetchAllActiveStaff();
-      setStaff(list);
-      const blob = buildBulkWageTemplate(list);
-      const date = new Date().toISOString().slice(0, 10);
-      saveBlob(blob, `bulk-wages-${date}.xlsx`);
-      toast.success(`Template downloaded`, { description: `${list.length} active staff included.` });
+      const blob = await buildBulkSalaryTemplate();
+      saveBlob(blob, `bulk-salary-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success('Template downloaded — edit and re-upload');
     } catch (e) {
       console.error(e); toast.error('Could not generate template');
-    } finally { setBusy('idle'); }
+    } finally { setDownloading(false); }
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setBusy('parse');
+  const handleFile = async (file: File) => {
+    setParsing(true);
     try {
-      const list = staff.length ? staff : await fetchAllActiveStaff();
-      if (!staff.length) setStaff(list);
-      const p = await parseBulkWageFile(file);
-      const { diffs: d, missing: m } = diffWageRows(p, list);
-      setParsed(p); setDiffs(d); setMissing(m);
-      if (d.length === 0) toast.info('No changes detected.');
-      else toast.success(`${d.length} rows ready to save`);
+      const result = await parseBulkSalaryFile(file);
+      setDiffs(result);
+      const updated = result.filter((r) => r.status === 'updated').length;
+      const errors = result.filter((r) => r.status === 'error').length;
+      toast.success(`Preview ready · ${updated} change(s)${errors ? `, ${errors} error(s)` : ''}`);
     } catch (e) {
-      console.error(e); toast.error('Could not read the file');
-    } finally { setBusy('idle'); }
+      console.error(e); toast.error('Could not read file');
+    } finally { setParsing(false); }
   };
 
-  const handleSave = async () => {
-    if (diffs.length === 0) return;
-    setBusy('save');
+  const handleApply = async () => {
+    if (!diffs) return;
+    setSaving(true);
     try {
-      const { updated, failed } = await applyWageDiffs(diffs);
-      if (failed === 0) toast.success(`Updated ${updated} staff wages`);
-      else toast.warning(`Updated ${updated}, ${failed} failed`);
-      setDiffs([]); setParsed([]); setMissing([]);
-      onOpenChange(false);
-    } catch (e) {
-      console.error(e); toast.error('Save failed');
-    } finally { setBusy('idle'); }
+      const { ok, failed } = await applyBulkSalaryUpdates(diffs);
+      setDiffs([...diffs]);
+      if (failed) toast.warning(`Saved ${ok}, ${failed} failed`);
+      else toast.success(`Saved ${ok} update(s)`);
+    } finally { setSaving(false); }
   };
+
+  const updatedCount = diffs?.filter((d) => d.status === 'updated').length || 0;
+  const unchangedCount = diffs?.filter((d) => d.status === 'unchanged').length || 0;
+  const errorCount = diffs?.filter((d) => d.status === 'error').length || 0;
 
   return (
     <MobileFriendlyDialog
       open={open}
-      onOpenChange={(o) => busy === 'idle' && onOpenChange(o)}
+      onOpenChange={(o) => { if (!saving) { onOpenChange(o); if (!o) reset(); } }}
       header={<DialogTitle>Bulk Salary Update</DialogTitle>}
+      maxWidthClass="max-w-2xl"
       footer={
-        <div className="flex gap-2 w-full">
-          <Button variant="outline" className="flex-1 h-11" onClick={() => onOpenChange(false)} disabled={busy !== 'idle'}>
-            Cancel
-          </Button>
-          <Button
-            className="flex-1 h-11"
-            onClick={handleSave}
-            disabled={busy !== 'idle' || diffs.length === 0}
-          >
-            {busy === 'save' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-            Save {diffs.length > 0 ? `(${diffs.length})` : ''}
-          </Button>
-        </div>
+        diffs ? (
+          <div className="flex gap-2 w-full">
+            <Button variant="outline" className="flex-1 h-11" onClick={reset} disabled={saving}>
+              Start over
+            </Button>
+            <Button
+              className="flex-1 h-11"
+              onClick={handleApply}
+              disabled={saving || updatedCount === 0}
+            >
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving ? 'Saving…' : `Save ${updatedCount} change(s)`}
+            </Button>
+          </div>
+        ) : null
       }
     >
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" className="h-12" onClick={handleDownload} disabled={busy !== 'idle'}>
-            {busy === 'download' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Download template
-          </Button>
-          <Button variant="outline" className="h-12" onClick={() => fileRef.current?.click()} disabled={busy !== 'idle'}>
-            {busy === 'parse' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            Upload edited file
-          </Button>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
-        </div>
+      {!diffs ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Edit wages for 200+ workers in one round-trip: download the current data,
+            change the numbers in Excel, then re-upload to preview and save.
+          </p>
 
-        <div className="text-[12px] text-muted-foreground p-3 rounded-lg bg-muted/40 border border-border leading-relaxed">
-          1. Download the template (all active staff). 2. Edit wage columns in Excel. 3. Re-upload to preview changes. 4. Save.
-        </div>
+          <div className="grid gap-2">
+            <Button
+              variant="outline"
+              className="h-auto py-3 justify-start gap-3"
+              onClick={handleDownload}
+              disabled={downloading}
+            >
+              {downloading
+                ? <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                : <Download className="h-5 w-5 text-emerald-600" />}
+              <div className="text-left">
+                <p className="text-sm font-semibold">1. Download current wages</p>
+                <p className="text-[11px] text-muted-foreground">All active staff (regular + MLT)</p>
+              </div>
+            </Button>
 
-        {parsed.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold">Preview</span>
-              <span className="text-muted-foreground">
-                {diffs.length} updated · {parsed.length - diffs.length - missing.length} unchanged
-                {missing.length > 0 ? ` · ${missing.length} not found` : ''}
-              </span>
-            </div>
-            <div className="max-h-72 overflow-auto rounded-lg border border-border divide-y divide-border">
-              {diffs.map((d) => (
-                <div key={`${d.source}:${d.id}`} className="p-2.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span className="font-semibold truncate">{d.name}</span>
-                    <span className="text-[10px] uppercase text-muted-foreground">{d.source === 'mlt_staff' ? 'MLT' : 'Staff'}</span>
-                  </div>
-                  <div className="mt-1.5 ml-5 grid grid-cols-1 gap-0.5">
-                    {d.changes.map((c) => (
-                      <div key={c.field} className="flex items-center gap-1.5 text-[11px]">
-                        <span className="text-muted-foreground w-20">{fieldLabel[c.field] || c.field}</span>
-                        <span className="line-through text-muted-foreground">{c.from.toFixed(2)}</span>
-                        <span>→</span>
-                        <span className="font-semibold text-emerald-700">{c.to.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                disabled={parsing}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (f) handleFile(f);
+                }}
+              />
+              <div className="h-auto py-3 px-3 rounded-md border border-input flex items-center gap-3 hover:bg-muted/50 transition-colors">
+                {parsing
+                  ? <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                  : <Upload className="h-5 w-5 text-blue-600" />}
+                <div className="text-left">
+                  <p className="text-sm font-semibold">2. Re-upload edited file</p>
+                  <p className="text-[11px] text-muted-foreground">.xlsx, .xls or .csv</p>
                 </div>
-              ))}
-              {missing.map((m) => (
-                <div key={`${m.source}:${m.id}`} className="p-2.5 text-xs flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                  <span className="truncate">{m.name || m.id}</span>
-                  <span className="text-[10px] text-muted-foreground">Row id not found · skipped</span>
-                </div>
-              ))}
-              {diffs.length === 0 && missing.length === 0 && (
-                <div className="p-4 text-center text-xs text-muted-foreground">No changes detected.</div>
-              )}
-            </div>
+              </div>
+            </label>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary" className="gap-1">
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+              {updatedCount} updated
+            </Badge>
+            <Badge variant="secondary" className="gap-1">
+              <MinusCircle className="h-3 w-3 text-muted-foreground" />
+              {unchangedCount} unchanged
+            </Badge>
+            {errorCount > 0 && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errorCount} error
+              </Badge>
+            )}
+          </div>
+          <ScrollArea className="h-[55vh] sm:h-[420px] border rounded-md">
+            <ul className="divide-y">
+              {diffs.map((d, i) => (
+                <li key={`${d.staff_id}-${i}`} className="p-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {d.status === 'updated' && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+                      {d.status === 'unchanged' && <MinusCircle className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      {d.status === 'error' && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
+                      <span className="font-semibold truncate">{d.name}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">{d.source}</Badge>
+                  </div>
+                  {d.message && <p className="text-destructive mt-1">{d.message}</p>}
+                  {d.changes.length > 0 && (
+                    <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                      {d.changes.map((c) => (
+                        <li key={c.field} className="font-mono">
+                          <span className="text-foreground">{c.field}:</span>{' '}
+                          {c.from} → <span className="text-emerald-600 font-semibold">{c.to}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </ScrollArea>
+        </div>
+      )}
     </MobileFriendlyDialog>
   );
 };
