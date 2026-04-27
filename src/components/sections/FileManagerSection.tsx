@@ -113,6 +113,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
+  const [moveConflicts, setMoveConflicts] = useState<MoveConflictsState | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
