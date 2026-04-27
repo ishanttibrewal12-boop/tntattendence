@@ -11,6 +11,7 @@ import { MobileFriendlyDialog } from '@/components/ui/MobileDialog';
 import { DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { snapshotCurrentVersion } from '@/lib/file-manager/versionSnapshot';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   AlignLeft, AlignCenter, AlignRight, List, ListOrdered,
@@ -70,6 +71,9 @@ export function DocxEditor({ open, onOpenChange, storagePath, fileName, onSaved 
     if (!editor) return;
     setSaving(true);
     try {
+      // Snapshot existing version before overwriting
+      await snapshotCurrentVersion(storagePath, fileName);
+
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${editor.getHTML()}</body></html>`;
       const blob = await asBlob(html);
       const file = blob instanceof Blob ? blob : new Blob([blob as BlobPart], {
@@ -84,7 +88,7 @@ export function DocxEditor({ open, onOpenChange, storagePath, fileName, onSaved 
         size_bytes: file.size,
         updated_at: new Date().toISOString(),
       }).eq('storage_path', storagePath);
-      toast.success('Document saved');
+      toast.success('Document saved · history updated');
       onSaved?.();
     } catch (err) {
       console.error(err);
