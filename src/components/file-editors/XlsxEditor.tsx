@@ -324,7 +324,7 @@ export function XlsxEditor({ open, onOpenChange, storagePath, fileName, onSaved 
         size_bytes: blob.size,
         updated_at: new Date().toISOString(),
       }).eq('storage_path', storagePath);
-      toast.success('Spreadsheet saved');
+      toast.success('Spreadsheet saved · history updated');
       onSaved?.();
     } catch (err) {
       console.error(err);
