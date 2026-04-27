@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -6,6 +5,10 @@ import {
   Trash2,
   RotateCw,
   Loader2,
+  Server,
+  Cloud,
+  HardDrive,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,24 +16,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { formatBuildId, relativeTime } from '@/lib/build-info';
 import {
-  BUILD_ID,
-  BUILD_LOADED_AT,
-  fetchServerBuildId,
-  formatBuildId,
-  relativeTime,
-} from '@/lib/build-info';
-import { toast } from 'sonner';
+  useBuildStatus,
+  type BuildTone,
+  type SwLifecycle,
+} from '@/lib/file-manager/useBuildStatus';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
-type Tone = 'live' | 'cached' | 'update' | 'unknown';
-
-interface SwInfo {
-  state: 'none' | 'active' | 'waiting' | 'unsupported';
-  registration: ServiceWorkerRegistration | null;
-}
-
-const TONE_CLASSES: Record<Tone, { dot: string; pill: string; label: string }> = {
+const TONE_CLASSES: Record<BuildTone, { dot: string; pill: string; label: string }> = {
   live: {
     dot: 'bg-emerald-500',
     pill: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
@@ -53,143 +48,44 @@ const TONE_CLASSES: Record<Tone, { dot: string; pill: string; label: string }> =
   },
 };
 
-const POLL_INTERVAL = 60_000;
+const SW_LABELS: Record<SwLifecycle, { label: string; tone: BuildTone }> = {
+  none: { label: 'No service worker', tone: 'live' },
+  installing: { label: 'Installing new version…', tone: 'update' },
+  'installed-waiting': { label: 'Installed — waiting to activate', tone: 'update' },
+  activating: { label: 'Activating…', tone: 'update' },
+  active: { label: 'Active', tone: 'cached' },
+  redundant: { label: 'Redundant (will refresh)', tone: 'update' },
+  unsupported: { label: 'Not supported in this browser', tone: 'live' },
+};
+
+const ASSET_LABELS = {
+  'service-worker': { label: 'Service Worker', icon: Server },
+  'cache-storage': { label: 'Cache Storage', icon: HardDrive },
+  network: { label: 'Network (live)', icon: Cloud },
+  unknown: { label: 'Unknown', icon: Globe },
+} as const;
+
+const formatExact = (d: Date | null) =>
+  d ? `${format(d, 'MMM d, HH:mm')} · ${relativeTime(d)}` : '—';
 
 const BuildStatusIndicator = () => {
-  const [serverBuildId, setServerBuildId] = useState<string | null>(null);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [checking, setChecking] = useState(false);
-  const [sw, setSw] = useState<SwInfo>({ state: 'none', registration: null });
-  const [, force] = useState(0);
-  const mounted = useRef(true);
+  const status = useBuildStatus();
+  const styles = TONE_CLASSES[status.tone];
 
-  // Re-render once a minute so "X min ago" stays accurate.
-  useEffect(() => {
-    const t = setInterval(() => force((n) => n + 1), 30_000);
-    return () => clearInterval(t);
-  }, []);
+  const versionText =
+    status.buildId === 'dev' ? 'dev' : `v${formatBuildId(status.buildId)}`;
+  const serverVersionText = status.serverBuildId
+    ? status.serverBuildId === 'dev'
+      ? 'dev'
+      : `v${formatBuildId(status.serverBuildId)}`
+    : '—';
+  const serverIsNewer =
+    !!status.serverBuildId &&
+    status.serverBuildId !== status.buildId &&
+    status.buildId !== 'dev';
 
-  const probeServer = useCallback(async () => {
-    setChecking(true);
-    try {
-      const id = await fetchServerBuildId();
-      if (!mounted.current) return;
-      setServerBuildId(id);
-      setLastChecked(new Date());
-    } finally {
-      if (mounted.current) setChecking(false);
-    }
-  }, []);
-
-  const refreshSw = useCallback(async () => {
-    if (!('serviceWorker' in navigator)) {
-      setSw({ state: 'unsupported', registration: null });
-      return;
-    }
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (!reg) {
-        setSw({ state: 'none', registration: null });
-        return;
-      }
-      if (reg.waiting) {
-        setSw({ state: 'waiting', registration: reg });
-      } else if (reg.active) {
-        setSw({ state: 'active', registration: reg });
-      } else {
-        setSw({ state: 'none', registration: reg });
-      }
-    } catch {
-      setSw({ state: 'none', registration: null });
-    }
-  }, []);
-
-  useEffect(() => {
-    mounted.current = true;
-    probeServer();
-    refreshSw();
-    const t = setInterval(() => {
-      probeServer();
-      refreshSw();
-    }, POLL_INTERVAL);
-
-    const onFocus = () => {
-      probeServer();
-      refreshSw();
-    };
-    window.addEventListener('focus', onFocus);
-
-    return () => {
-      mounted.current = false;
-      clearInterval(t);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [probeServer, refreshSw]);
-
-  // Determine tone
-  const isDev = BUILD_ID === 'dev';
-  let tone: Tone = 'unknown';
-  if (sw.state === 'waiting') {
-    tone = 'update';
-  } else if (serverBuildId == null) {
-    tone = 'unknown';
-  } else if (serverBuildId !== BUILD_ID && !isDev) {
-    tone = 'update';
-  } else if (sw.state === 'active') {
-    tone = 'cached';
-  } else {
-    tone = 'live';
-  }
-
-  const styles = TONE_CLASSES[tone];
-
-  const handleHardReload = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('__r', String(Date.now()));
-    window.location.replace(url.toString());
-  };
-
-  const handleApplyWaiting = () => {
-    if (sw.registration?.waiting) {
-      sw.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    handleHardReload();
-  };
-
-  const handleClearCache = async () => {
-    try {
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((k) => caches.delete(k)));
-      }
-      if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister()));
-      }
-      toast.success('Cache cleared. Reloading…');
-    } catch {
-      toast.error('Failed to clear some caches; reloading anyway');
-    } finally {
-      setTimeout(handleHardReload, 400);
-    }
-  };
-
-  const versionText = isDev ? 'dev' : `v${formatBuildId(BUILD_ID)}`;
-  const loadedAgo = relativeTime(BUILD_LOADED_AT);
-  const checkedAgo = lastChecked ? relativeTime(lastChecked) : 'never';
-
-  const swLabel = (() => {
-    switch (sw.state) {
-      case 'waiting':
-        return 'New version waiting';
-      case 'active':
-        return 'Active (serving cache)';
-      case 'none':
-        return 'No service worker';
-      case 'unsupported':
-        return 'Not supported';
-    }
-  })();
+  const swInfo = SW_LABELS[status.sw.lifecycle];
+  const AssetIcon = ASSET_LABELS[status.assetSource].icon;
 
   return (
     <Popover>
@@ -206,114 +102,234 @@ const BuildStatusIndicator = () => {
           <span className={cn('h-2 w-2 rounded-full', styles.dot)} />
           <span className="hidden sm:inline">{styles.label}</span>
           <span className="hidden sm:inline opacity-70">·</span>
-          <span className="hidden md:inline">{versionText}</span>
+          <span className="hidden md:inline font-mono">{versionText}</span>
           <span className="sm:hidden">{styles.label.split(' ')[0]}</span>
-          {checking && <Loader2 className="h-3 w-3 animate-spin opacity-70" />}
+          {status.checking && (
+            <Loader2 className="h-3 w-3 animate-spin opacity-70" />
+          )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-4">
-        <div className="space-y-3">
-          <div className="flex items-start gap-2">
-            {tone === 'update' ? (
-              <AlertTriangle className="h-4 w-4 text-sky-500 mt-0.5" />
-            ) : tone === 'cached' ? (
-              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">
-                {styles.label}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {tone === 'update' &&
-                  'A newer deploy is available. Reload to apply it.'}
-                {tone === 'cached' &&
-                  'You are running a service-worker cached build. Latest deploy matches, but reload if changes look stale.'}
-                {tone === 'live' &&
-                  'You are on the latest build. Changes are live.'}
-                {tone === 'unknown' && 'Checking server for the latest build…'}
-              </p>
-            </div>
+      <PopoverContent
+        align="end"
+        className="w-[min(92vw,360px)] p-0 overflow-hidden"
+      >
+        {/* Header */}
+        <div
+          className={cn(
+            'px-4 py-3 border-b flex items-start gap-2.5',
+            status.tone === 'update' && 'bg-sky-500/5',
+            status.tone === 'cached' && 'bg-amber-500/5',
+            status.tone === 'live' && 'bg-emerald-500/5',
+          )}
+        >
+          {status.tone === 'update' || status.tone === 'cached' ? (
+            <AlertTriangle
+              className={cn(
+                'h-4 w-4 mt-0.5 shrink-0',
+                status.tone === 'update' ? 'text-sky-500' : 'text-amber-500',
+              )}
+            />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-emerald-500" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              {styles.label}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+              {status.tone === 'update' &&
+                'A newer build is available. Apply or hard reload to get the latest UI.'}
+              {status.tone === 'cached' &&
+                'You are running an SW-cached build. Latest deploy still matches; reload if anything looks stale.'}
+              {status.tone === 'live' &&
+                'You are on the latest build. Changes are live.'}
+              {status.tone === 'unknown' && 'Checking server for the latest build…'}
+            </p>
           </div>
+        </div>
 
-          <div className="rounded-md border bg-muted/30 p-2.5 text-xs space-y-1.5">
-            <Row label="This tab" value={versionText} />
+        {/* Sections */}
+        <div className="px-4 py-3 space-y-4 text-xs">
+          {/* Build */}
+          <Section title="Build">
+            <Row label="This tab" value={versionText} mono />
             <Row
               label="Latest on server"
               value={
-                serverBuildId
-                  ? serverBuildId === 'dev'
-                    ? 'dev'
-                    : `v${formatBuildId(serverBuildId)}`
-                  : '—'
+                <span className="font-mono">
+                  {serverVersionText}
+                  {serverIsNewer && (
+                    <span className="ml-1.5 text-sky-600 dark:text-sky-400 font-sans not-italic">
+                      (newer)
+                    </span>
+                  )}
+                </span>
               }
             />
-            <Row label="Loaded" value={loadedAgo} />
-            <Row label="Last check" value={checkedAgo} />
-            <Row label="Service worker" value={swLabel} />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {tone === 'update' && sw.state === 'waiting' && (
-              <Button
-                size="sm"
-                className="w-full h-10"
-                onClick={handleApplyWaiting}
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Apply update & reload
-              </Button>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-10"
-                disabled={checking}
-                onClick={() => {
-                  probeServer();
-                  refreshSw();
-                }}
-              >
-                <RefreshCw
+            <Row
+              label="Mode"
+              value={
+                <span
                   className={cn(
-                    'h-3.5 w-3.5 mr-1.5',
-                    checking && 'animate-spin',
+                    'inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                    status.isDev
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
                   )}
-                />
-                Check
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-10"
-                onClick={handleHardReload}
-              >
-                <RotateCw className="h-3.5 w-3.5 mr-1.5" />
-                Hard reload
-              </Button>
-            </div>
+                >
+                  {status.mode}
+                </span>
+              }
+            />
+            <Row
+              label="Asset source"
+              value={
+                <span className="inline-flex items-center gap-1.5">
+                  <AssetIcon className="h-3 w-3" />
+                  {ASSET_LABELS[status.assetSource].label}
+                </span>
+              }
+            />
+          </Section>
+
+          {/* Service Worker */}
+          <Section title="Service Worker">
+            <Row
+              label="State"
+              value={
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      TONE_CLASSES[swInfo.tone].dot,
+                    )}
+                  />
+                  {swInfo.label}
+                </span>
+              }
+            />
+            <Row
+              label="Controller"
+              value={status.sw.hasController ? 'Yes (page is under SW)' : 'No'}
+            />
+            {status.sw.scope && (
+              <Row label="Scope" value={status.sw.scope} mono />
+            )}
+          </Section>
+
+          {/* Timeline */}
+          <Section title="Timeline">
+            <Row label="Tab loaded" value={relativeTime(status.loadedAt)} />
+            <Row
+              label="Last server check"
+              value={status.lastChecked ? relativeTime(status.lastChecked) : 'never'}
+            />
+            <Row
+              label="Update detected"
+              value={formatExact(status.lastUpdateDetectedAt)}
+              muted={!status.lastUpdateDetectedAt}
+            />
+            <Row
+              label="Update applied"
+              value={formatExact(status.lastUpdateAppliedAt)}
+              muted={!status.lastUpdateAppliedAt}
+            />
+          </Section>
+        </div>
+
+        {/* Actions */}
+        <div className="px-4 pb-4 pt-1 space-y-2">
+          {status.sw.waiting && (
             <Button
               size="sm"
-              variant="ghost"
-              className="h-10 text-destructive hover:text-destructive"
-              onClick={handleClearCache}
+              className="w-full h-10"
+              onClick={() => status.applyWaiting()}
             >
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Clear cache & reload
+              <RotateCw className="h-4 w-4 mr-2" />
+              Apply update &amp; reload
+            </Button>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-10"
+              disabled={status.checking}
+              onClick={() => {
+                status.probeServer();
+                status.refreshSw();
+              }}
+            >
+              <RefreshCw
+                className={cn(
+                  'h-3.5 w-3.5 mr-1.5',
+                  status.checking && 'animate-spin',
+                )}
+              />
+              Check now
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-10"
+              onClick={() => status.hardReload()}
+            >
+              <RotateCw className="h-3.5 w-3.5 mr-1.5" />
+              Hard reload
             </Button>
           </div>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="w-full h-10"
+            onClick={() => status.clearCachesAndReload()}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            Refresh &amp; Clear Cache
+          </Button>
         </div>
       </PopoverContent>
     </Popover>
   );
 };
 
-const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-center justify-between gap-2">
-    <span className="text-muted-foreground">{label}</span>
-    <span className="font-mono text-foreground truncate max-w-[60%] text-right">
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <div>
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1.5">
+      {title}
+    </p>
+    <div className="space-y-1.5 rounded-md border bg-muted/30 px-2.5 py-2">
+      {children}
+    </div>
+  </div>
+);
+
+const Row = ({
+  label,
+  value,
+  mono,
+  muted,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+  muted?: boolean;
+}) => (
+  <div className="flex items-center justify-between gap-2 leading-snug">
+    <span className="text-muted-foreground shrink-0">{label}</span>
+    <span
+      className={cn(
+        'truncate max-w-[65%] text-right',
+        mono && 'font-mono',
+        muted ? 'text-muted-foreground/60' : 'text-foreground',
+      )}
+    >
       {value}
     </span>
   </div>
