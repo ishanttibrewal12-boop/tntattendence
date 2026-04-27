@@ -9,6 +9,8 @@ export interface AppUser {
   full_name: string;
   role: AppRole;
   category: string | null;
+  last_login_at?: string | null;
+  previous_login_at?: string | null;
 }
 
 interface AppAuthContextType {
@@ -209,12 +211,30 @@ export const AppAuthProvider: React.FC<AppAuthProviderProps> = ({ children }) =>
       sessionStorage.removeItem(attemptKey);
       sessionStorage.removeItem(lockoutKey);
 
+      const previousLoginAt: string | null = (data as any).last_login_at ?? null;
+      const nowIso = new Date().toISOString();
+
+      // Record the new login timestamp (best-effort; non-blocking on failure)
+      try {
+        await supabase
+          .from('app_users')
+          .update({
+            previous_login_at: previousLoginAt,
+            last_login_at: nowIso,
+          } as any)
+          .eq('id', data.id);
+      } catch (e) {
+        console.warn('Failed to update last_login_at', e);
+      }
+
       const appUser: AppUser = {
         id: data.id,
         username: data.username,
         full_name: data.full_name,
         role: data.role as AppRole,
         category: data.category,
+        last_login_at: nowIso,
+        previous_login_at: previousLoginAt,
       };
 
       setUser(appUser);
