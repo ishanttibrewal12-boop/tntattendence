@@ -333,8 +333,9 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       return true;
     } catch (error) {
       const firstError = error as FileCreateError;
+      const firstCategory = firstError.category ?? classifyCreateError(firstError.step, firstError);
       console.error('[NewFile] Create file error', firstError);
-      showCreateErrorToast(spec.kind, firstError.step, firstError.message);
+      showCreateErrorToast(spec.kind, firstError.step, firstError.message, firstCategory);
 
       try {
         await createAndPersistSpec(makeSimplifiedNewFileSpec(spec));
@@ -348,6 +349,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
         setNewFileTroubleshooting({
           step: firstError.step,
           message: firstError.message,
+          category: firstCategory,
           expectedKind: spec.kind,
           retryAttempted: true,
           retryFailed: true,
