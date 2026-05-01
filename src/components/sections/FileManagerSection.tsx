@@ -202,19 +202,29 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   };
 
   const makeCreateError = (step: FileCreateStep, error: unknown): FileCreateError => {
+    const anyErr = (error || {}) as any;
     const message = error instanceof Error
       ? error.message
       : typeof error === 'string'
         ? error
-        : 'Unknown error';
+        : anyErr.message || anyErr.error || 'Unknown error';
     const wrapped = new Error(message) as FileCreateError;
     wrapped.step = step;
+    wrapped.category = classifyCreateError(step, error);
+    wrapped.statusCode = anyErr.statusCode ?? anyErr.status ?? anyErr.code;
     return wrapped;
   };
 
-  const showCreateErrorToast = (kind: 'docx' | 'xlsx', step: FileCreateStep, message: string) => {
-    toast.error(`Failed to create ${kind === 'docx' ? 'Word' : 'Excel'} file`, {
-      description: `Step: ${step} · Error: ${message}`,
+  const categoryLabel = (c: FileCreateCategory) =>
+    c === 'permission' ? 'Permission issue'
+    : c === 'quota' ? 'Storage quota'
+    : c === 'network' ? 'Network problem'
+    : c === 'validation' ? 'File validation'
+    : 'Unexpected error';
+
+  const showCreateErrorToast = (kind: 'docx' | 'xlsx', step: FileCreateStep, message: string, category: FileCreateCategory = 'unknown') => {
+    toast.error(`Couldn't create ${kind === 'docx' ? 'Word' : 'Excel'} file (${categoryLabel(category)})`, {
+      description: `Step: ${step} · ${message}`,
     });
   };
 
