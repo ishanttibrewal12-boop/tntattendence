@@ -19,37 +19,35 @@ const BeforeAfterSlider = () => {
     setPosition((x / rect.width) * 100);
   };
 
-  const handleMouseDown = () => setIsDragging(true);
-  const handleMouseUp = () => setIsDragging(false);
-
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => isDragging && handleMove(e.clientX);
     const handleTouchMove = (e: TouchEvent) => isDragging && handleMove(e.touches[0].clientX);
-
+    const stop = () => setIsDragging(false);
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseup', stop);
     window.addEventListener('touchmove', handleTouchMove);
-    window.addEventListener('touchend', handleMouseUp);
-
+    window.addEventListener('touchend', stop);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseup', stop);
       window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleMouseUp);
+      window.removeEventListener('touchend', stop);
     };
   }, [isDragging]);
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
 
     const ctx = gsap.context(() => {
-      gsap.from('.ba-heading', {
-        opacity: 0, y: 40, duration: 0.8, ease: 'power3.out',
+      gsap.from('.ba-head > *', {
+        opacity: 0, y: 14, duration: 0.6, ease: 'power2.out', stagger: 0.08,
         scrollTrigger: { trigger: section, start: 'top 80%' },
       });
       gsap.from('.ba-slider-wrap', {
-        opacity: 0, scale: 0.95, duration: 0.8, ease: 'power3.out', delay: 0.2,
+        opacity: 0, y: 16, duration: 0.7, ease: 'power2.out', delay: 0.15,
         scrollTrigger: { trigger: section, start: 'top 75%' },
       });
     }, section);
@@ -58,73 +56,52 @@ const BeforeAfterSlider = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 relative overflow-hidden" style={{ background: '#0a0d14' }}>
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <p className="ba-heading text-xs font-bold tracking-[0.3em] uppercase mb-4" style={{ color: '#f97316' }}>
-            Our Impact
-          </p>
-          <h2 className="ba-heading text-3xl md:text-5xl font-extrabold leading-tight" style={{ color: '#f2f4f7' }}>
-            Transforming Landscapes
+    <section ref={sectionRef} className="py-24 md:py-32 bg-background">
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="ba-head text-center mb-12">
+          <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Our Impact</p>
+          <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+            Transforming landscapes.
           </h2>
-          <p className="ba-heading mt-4 text-sm md:text-base max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Drag the slider to see how our operations transform raw terrain into productive infrastructure
+          <p className="mt-4 text-base md:text-lg max-w-xl mx-auto text-muted-foreground">
+            Drag the slider to see how our operations transform raw terrain into productive infrastructure.
           </p>
         </div>
 
         <div
           ref={containerRef}
-          className="ba-slider-wrap relative w-full aspect-[16/9] rounded-2xl overflow-hidden cursor-col-resize select-none border"
-          style={{ borderColor: 'rgba(255,255,255,0.1)' }}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleMouseDown}
+          className="ba-slider-wrap relative w-full aspect-[16/9] rounded-2xl overflow-hidden cursor-col-resize select-none border border-border"
+          onMouseDown={() => setIsDragging(true)}
+          onTouchStart={() => setIsDragging(true)}
         >
-          {/* After image (full) */}
-          <img
-            src={afterImg}
-            alt="After - Developed operations"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-
-          {/* Before image (clipped) */}
-          <div
-            className="absolute inset-0 overflow-hidden"
-            style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-          >
-            <img
-              src={beforeImg}
-              alt="Before - Raw terrain"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+          <img src={afterImg} alt="After - Developed operations" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
+            <img src={beforeImg} alt="Before - Raw terrain" className="absolute inset-0 w-full h-full object-cover" />
           </div>
 
-          {/* Slider line */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 z-10"
-            style={{ left: `${position}%`, background: '#f97316', boxShadow: '0 0 12px rgba(249,115,22,0.5)' }}
+            className="absolute top-0 bottom-0 w-px z-10 bg-accent"
+            style={{ left: `${position}%` }}
           />
 
-          {/* Drag handle */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center shadow-xl transition-transform"
+            className="absolute top-1/2 z-20 w-9 h-9 rounded-full flex items-center justify-center bg-accent text-accent-foreground border-2 border-background shadow-md"
             style={{
               left: `${position}%`,
-              background: '#f97316',
-              boxShadow: '0 0 20px rgba(249,115,22,0.4)',
-              transform: `translate(-50%, -50%) scale(${isDragging ? 1.15 : 1})`,
+              transform: `translate(-50%, -50%) scale(${isDragging ? 1.08 : 1})`,
+              transition: 'transform 150ms ease',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M8 4l-6 8 6 8" />
               <path d="M16 4l6 8-6 8" />
             </svg>
           </div>
 
-          {/* Labels */}
-          <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] uppercase bg-background/85 text-foreground border border-border backdrop-blur">
             Raw Stone
           </div>
-          <div className="absolute top-4 right-4 z-10 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] uppercase bg-background/85 text-foreground border border-border backdrop-blur">
             Crushed Aggregates
           </div>
         </div>

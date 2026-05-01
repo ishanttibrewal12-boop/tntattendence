@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Star } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -9,8 +10,7 @@ const companies = [
     title: 'Tibrewal Ventures',
     year: '2025',
     desc: 'Strategic Investments & Expansion',
-    detail: 'The flagship strategic investment and expansion arm of Tibrewal Group. Tibrewal Ventures identifies and capitalizes on high-potential business opportunities across infrastructure, technology, trading, and industrial services. As the most dynamic entity of the group, it drives the vision for future growth, strategic partnerships, and new market entries.',
-    icon: '📈',
+    detail: 'The flagship strategic investment and expansion arm of Tibrewal Group. Identifies and capitalizes on high-potential business opportunities across infrastructure, technology, trading, and industrial services.',
     highlights: ['New sector identification', 'Strategic partnerships & JVs', 'Infrastructure investments', 'Growth acceleration', 'Market expansion', 'Future-forward approach'],
     featured: true,
   },
@@ -18,8 +18,7 @@ const companies = [
     title: 'Tibrewal & Tibrewal Pvt. Ltd.',
     year: '2021',
     desc: 'Transport & Logistics',
-    detail: 'A Private Limited Company specializing in freight transport by road. Directed by Trishav Tibrewal, this active entity handles the group\'s transport and logistics operations — ensuring reliable movement of materials, aggregates, and goods across Jharkhand and beyond.',
-    icon: '🚛',
+    detail: 'A Private Limited Company specializing in freight transport by road. Directed by Trishav Tibrewal, handling the group\'s transport and logistics operations across Jharkhand and beyond.',
     highlights: ['Freight transport by road', 'Fleet management', 'Material logistics', 'Pan-regional operations'],
     featured: false,
   },
@@ -27,8 +26,7 @@ const companies = [
     title: 'Tibrewal Mines & Minerals Pvt. Ltd.',
     year: '2022',
     desc: 'Mining & Mineral Extraction',
-    detail: 'Operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand. Modern excavation equipment and sustainable mining practices ensure top-quality aggregates for the construction industry.',
-    icon: '⛏️',
+    detail: 'Operates in the core mining sector with a focus on extraction and supply of high-quality natural minerals from the mineral-rich region of Jharkhand.',
     highlights: ['Open-pit mining operations', 'Stone crushing plants', 'High-quality aggregates', 'Sustainable practices'],
     featured: false,
   },
@@ -36,8 +34,7 @@ const companies = [
     title: 'Bharat Petroleum Fuel Station',
     year: '2013',
     desc: 'Petroleum Distribution',
-    detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station since 2013, this unit provides reliable fuel supply to transporters, fleet operators, and the local community across Jharkhand.',
-    icon: '⛽',
+    detail: 'The foundational business of Tibrewal Group. Operating a full-service Bharat Petroleum fuel station since 2013, providing reliable fuel supply to transporters, fleet operators, and the local community.',
     highlights: ['24/7 fuel availability', 'BPCL partnership', 'Fleet fueling services', 'Community fuel supply'],
     featured: false,
   },
@@ -45,8 +42,7 @@ const companies = [
     title: 'Tibrewal Tyres',
     year: '2014',
     desc: 'Tyre Trading & Distribution',
-    detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles. Catering to transporters, fleet owners, and industrial clients with a comprehensive range from leading manufacturers across India.',
-    icon: '🛞',
+    detail: 'Specializes in tyre trading and distribution for commercial and heavy-duty vehicles, catering to transporters, fleet owners, and industrial clients across India.',
     highlights: ['Commercial vehicle tyres', 'Heavy-duty range', 'Competitive pricing', 'Pan-brand availability'],
     featured: false,
   },
@@ -54,8 +50,7 @@ const companies = [
     title: 'Tibrewal Agro Food Processing',
     year: '2022',
     desc: 'Agricultural Processing',
-    detail: 'Focusing on processing and value addition of agricultural produce. Bridging the gap between raw agricultural resources and market-ready products, contributing to the region\'s agricultural economy and food security.',
-    icon: '🌾',
+    detail: 'Focusing on processing and value addition of agricultural produce. Bridging the gap between raw agricultural resources and market-ready products.',
     highlights: ['Value-added processing', 'Farm-to-market chain', 'Quality food products', 'Regional agricultural support'],
     featured: false,
   },
@@ -67,19 +62,14 @@ const CompanyShowcase = () => {
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
 
     const ctx = gsap.context(() => {
-      // Featured card
-      gsap.from('.featured-card', {
-        opacity: 0, y: 80, scale: 0.95, duration: 1, ease: 'power3.out',
-        scrollTrigger: { trigger: '.featured-card', start: 'top 88%', toggleActions: 'play none none none' },
-      });
-
-      gsap.utils.toArray<HTMLElement>('.company-card').forEach((el, i) => {
+      gsap.utils.toArray<HTMLElement>('.company-card').forEach((el) => {
         gsap.from(el, {
-          opacity: 0, y: 60, duration: 0.7, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
-          delay: i * 0.08,
+          opacity: 0, y: 14, duration: 0.55, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 88%' },
         });
       });
     }, section);
@@ -91,77 +81,56 @@ const CompanyShowcase = () => {
   const others = companies.filter(c => !c.featured);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-36" style={{ background: '#0d1118' }}>
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <p className="text-xs font-bold tracking-[0.3em] uppercase mb-3 text-orange-400">Our Companies</p>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-white/95">Business Verticals</h2>
-          <div className="w-20 h-1 mx-auto mt-5 rounded-full bg-orange-500" />
-          <p className="mt-5 max-w-xl mx-auto text-sm md:text-base text-white/50">
-            A diversified portfolio of industrial businesses powering Jharkhand's growth and infrastructure development.
+    <section ref={sectionRef} id="companies" className="py-24 md:py-32 bg-background">
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="text-center mb-14">
+          <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Our Companies</p>
+          <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+            Business verticals.
+          </h2>
+          <p className="mt-4 max-w-xl mx-auto text-base md:text-lg text-muted-foreground">
+            A diversified portfolio of industrial businesses powering Jharkhand's growth.
           </p>
         </div>
 
-        {/* Featured — Tibrewal Ventures */}
-        <div className="featured-card mb-10 rounded-3xl overflow-hidden border-2 border-orange-500/30 relative" style={{ background: 'linear-gradient(135deg, #1a1f2e 0%, #1e2538 50%, #1a1f2e 100%)' }}>
-          <div className="absolute top-0 left-0 w-full h-[3px]" style={{ background: 'linear-gradient(90deg, transparent, #f97316, transparent)' }} />
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%)' }} />
-          
-          <div className="p-8 md:p-12 lg:p-16 relative z-10">
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <span className="text-5xl md:text-6xl">{featured.icon}</span>
-                  <span className="text-[10px] font-extrabold tracking-[0.25em] uppercase px-4 py-2 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/25">
-                    ★ Flagship Company
-                  </span>
-                </div>
-                <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-3">{featured.title}</h3>
-                <p className="text-sm font-bold uppercase tracking-wider text-orange-400/70 mb-5">{featured.desc} · Est. {featured.year}</p>
-                <p className="text-base md:text-lg leading-relaxed text-white/60 mb-8">{featured.detail}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {featured.highlights.map((h, j) => (
-                    <div key={j} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/8 text-sm text-white/60">
-                      <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />
-                      {h}
-                    </div>
-                  ))}
-                </div>
+        {/* Featured */}
+        <div className="company-card mb-6 rounded-2xl border border-border bg-card p-8 md:p-10">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.14em] uppercase px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
+              <Star className="h-3 w-3 fill-current" /> Flagship
+            </span>
+            <span className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground">Est. {featured.year}</span>
+          </div>
+          <h3 className="text-2xl md:text-3xl font-semibold tracking-[-0.018em] text-foreground mb-2">{featured.title}</h3>
+          <p className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground mb-5">{featured.desc}</p>
+          <p className="text-base md:text-lg leading-relaxed text-muted-foreground mb-6">{featured.detail}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {featured.highlights.map((h, j) => (
+              <div key={j} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-[13px] text-muted-foreground">
+                <span className="w-1 h-1 rounded-full bg-accent flex-shrink-0" />
+                {h}
               </div>
-            </div>
+            ))}
           </div>
         </div>
 
         {/* Other companies */}
-        <div className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-4">
           {others.map((company, i) => (
-            <div
-              key={i}
-              className="company-card rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_4px_30px_-10px_rgba(249,115,22,0.1)]"
-              style={{ background: '#161b26' }}
-            >
-              <div className="p-8 md:p-10">
-                <div className="flex items-start gap-5 md:gap-8">
-                  <div className="text-4xl md:text-5xl flex-shrink-0">{company.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <h3 className="text-xl md:text-2xl font-bold text-white/90">{company.title}</h3>
-                      <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/15">
-                        Est. {company.year}
-                      </span>
-                    </div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">{company.desc}</p>
-                    <p className="text-sm md:text-base leading-relaxed text-white/55 mb-6">{company.detail}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {company.highlights.map((h, j) => (
-                        <div key={j} className="flex items-center gap-2 text-sm text-white/50">
-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-500/60 flex-shrink-0" />
-                          {h}
-                        </div>
-                      ))}
-                    </div>
+            <div key={i} className="company-card rounded-2xl border border-border bg-card p-7 hover:border-foreground/20 transition-colors">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground">Est. {company.year}</span>
+              </div>
+              <h3 className="text-lg md:text-xl font-semibold tracking-[-0.012em] text-foreground mb-1">{company.title}</h3>
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground mb-3">{company.desc}</p>
+              <p className="text-[14px] leading-relaxed text-muted-foreground mb-4">{company.detail}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {company.highlights.map((h, j) => (
+                  <div key={j} className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                    <span className="w-1 h-1 rounded-full bg-accent flex-shrink-0" />
+                    {h}
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           ))}

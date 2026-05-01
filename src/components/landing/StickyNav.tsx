@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import companyLogo from '@/assets/tibrewal-logo.png';
+import { cn } from '@/lib/utils';
 
 const navLinks = [
   { label: 'About', id: 'about' },
@@ -15,16 +16,12 @@ const StickyNav = () => {
   const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
-    const handleScroll = () => {
-      setVisible(window.scrollY > window.innerHeight * 0.8);
-    };
+    const handleScroll = () => setVisible(window.scrollY > window.innerHeight * 0.6);
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
       { threshold: 0.3, rootMargin: '-80px 0px 0px 0px' }
@@ -46,54 +43,45 @@ const StickyNav = () => {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-[100] transition-all duration-500"
+      className={cn(
+        'fixed top-0 left-0 right-0 z-[100] transition-all duration-300',
+        'bg-background/80 backdrop-blur-xl border-b border-border',
+      )}
       style={{
         transform: visible ? 'translateY(0)' : 'translateY(-100%)',
         opacity: visible ? 1 : 0,
-        background: 'rgba(10, 13, 20, 0.75)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between h-14 md:h-16">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between h-14">
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="flex items-center gap-2 group"
         >
-          <img src={companyLogo} alt="Tibrewal Group" className="h-8 w-auto object-contain" width={32} height={32} />
-          <span className="text-sm font-bold tracking-wide text-white/80 group-hover:text-white transition-colors hidden sm:inline">
-            TIBREWAL GROUP
+          <img src={companyLogo} alt="Tibrewal Group" className="h-7 w-auto object-contain" width={28} height={28} />
+          <span className="text-[13px] font-semibold tracking-tight text-foreground hidden sm:inline">
+            Tibrewal Group
           </span>
         </button>
 
-        <div className="flex items-center gap-1 md:gap-2">
-          {navLinks.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => document.getElementById(link.id)?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-2.5 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-semibold uppercase tracking-wider transition-all duration-300"
-              style={{
-                color: activeSection === link.id ? '#f97316' : 'rgba(255,255,255,0.55)',
-                background: activeSection === link.id ? 'rgba(249,115,22,0.12)' : 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                if (activeSection !== link.id) {
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeSection !== link.id) {
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-                  e.currentTarget.style.background = 'transparent';
-                }
-              }}
-            >
-              {link.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-1">
+          {navLinks.map((link) => {
+            const isActive = activeSection === link.id;
+            return (
+              <button
+                key={link.id}
+                onClick={() => document.getElementById(link.id)?.scrollIntoView({ behavior: 'smooth' })}
+                className={cn(
+                  'relative px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors',
+                  isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {link.label}
+                {isActive && (
+                  <span aria-hidden className="absolute left-1/2 -translate-x-1/2 -bottom-0.5 h-1 w-1 rounded-full bg-accent" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </nav>

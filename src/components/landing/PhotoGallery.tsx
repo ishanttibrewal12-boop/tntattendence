@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { X, ZoomIn } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import crusher1 from '@/assets/gallery-crusher-new-1.jpeg';
 import crusher2 from '@/assets/gallery-crusher-new-2.jpeg';
 import crusher3 from '@/assets/gallery-crusher-new-3.jpeg';
@@ -66,18 +67,12 @@ const PhotoGallery = () => {
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
 
     const ctx = gsap.context(() => {
-      gsap.from('.gallery-sub', {
-        opacity: 0, y: 20, duration: 0.6, ease: 'power3.out',
-        scrollTrigger: { trigger: section, start: 'top 80%' },
-      });
-      gsap.from('.gallery-heading', {
-        opacity: 0, y: 30, duration: 0.7, delay: 0.1, ease: 'power3.out',
-        scrollTrigger: { trigger: section, start: 'top 80%' },
-      });
-      gsap.from('.gallery-line', {
-        scaleX: 0, duration: 0.6, delay: 0.2, ease: 'power2.out',
+      gsap.from('.gallery-head > *', {
+        opacity: 0, y: 14, duration: 0.6, ease: 'power2.out', stagger: 0.08,
         scrollTrigger: { trigger: section, start: 'top 80%' },
       });
     }, section);
@@ -85,41 +80,45 @@ const PhotoGallery = () => {
     return () => ctx.revert();
   }, []);
 
-  // Re-animate on filter change
   useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
     const imgs = document.querySelectorAll('.gallery-img');
-    gsap.fromTo(imgs, { opacity: 0, y: 30, scale: 0.95 }, {
-      opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out',
-      stagger: 0.04,
+    gsap.fromTo(imgs, { opacity: 0, y: 10 }, {
+      opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', stagger: 0.03,
     });
   }, [activeFilter]);
 
   return (
     <>
-      <section ref={sectionRef} className="py-20 md:py-32" style={{ background: '#10141c' }}>
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <p className="gallery-sub text-xs font-bold tracking-[0.3em] uppercase mb-3 text-orange-400">Gallery</p>
-            <h2 className="gallery-heading text-3xl md:text-5xl font-extrabold text-white/95">Our Work in Action</h2>
-            <div className="gallery-line w-20 h-1.5 mx-auto mt-5 rounded-full origin-center" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c)' }} />
+      <section ref={sectionRef} id="gallery" className="py-24 md:py-32 bg-background">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="gallery-head text-center mb-12">
+            <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Gallery</p>
+            <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+              Our work in action.
+            </h2>
           </div>
 
           {/* Filter tabs */}
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveFilter(cat)}
-                className="px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 border"
-                style={{
-                  background: activeFilter === cat ? '#f97316' : 'rgba(255,255,255,0.04)',
-                  color: activeFilter === cat ? '#fff' : 'rgba(255,255,255,0.5)',
-                  borderColor: activeFilter === cat ? '#f97316' : 'rgba(255,255,255,0.1)',
-                }}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="flex flex-wrap justify-center gap-2 mb-10">
+            {categories.map((cat) => {
+              const isActive = activeFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveFilter(cat)}
+                  className={cn(
+                    'px-4 py-1.5 rounded-full text-[12px] font-medium border transition-colors',
+                    isActive
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30',
+                  )}
+                >
+                  {cat}
+                </button>
+              );
+            })}
           </div>
 
           {/* Gallery grid */}
@@ -127,16 +126,14 @@ const PhotoGallery = () => {
             {filtered.map((photo, i) => (
               <div
                 key={`${activeFilter}-${i}`}
-                className="gallery-img group relative break-inside-avoid rounded-xl overflow-hidden cursor-pointer"
+                className="gallery-img group relative break-inside-avoid rounded-xl overflow-hidden cursor-pointer border border-border"
                 onClick={() => setLightbox(photo.src)}
               >
-                <img src={photo.src} alt={photo.alt} className="w-full block transition-transform duration-700 group-hover:scale-110" loading="lazy" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-500 flex items-center justify-center">
-                  <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100" />
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
-                  <p className="text-xs text-white/80 font-medium">{photo.alt}</p>
-                  <p className="text-[10px] text-orange-400">{photo.cat}</p>
+                <img src={photo.src} alt={photo.alt} className="w-full block transition-transform duration-700 group-hover:scale-[1.04]" loading="lazy" />
+                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full bg-background/90 border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ZoomIn className="h-4 w-4 text-foreground" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -147,14 +144,15 @@ const PhotoGallery = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-pointer"
+          className="fixed inset-0 z-[100] bg-foreground/95 flex items-center justify-center p-4 cursor-pointer"
           onClick={() => setLightbox(null)}
         >
           <button
             onClick={() => setLightbox(null)}
-            className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors"
+            className="absolute top-5 right-5 text-background/90 hover:text-background transition-colors"
+            aria-label="Close"
           >
-            <X className="h-8 w-8" />
+            <X className="h-7 w-7" />
           </button>
           <img src={lightbox} alt="Fullscreen" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
         </div>
