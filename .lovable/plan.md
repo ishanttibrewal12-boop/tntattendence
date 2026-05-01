@@ -1,158 +1,110 @@
-# Plan: Industrial Premium v2 — full theme, refreshed ERP, cinematic landing
+# Apple-Clean Redesign + New shadcn ERP Sidebar
 
-You picked **Industrial Premium**, **Cinematic animations**, **whole-web scope**, and **light + dark with toggle (default light)**. All existing data, routes, RBAC, and business logic stay identical — only the visual layer changes.
+You've asked for two things:
+1. **Drop the heavy "Industrial Premium" look** — go Apple-clean: lots of whitespace, neutral palette, one accent, restrained motion, crisp typography.
+2. **Rebuild the ERP sidebar** using shadcn's collapsible `Sidebar`, with an amber active rail and proper responsive behavior.
+
+This supersedes the previous "cinematic / amber-everywhere" direction. I'll save the new aesthetic to project memory so it sticks.
 
 ---
 
-## 1. New design system (tokens, fonts, motion utilities)
+## 1. Aesthetic pivot — Apple-clean
 
-Updated in `src/index.css` and `tailwind.config.ts`.
+**Tokens (`src/index.css`)**
+- Background: pure `#FFFFFF` (light) / near-black `#0B0B0F` (dark).
+- Foreground: `#0A0A0A` / `#F5F5F7`.
+- Borders: hairline `#E5E5EA` / `#1F1F22` (1px, never thicker).
+- Single accent: amber `#F59E0B` — used **only** for active states, primary CTA, focus ring. Not for backgrounds, gradients, or section fills.
+- Remove: `--gradient-hero`, `--gradient-amber`, `industrial-grid-bg`, `grain-overlay`, `glow-pulse-amber`, `shine-on-hover`, marquee.
+- Radius: `0.625rem` (Apple-ish, slightly tighter).
+- Shadow: very soft, single layer (`0 1px 2px rgba(0,0,0,.04), 0 8px 24px -12px rgba(0,0,0,.08)`). No glows.
 
-### Color tokens (HSL, semantic)
+**Typography (`index.html`)**
+- Replace Fraunces with **Inter** (display + body) using tight tracking on headings (`-0.022em`).
+- Drop JetBrains Mono → use `ui-monospace, SF Mono` system stack.
+- Big-but-quiet headings: `text-5xl md:text-7xl font-semibold tracking-tight`.
 
-Light (default):
+**Motion (`gsapUtils.ts` + landing sections)**
+- Strip cinematic effects: no parallax, no pinned horizontal scroll, no cursor spotlight, no magnetic buttons, no word-by-word reveals.
+- Keep only: gentle 400ms fade-up on section enter, 150ms hover lift on cards, smooth scroll. Respect `prefers-reduced-motion`.
+
+**Landing sections**
+- `HeroSection`: flat white, centered headline + sub, two buttons (filled black + ghost), one product image below. No background gradient.
+- All sections: white/`bg-muted/30` alternation, max-w-6xl, generous `py-24/32`, no decorative shapes.
+- Remove `industrial-grid-bg` and `grain-overlay` from all components currently using them.
+
+---
+
+## 2. ERP sidebar rebuild (shadcn collapsible)
+
+**Important context**: the live ERP runs from `src/pages/Home.tsx` and uses **internal section state**, not React Router routes. The existing `src/components/layout/Sidebar.tsx` + `DashboardLayout.tsx` appear unused by the actual `/dashboard` route. So the rebuild must happen inside `Home.tsx`.
+
+### Approach
+Create `src/components/layout/AppSidebar.tsx` using shadcn `Sidebar` primitives (already present at `src/components/ui/sidebar.tsx`), driven by the `activeSection` state from `Home.tsx` instead of `useLocation`.
 
 ```text
---background: 36 25% 97%        /* warm ivory */
---foreground: 220 30% 8%        /* near-black slate */
---card / --popover: 0 0% 100%
---muted: 30 12% 92%
---border / --input: 30 10% 86%
-
---primary: 220 60% 12%          /* deep slate */
---primary-foreground: 36 25% 97%
---secondary: 220 20% 22%
---accent: 28 90% 52%            /* warm amber, the brand spark */
---accent-foreground: 220 30% 8%
---accent-glow: 28 95% 60%
---destructive: 0 72% 50%
---ring: 28 90% 52%
-
---gradient-hero: linear-gradient(135deg, hsl(220 60% 10%), hsl(220 50% 18%) 60%, hsl(28 90% 52%))
---gradient-amber: linear-gradient(135deg, hsl(28 95% 58%), hsl(18 85% 50%))
---gradient-steel: linear-gradient(180deg, hsl(220 25% 96%), hsl(220 18% 90%))
-
---shadow-elegant: 0 20px 50px -20px hsl(220 60% 12% / .25)
---shadow-glow: 0 0 40px hsl(28 90% 52% / .35)
---shadow-card: 0 4px 16px -8px hsl(220 30% 15% / .12)
-
---radius: 0.875rem               /* slightly rounder, premium feel */
+SidebarProvider
+├── AppSidebar (collapsible="icon")
+│   ├── SidebarHeader   → logo + brand (hides label when collapsed)
+│   ├── SidebarContent
+│   │   ├── Group: Overview        (Dashboard)
+│   │   ├── Group: Departments     (Petroleum, Crusher, MLT, Tyres & Office)
+│   │   ├── Group: Operations      (Attendance, Salary, Advances, Daily Report…)
+│   │   └── Group: Tools           (Files, Calculator, Reminders, Backup, Settings)
+│   └── SidebarFooter   → user chip + theme toggle + logout
+└── SidebarInset
+    ├── header: SidebarTrigger + breadcrumb + NotificationBell + GlobalSearch
+    └── main: <section content>
 ```
 
-Dark mode keeps the same accent and uses a slate-charcoal base (`220 30% 7%`), softer borders, and stronger amber glow.
+### Behavior
+- `collapsible="icon"` — collapses to a 56px icon rail (never disappears on desktop).
+- Mobile (<768px): `Sheet`-based off-canvas (built into shadcn Sidebar) opened via `SidebarTrigger` in the top bar.
+- Active item = `activeSection === item.id`. Use `SidebarMenuButton isActive={...}` so shadcn handles base styling, then add the **amber rail**:
+  ```css
+  [data-sidebar="menu-button"][data-active="true"]::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 3px; border-radius: 0 3px 3px 0;
+    background: hsl(var(--accent)); /* amber */
+  }
+  ```
+- Section labels (`SidebarGroupLabel`) hide when collapsed; tooltips appear on icon hover (shadcn provides `tooltip` prop on `SidebarMenuButton`).
+- Keyboard: `Cmd/Ctrl+B` toggles sidebar (built-in).
+- Persist collapsed state in `localStorage` via `SidebarProvider`'s `defaultOpen`.
 
-### Typography
-
-- **Display / headlines**: `Fraunces` (variable serif, modern industrial-luxury) loaded from Google Fonts.
-- **Body / UI**: `Inter` (already loaded).
-- **Mono / numerics**: `JetBrains Mono` for stats and tabular numbers.
-
-Loaded once in `index.html`; existing `--font-sans` stays so nothing else breaks.
-
-### Motion utility classes (added to `index.css`)
-
-`.section-reveal`, `.text-reveal`, `.stagger-children > *`, `.hover-lift`, `.magnetic`, `.shine-on-hover`, `.glow-pulse-amber`, `.tilt-3d`, `.gradient-text`, `.industrial-grid-bg` (subtle SVG grid), `.grain-overlay` (very faint film grain on hero).
-
-All wrapped behind `prefers-reduced-motion: reduce` to fall back to fades only.
-
----
-
-## 2. Cinematic landing page
-
-A new top-level `LandingV2` shell mounted at `/` (the existing landing components are kept as-is for fallback; we only swap what `Index`/`Home` route renders for unauthenticated users so nothing is deleted by mistake).
-
-Section flow (data identical, presentation new):
-
-```text
-1. Sticky glass nav     — frosted backdrop, amber underline on hover, theme toggle, "Open ERP" CTA
-2. Cinematic hero       — split layout: left = display headline with word-by-word GSAP reveal
-                          + amber gradient on the spark word, right = looping subtle parallax
-                          stack of 3 industrial photos with depth tilt
-3. Stats strip          — 4 KPIs ("13+ Years", "Ample Fleet", clients, lines of business)
-                          counting up on scroll, JetBrains Mono numerals
-4. Group overview       — alternating left/right slabs with reveal-on-scroll, accent rule lines
-5. Companies showcase   — horizontal pinned scroll on desktop, swipe carousel on mobile
-6. Before/After slider  — kept (Raw Stone vs Crushed Aggregates), restyled with amber handle
-7. Leadership           — refreshed cards with grayscale-to-color hover, accent border
-8. Trusted by / clients — premium logo marquee, hover pause + slow-down (kept from memory)
-9. Photo gallery        — masonry kept, new lightbox chrome, category pill filters restyled
-10. Policies            — 8 standards as numbered amber-rule storytelling steps
-11. Testimonials        — 3D tilt cards on hover, attributed only to company names
-12. CTA banner          — full-bleed amber gradient with magnetic button
-13. Contact + footer    — restyled, WhatsApp & phone CTAs, smooth-scroll nav
-```
-
-Cinematic effects (all wrapped in `gsap.context()` with `ctx.revert()` cleanup, throttled on mobile, disabled under reduced-motion):
-
-- Scroll-pinned hero with parallax depth.
-- Word-by-word headline reveal.
-- Section reveals on `ScrollTrigger`.
-- Counter animations for stats.
-- Pinned horizontal scroll for companies.
-- Magnetic accent buttons (mouse-following).
-- Cursor "spotlight" glow on hero (desktop only).
-- Logo marquee with hover slow-down (existing pattern preserved).
-
-Persisted constraints respected: no background videos, no opacity:0 on critical hero text, no infinite CSS animations, `13+ Years` / `Ample` (no quantitative counts), Tibrewal branding + logo, contact = WhatsApp/phone/email links.
+### Wiring in `Home.tsx`
+- Replace the current custom drawer/menu rendering with `<SidebarProvider><AppSidebar onSelect={setActiveSection} active={activeSection} /><SidebarInset>…</SidebarInset></SidebarProvider>`.
+- Keep all existing section logic, lazy imports, and data flow untouched.
+- Remove the custom mobile menu code that's now handled by shadcn.
 
 ---
 
-## 3. ERP refresh (data and routes unchanged)
+## Files touched
 
-Light, surgical visual updates — no screen restructured, no feature touched.
+**Edit**
+- `src/index.css` — token rewrite, remove industrial utilities
+- `tailwind.config.ts` — drop custom keyframes (shimmer/text-reveal/marquee), keep simple fade-up
+- `index.html` — swap fonts to Inter only
+- `src/lib/motion/gsapUtils.ts` — strip to fade-up only
+- `src/components/landing/HeroSection.tsx` — flat Apple-style hero
+- `src/components/landing/*` (Stats, Showcase, Leadership, Testimonials, Policies, CTABanner, Contact, TrustedBy) — remove gradients/grids/grain, apply whitespace layout
+- `src/components/ui/button.tsx` — replace `premium`/`hero` variants with `default` (filled black) + `ghost` only
+- `src/pages/Home.tsx` — wire new sidebar
+- `src/components/layout/DashboardLayout.tsx` — also adopt shadcn sidebar (for consistency, even if unused)
 
-- **Sidebar**: rebuilt with shadcn `Sidebar` (`collapsible="icon"`), deep slate background, amber active rail, persistent `SidebarTrigger` in the topbar. Mobile keeps existing drawer pattern.
-- **Topbar**: glass blur, breadcrumbs (existing component) + `NotificationBell` + `GlobalSearch` (Ctrl+K) + theme toggle + profile avatar.
-- **Cards**: new `.premium-card` style — soft shadow, subtle border, hover-lift; applied automatically because all sections already use `<Card>` from shadcn.
-- **Buttons**: a new `premium` variant on `buttonVariants` (gradient amber → deep amber, shine on hover) for primary CTAs; default/outline/ghost stay backwards-compatible so nothing else changes.
-- **Dashboard (`CorporateDashboard`)**: new `GreetingBanner` with gradient, KPI cards get JetBrains Mono numerals + count-up, Quick Access Grid restyled into a 4-col tile grid with icon chips.
-- **Tables (`.premium-table`)**: refreshed header band, zebra rows, sticky header — class is already used in ERP, so update is in CSS only.
-- **Page transitions**: existing `PageTransition` + `LogoWipeTransition` kept, just retimed for snappier feel (180ms in, 220ms out).
+**Create**
+- `src/components/layout/AppSidebar.tsx` — the new shadcn-based sidebar with amber rail
 
-No changes to: routes, RBAC, RLS, queries, edge functions, file manager logic, payroll math, attendance flow, exports/PDFs.
-
----
-
-## 4. Light/Dark toggle
-
-- Tokens already split into `:root` and `.dark`.
-- Replace the existing landing `ThemeToggle` with a unified one in the topbar/nav that sets `class="dark"` on `<html>`, persists in `localStorage`, and respects `prefers-color-scheme` on first visit.
-- Default = light.
+**Memory update**
+- Save new core rule: *"Apple-clean aesthetic: white/near-black, hairline borders, Inter only, amber accent reserved for active/CTA, no gradients/grain/parallax."*
+- Mark previous "Industrial Premium cinematic" direction as superseded.
 
 ---
 
-## 5. Files I will edit / add
+## What stays the same
+- All ERP data, sections, lazy loading, auth, RLS, realtime, notifications, AIChatBot, IdleWarning.
+- All routing in `App.tsx`.
+- Indian INR formatting, all business logic, all reports.
+- Theme toggle (light/dark) — both modes get the new clean palette.
 
-Edits (visual only, no API changes):
-
-- `src/index.css` — full token rewrite (light + dark), motion utilities, `.premium-card`, `.premium-table`, grain/grid backgrounds.
-- `tailwind.config.ts` — extend keyframes (`fade-up`, `scale-in`, `slide-in-right`, `marquee`, `shine`, `text-reveal`), `boxShadow.elegant/glow/card`, `backgroundImage.hero/amber/steel`, `fontFamily.display`.
-- `index.html` — add Fraunces + JetBrains Mono Google Font links.
-- `src/components/landing/HeroSection.tsx`, `StickyNav.tsx`, `StatsStrip.tsx`, `CompanyShowcase.tsx`, `LeadershipShowcase.tsx`, `TrustedBySection.tsx`, `TestimonialsSection.tsx`, `CTABanner.tsx`, `ContactSection.tsx`, `PoliciesSection.tsx`, `BeforeAfterSlider.tsx`, `ImageGallery.tsx` — restyle + new motion.
-- `src/components/landing/ThemeToggle.tsx` — promote to global toggle.
-- `src/components/ui/button.tsx` — add `premium` variant.
-- `src/components/layout/Sidebar.tsx`, `DashboardLayout.tsx` — switch to shadcn `Sidebar`, amber active state, glass topbar.
-- `src/components/dashboard/CorporateDashboard.tsx`, `GreetingBanner.tsx`, `LiveKPICards.tsx` — restyle, count-up numerics.
-- `src/pages/Login.tsx` — refreshed glass card on industrial backdrop (already premium; just retoned to new tokens).
-
-New files:
-
-- `src/components/landing/LandingV2.tsx` — orchestrator that composes the redesigned sections in the new order.
-- `src/lib/motion/gsapUtils.ts` — small helpers for `useGsapReveal`, `useMagnetic`, `useCursorSpotlight`, all with proper cleanup.
-
-Removed: nothing. Old landing files stay on disk in case we need to revert.
-
----
-
-## 6. Out of scope (explicitly unchanged)
-
-- All Supabase tables, RLS, edge functions, daily backups.
-- Auth flow, session policy, lockouts, RBAC.
-- Payroll math, attendance model, MLT/Crusher/Petroleum logic.
-- PDF/Excel/Word generation and "Rs." formatting.
-- Currency rules (INR + Indian numbering), branding ("Tibrewal Group"), client list, qualitative counts ("Ample"/"13+ Years").
-- File Manager creation flow we just rebuilt.
-
----
-
-Once you approve, I'll implement in this order so the preview stays usable throughout: tokens → button/card primitives → sidebar+topbar → dashboard → landing sections → theme toggle wiring. You'll see the change immediately on every screen.
+Approve to switch to build mode and execute.

@@ -1,8 +1,8 @@
 /**
- * Industrial Premium v2 — GSAP motion helpers.
- * Every effect respects prefers-reduced-motion and disables itself on touch
- * devices when scroll-driven. Always wrap GSAP work in gsap.context() and
- * call ctx.revert() in the cleanup (project rule).
+ * Apple-Clean motion helpers.
+ * Restrained motion only: gentle fade-up on scroll, count-up.
+ * Magnetic/cursor-spotlight kept as no-ops so existing callers don't break.
+ * Always wrap GSAP work in gsap.context() and call ctx.revert() in cleanup.
  */
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
@@ -14,14 +14,8 @@ const isReduced = () =>
   typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-const isTouch = () =>
-  typeof window !== 'undefined' &&
-  (window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
-    window.innerWidth < 768);
-
 /**
- * Reveal direct children of `selector` on scroll.
- * Children should have one of: .reveal-up | .reveal-fade | .reveal-scale
+ * Reveal items on scroll with a soft fade-up. Touch + reduced-motion safe.
  */
 export const useRevealOnScroll = (
   scopeRef: React.RefObject<HTMLElement>,
@@ -30,9 +24,9 @@ export const useRevealOnScroll = (
 ) => {
   useEffect(() => {
     const scope = scopeRef.current;
-    if (!scope || isReduced()) {
-      // Make sure content stays visible if motion is reduced
-      scope?.querySelectorAll<HTMLElement>(selector).forEach((el) => el.classList.add('is-revealed'));
+    if (!scope) return;
+    if (isReduced()) {
+      scope.querySelectorAll<HTMLElement>(selector).forEach((el) => el.classList.add('is-revealed'));
       return;
     }
     const ctx = gsap.context(() => {
@@ -42,14 +36,10 @@ export const useRevealOnScroll = (
           autoAlpha: 1,
           y: 0,
           scale: 1,
-          duration: 0.85,
-          delay: (opts.stagger ?? 0.08) * (i % 6),
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: el,
-            start: opts.start ?? 'top 85%',
-            once: true,
-          },
+          duration: 0.55,
+          delay: (opts.stagger ?? 0.06) * (i % 6),
+          ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: opts.start ?? 'top 88%', once: true },
           onStart: () => el.classList.add('is-revealed'),
         });
       });
@@ -58,9 +48,7 @@ export const useRevealOnScroll = (
   }, [scopeRef, selector, opts.stagger, opts.start]);
 };
 
-/**
- * Animated counter that runs once when scrolled into view.
- */
+/** Animated counter that runs once when scrolled into view. */
 export const useCountUp = (
   ref: React.RefObject<HTMLElement>,
   to: number,
@@ -77,9 +65,9 @@ export const useCountUp = (
     const ctx = gsap.context(() => {
       gsap.to(obj, {
         val: to,
-        duration: opts.duration ?? 1.6,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 85%', once: true },
+        duration: opts.duration ?? 1.4,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: el, start: 'top 88%', once: true },
         onUpdate: () => {
           el.textContent = (opts.format ?? ((n: number) => String(Math.round(n))))(obj.val);
         },
@@ -89,57 +77,10 @@ export const useCountUp = (
   }, [ref, to, opts.duration, opts.format]);
 };
 
-/**
- * Magnetic pointer effect — subtle pull toward cursor on hover.
- * Disabled on touch and reduced-motion.
- */
-export const useMagnetic = (ref: React.RefObject<HTMLElement>, strength = 0.25) => {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || isTouch() || isReduced()) return;
+/** No-op (Apple-clean removes magnetic effect). */
+export const useMagnetic = (_ref: React.RefObject<HTMLElement>, _strength = 0.25) => {};
 
-    const onMove = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-      const x = (e.clientX - cx) * strength;
-      const y = (e.clientY - cy) * strength;
-      el.style.setProperty('--mx', `${x}px`);
-      el.style.setProperty('--my', `${y}px`);
-    };
-    const onLeave = () => {
-      el.style.setProperty('--mx', '0px');
-      el.style.setProperty('--my', '0px');
-    };
-    el.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerleave', onLeave);
-    return () => {
-      el.removeEventListener('pointermove', onMove);
-      el.removeEventListener('pointerleave', onLeave);
-    };
-  }, [ref, strength]);
-};
+/** No-op (Apple-clean removes cursor spotlight). */
+export const useCursorSpotlight = (_ref: React.RefObject<HTMLElement>) => {};
 
-/**
- * Hook to attach a soft cursor "spotlight" glow to a section.
- * Pure DOM, no React state churn.
- */
-export const useCursorSpotlight = (ref: React.RefObject<HTMLElement>) => {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || isTouch() || isReduced()) return;
-    const onMove = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty('--spot-x', `${e.clientX - r.left}px`);
-      el.style.setProperty('--spot-y', `${e.clientY - r.top}px`);
-    };
-    el.addEventListener('pointermove', onMove);
-    return () => el.removeEventListener('pointermove', onMove);
-  }, [ref]);
-};
-
-/**
- * Helper to declare a ref with the right HTML element type
- * inline at the call site without the `useRef<X>(null)` ceremony.
- */
 export const useElRef = <T extends HTMLElement = HTMLDivElement>() => useRef<T>(null);
