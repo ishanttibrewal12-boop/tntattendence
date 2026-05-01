@@ -421,11 +421,13 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       return true;
     } catch (error) {
       const createError = error as FileCreateError;
+      const cat = createError.category ?? classifyCreateError(createError.step, createError);
       console.error('[NewFile] Local-first create failed', createError);
-      showCreateErrorToast(spec.kind, createError.step, createError.message);
+      showCreateErrorToast(spec.kind, createError.step, createError.message, cat);
       setNewFileTroubleshooting({
         step: createError.step,
         message: createError.message,
+        category: cat,
         expectedKind: spec.kind,
         retryAttempted: false,
       });
