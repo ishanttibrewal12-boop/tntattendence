@@ -28,31 +28,23 @@ const clients = [
 
 const TrustedBySection = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const marqueeRef = useRef<HTMLDivElement>(null);
-  const marqueeReverseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
 
     const ctx = gsap.context(() => {
-      gsap.from('.trusted-heading', {
-        opacity: 0, y: 40, duration: 0.8, ease: 'power3.out',
+      gsap.from('.trusted-head > *', {
+        opacity: 0, y: 14, duration: 0.6, ease: 'power2.out', stagger: 0.08,
         scrollTrigger: { trigger: section, start: 'top 80%' },
       });
-      gsap.from('.trusted-sub', {
-        opacity: 0, y: 20, duration: 0.6, delay: 0.2, ease: 'power3.out',
-        scrollTrigger: { trigger: section, start: 'top 80%' },
-      });
-      gsap.from('.trusted-line', {
-        scaleX: 0, duration: 0.8, delay: 0.3, ease: 'power2.out',
-        scrollTrigger: { trigger: section, start: 'top 80%' },
-      });
-      gsap.utils.toArray<HTMLElement>('.client-name-pill').forEach((el, i) => {
+      gsap.utils.toArray<HTMLElement>('.client-tile').forEach((el, i) => {
         gsap.from(el, {
-          opacity: 0, x: i % 2 === 0 ? -30 : 30, duration: 0.5,
-          ease: 'power2.out', delay: i * 0.06,
-          scrollTrigger: { trigger: '.client-names-grid', start: 'top 88%' },
+          opacity: 0, y: 10, duration: 0.4, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 92%' },
+          delay: (i % 4) * 0.04,
         });
       });
     }, section);
@@ -60,138 +52,49 @@ const TrustedBySection = () => {
     return () => ctx.revert();
   }, []);
 
-  useEffect(() => {
-    // Row 1: scroll left
-    const el = marqueeRef.current;
-    if (el) {
-      const inner = el.querySelector('.marquee-track') as HTMLElement;
-      if (inner) {
-        inner.innerHTML += inner.innerHTML;
-        const totalWidth = inner.scrollWidth / 2;
-        const tween = gsap.to(inner, {
-          x: -totalWidth, duration: 30, ease: 'none', repeat: -1,
-          modifiers: { x: gsap.utils.unitize((x: number) => x % totalWidth) },
-        });
-        el.addEventListener('mouseenter', () => tween.timeScale(0.3));
-        el.addEventListener('mouseleave', () => tween.timeScale(1));
-      }
-    }
-
-    // Row 2: scroll right (reverse)
-    const el2 = marqueeReverseRef.current;
-    if (el2) {
-      const inner2 = el2.querySelector('.marquee-track-reverse') as HTMLElement;
-      if (inner2) {
-        inner2.innerHTML += inner2.innerHTML;
-        const totalWidth2 = inner2.scrollWidth / 2;
-        gsap.set(inner2, { x: -totalWidth2 });
-        const tween2 = gsap.to(inner2, {
-          x: 0, duration: 35, ease: 'none', repeat: -1,
-          modifiers: { x: gsap.utils.unitize((x: number) => {
-            const mod = x % totalWidth2;
-            return mod > 0 ? mod - totalWidth2 : mod;
-          }) },
-        });
-        el2.addEventListener('mouseenter', () => tween2.timeScale(0.3));
-        el2.addEventListener('mouseleave', () => tween2.timeScale(1));
-      }
-    }
-  }, []);
-
   return (
-    <section ref={sectionRef} className="relative overflow-hidden" style={{ background: '#0f1420' }}>
-      <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c, #f97316)' }} />
-
-      <div className="py-24 md:py-36">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Header */}
-          <div className="text-center mb-16 md:mb-20">
-            <p className="trusted-sub text-xs font-bold tracking-[0.3em] uppercase mb-4" style={{ color: '#f97316' }}>
-              Our Esteemed Clients
-            </p>
-            <h2 className="trusted-heading text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight" style={{ color: '#f2f4f7' }}>
-              Trusted by Industry Leaders
-            </h2>
-            <div className="trusted-line w-24 h-1.5 mx-auto mt-6 rounded-full origin-left" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c)' }} />
-            <p className="trusted-sub mt-6 text-base md:text-lg max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
-              We are proud to have served and supplied premium materials &amp; services to some of India's most respected infrastructure and engineering companies.
-            </p>
-          </div>
+    <section ref={sectionRef} id="clients" className="py-24 md:py-32 bg-background">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="trusted-head text-center mb-14">
+          <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Our Clients</p>
+          <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+            Trusted by industry leaders.
+          </h2>
+          <p className="mt-4 text-base md:text-lg max-w-2xl mx-auto text-muted-foreground">
+            Premium materials and services for India's most respected infrastructure and engineering companies.
+          </p>
         </div>
 
-        {/* Infinite Marquee Row 1 */}
-        <div ref={marqueeRef} className="relative w-full overflow-hidden py-6 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
-          <div className="marquee-track flex items-center gap-12 w-max">
-            {clients.map((client, i) => (
-              <div
-                key={i}
-                className="group flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-500"
-                style={{ background: '#ffffff', borderColor: 'rgba(255,255,255,0.1)', width: '220px', height: '120px' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#f97316';
-                  e.currentTarget.style.boxShadow = '0 8px 40px -8px rgba(249,115,22,0.18)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain transition-all duration-500" loading="lazy" />
-              </div>
-            ))}
-          </div>
+        {/* Client logos grid (no marquee — clean static grid like Apple) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3 md:gap-4 mb-14">
+          {clients.map((client, i) => (
+            <div
+              key={i}
+              className="client-tile flex items-center justify-center rounded-2xl border border-border bg-card aspect-[2/1] p-6 hover:border-foreground/20 transition-colors"
+            >
+              <img
+                src={client.logo}
+                alt={client.name}
+                className="max-h-12 md:max-h-14 w-auto object-contain"
+                loading="lazy"
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Infinite Marquee Row 2 (Reverse) */}
-        <div ref={marqueeReverseRef} className="relative w-full overflow-hidden py-6 mb-20 md:mb-28 cursor-grab" style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
-          <div className="marquee-track-reverse flex items-center gap-12 w-max">
-            {[...clients].reverse().map((client, i) => (
-              <div
-                key={i}
-                className="group flex-shrink-0 flex items-center justify-center rounded-2xl border transition-all duration-500"
-                style={{ background: '#ffffff', borderColor: 'rgba(255,255,255,0.1)', width: '220px', height: '120px' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#f97316';
-                  e.currentTarget.style.boxShadow = '0 8px 40px -8px rgba(249,115,22,0.18)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <img src={client.logo} alt={client.name} className="max-h-14 w-auto object-contain transition-all duration-500" loading="lazy" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Divider */}
-          <div className="flex items-center gap-4 mb-16 md:mb-20 max-w-3xl mx-auto">
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15))' }} />
-            <span className="text-xs font-bold tracking-[0.25em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>Companies We've Served</span>
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.15), transparent)' }} />
-          </div>
-
-          {/* Company Name Pills */}
-          <div className="client-names-grid flex flex-wrap justify-center gap-4 md:gap-5 max-w-4xl mx-auto">
-            {clients.map((c, i) => (
-              <span
-                key={i}
-                className="client-name-pill inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm md:text-base font-semibold transition-all duration-300 cursor-default border"
-                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.1)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#f97316'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-              >
-                <span className="w-2 h-2 rounded-full" style={{ background: '#f97316' }} />
-                {c.name}
-              </span>
-            ))}
-          </div>
+        {/* Company name pills */}
+        <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
+          {clients.map((c, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-medium border border-border text-muted-foreground"
+            >
+              <span className="w-1 h-1 rounded-full bg-accent" />
+              {c.name}
+            </span>
+          ))}
         </div>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c, #f97316)' }} />
     </section>
   );
 };
