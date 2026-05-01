@@ -65,7 +65,23 @@ interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; exis
 interface MoveConflictsState { targetFolderId: string | null; conflicts: ConflictItem[]; }
 
 type FileCreateStep = 'build blob' | 'upload' | 'metadata';
-type FileCreateError = Error & { step: FileCreateStep };
+type FileCreateCategory = 'permission' | 'quota' | 'network' | 'validation' | 'unknown';
+type FileCreateError = Error & { step: FileCreateStep; category?: FileCreateCategory; statusCode?: number | string };
+
+const classifyCreateError = (step: FileCreateStep, error: unknown): FileCreateCategory => {
+  const anyErr = (error || {}) as any;
+  const status = Number(anyErr.statusCode ?? anyErr.status ?? anyErr.code);
+  const name = String(anyErr.name || '').toLowerCase();
+  const raw = (typeof error === 'string' ? error : anyErr.message || anyErr.error || '') as string;
+  const msg = raw.toLowerCase();
+
+  if (status === 401 || status === 403 || /not authorized|unauthor|forbidden|row-level|rls|permission|bucket not found|policy/i.test(raw)) return 'permission';
+  if (status === 413 || name === 'quotaexceedederror' || /quota|exceeded|payload too large|storage is full|insufficient storage|disk/i.test(raw)) return 'quota';
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'network';
+  if (/failed to fetch|networkerror|network error|timeout|aborted|offline|connection/i.test(msg)) return 'network';
+  if (step === 'build blob' && /validation|invalid|could not be opened|generated/i.test(raw)) return 'validation';
+  return 'unknown';
+};
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
