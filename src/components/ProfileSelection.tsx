@@ -130,33 +130,32 @@ const LandingContent = () => {
 
       {/* Login Dialog */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
-        <DialogContent className="sm:max-w-md border-0" style={{ background: '#0F2A44' }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle style={{ color: 'white' }} className="text-lg">Management Login</DialogTitle>
+            <DialogTitle className="text-lg font-semibold tracking-[-0.012em]">Management Login</DialogTitle>
           </DialogHeader>
-          <div className="h-0.5 rounded-full my-2" style={{ background: 'linear-gradient(90deg, transparent, #f97316, transparent)' }} />
-          <form onSubmit={handleLogin} className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label htmlFor="username" style={{ color: 'rgba(255,255,255,0.7)' }}>Username</Label>
+          <form onSubmit={handleLogin} className="space-y-4 mt-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="username" className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Username</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="username" type="text" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10 border-white/20" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }} autoComplete="username" />
+                  className="pl-10" autoComplete="username" />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" style={{ color: 'rgba(255,255,255,0.7)' }}>Password</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 border-white/20" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }} autoComplete="current-password" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  className="pl-10 pr-10" autoComplete="current-password" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full font-semibold" disabled={isLoading} style={{ background: '#f97316', color: 'white' }}>
-              {isLoading ? 'Logging in...' : 'Login'}
+            <Button type="submit" className="w-full" disabled={isLoading} size="lg">
+              {isLoading ? 'Logging in…' : 'Login'}
             </Button>
           </form>
         </DialogContent>
