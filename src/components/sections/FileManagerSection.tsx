@@ -383,11 +383,13 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       return true;
     } catch (error) {
       const createError = error as FileCreateError;
+      const cat = createError.category ?? classifyCreateError(createError.step, createError);
       console.error('[NewFile] Manual template upload failed', createError);
-      showCreateErrorToast(kind, createError.step, createError.message);
+      showCreateErrorToast(kind, createError.step, createError.message, cat);
       setNewFileTroubleshooting({
         step: createError.step,
         message: createError.message,
+        category: cat,
         expectedKind: kind,
         retryAttempted: false,
       });
