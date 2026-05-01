@@ -1,93 +1,120 @@
-## Goal
+# Plan: Smarter upload-error hints + visible UI/UX refresh
 
-Expand the existing File Manager build/version pill into a **full status panel + visible banner** that tells you, at a glance:
+You raised two things:
 
-- Service Worker lifecycle state (installing / installed-waiting / activating / active / redundant / none)
-- Whether the preview is in **dev** or **production** mode
-- Which **asset source** is serving the page right now (Service Worker, Cache Storage, or Network)
-- The **last time an update was detected** vs. the **last time an update was applied** (persisted across refreshes)
-- A one-click **"Refresh & Clear Cache"** button that nukes caches + unregisters SWs + hard-reloads
-- A **dismissible banner** above the file list that appears whenever the bundle is stale or a new version is waiting
+1. The troubleshooting panel is generic — it should call out the **exact browser permission and storage settings** to check when the failure is a permission or quota error.
+2. Despite all the recent backend work, the **interface still looks the same**. The new features (profile tools, file creation flow, troubleshooting) need a real visual refresh so they feel like a new experience, not the same screen.
 
-## What you'll see
+Below is what I will change.
 
-### 1. Banner (only when needed)
-A full-width strip at the top of the File Manager content area, color-coded:
+---
+
+## 1. Classify the upload error and show specific guidance
+
+In `src/components/sections/FileManagerSection.tsx` (`persistCreatedBlob` + `handleCreateNewFile`):
+
+- Inspect the error object (`statusCode`, `error`, `message`) returned by Supabase Storage and the browser.
+- Classify into one of:
+  - `permission` — 401 / 403 / "row-level security" / "not authorized" / "Bucket not found"
+  - `quota` — 413 / "Payload too large" / "exceeded" / `QuotaExceededError` / "storage is full"
+  - `network` — `Failed to fetch`, offline, timeout
+  - `validation` — blob built but failed `validateGeneratedFile`
+  - `unknown` — fallback
+
+- Pass this `category` into `NewFileTroubleshootingState` so the dialog can render a tailored hint block.
+
+## 2. New troubleshooting hint block in `NewFileDialog.tsx`
+
+When category is **permission**, show a checklist:
+- Browser → Site settings for this site:
+  - **Cookies**: Allow (third-party cookies must not be blocked for this origin)
+  - **JavaScript**: Allowed
+  - **Pop-ups and redirects**: Allowed (needed for local-first download)
+  - **Insecure content**: Blocked is fine; site must stay on HTTPS
+- App-level:
+  - You are signed in as Manager (Abhay) — only Manager can create files
+  - Re-login if your session expired (top-right → Logout → Login)
+- Private/Incognito mode disables IndexedDB/localStorage in some browsers — open in a normal window
+
+When category is **quota**, show:
+- Browser storage quota:
+  - Chrome/Edge: `chrome://settings/content/all` → find this site → check "Usage" → click **Clear data**
+  - Firefox: Settings → Privacy & Security → Cookies and Site Data → **Manage Data** → remove this site
+  - Safari: Settings → Privacy → Manage Website Data → remove this site
+- App-side storage:
+  - File Manager → Storage usage widget — if &gt; 90%, archive or delete older files
+  - Try the **Local first** button to confirm your machine can at least save locally
+- Hard cap: single file upload limit is ~50 MB; split large files
+
+When category is **network**, show: check connection, disable VPN/ad-blocker for this origin, retry.
+
+Each block uses a clean checklist style (icons + monospace for the exact setting paths) so it's visibly different from the old generic panel.
+
+## 3. Visible UI/UX refresh — so the change is obvious
+
+This is the part you said is missing. I will redesign the surfaces that host the new features so they actually look new:
+
+### `ProfileSection.tsx` (Abhay's profile page)
+- New **hero header card**: gradient (slate→indigo), large avatar circle with initials, role badge, "Last login" pill with relative time, and an inline **Sign out** button.
+- New **stats strip**: 3 premium cards — Active Staff, Pending Advances, Today's Attendance — with `AnimatedNumber`, icon tiles, and subtle hover lift (matches Corporate Dashboard styling already in the project).
+- New **Manager Tools** band (Manager-only): three large pill-buttons in a row —
+  - **Today's Salary Slips** (Excel + Word)
+  - **Bulk Salary Update**
+  - **Custom Range Reports**
+  Each with icon, one-line description, and loading state.
+- Quick Links converted from a flat list to a **3-column responsive grid of icon tiles** with the existing `tone` colors as soft backgrounds, hover scale, and a right-arrow that slides on hover.
+- Sticky section breadcrumb at top: Home / Profile.
+
+### `FileManagerSection.tsx` (file creation surface)
+- Replace the small "+ New" dropdown trigger with a **prominent split button**: "New" + caret, in primary color, top-right of the toolbar.
+- New empty-state panel when a folder has no files: illustration block + two CTAs ("New Document", "New Sheet") + "Upload" — instead of the current bare list.
+- Toolbar gets a refreshed pill layout (search, filter, view toggle, new) with consistent 40px height and rounded-xl.
+
+### `NewFileDialog.tsx`
+- Header gets a small gradient strip + icon matching the selected kind (blue for Word, emerald for Excel) so the dialog visibly responds to the toggle.
+- Template cards become **2-column grid** with icon + title + description, selected state shows a check badge.
+- Footer buttons re-grouped: primary **Create** on the right, secondary **Download blank first** on the left, and a tertiary **Upload my own template** link below — replacing the current single row that looks identical to the old dialog.
+- Troubleshooting panel restyled: amber border, category badge ("Permission issue" / "Storage quota" / "Network"), checklist with copyable code snippets for the browser settings paths.
+
+### Toast feedback (sonner)
+- Failure toasts now render with a **title + description + action button**: title = `Couldn't create file (step: upload)`, description = short cause, action = "Open troubleshooting" which scrolls/focuses the panel inside the still-open dialog.
+
+## 4. Technical details
+
+Files to edit:
+- `src/components/sections/FileManagerSection.tsx` — error classifier (`classifyCreateError`), pass `category` into troubleshooting state, refreshed toolbar + empty state, split "New" button.
+- `src/components/file-manager/NewFileDialog.tsx` — new `category` prop in `NewFileTroubleshootingState`, category-specific hint blocks, redesigned header / template grid / footer.
+- `src/components/sections/ProfileSection.tsx` — hero card, stats strip, Manager Tools band, quick-links grid redesign.
+- (No DB migration, no new dependencies.)
+
+New type shape (illustrative):
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│ ⓘ  Update ready · v20260427-1542 → v20260427-1610                      │
-│    A newer build is available. Your UI may show stale data.            │
-│    [ Apply update ]  [ Refresh & Clear Cache ]   [ × dismiss ]         │
-└────────────────────────────────────────────────────────────────────────┘
+NewFileTroubleshootingState {
+  step: 'build blob' | 'upload' | 'metadata'
+  category: 'permission' | 'quota' | 'network' | 'validation' | 'unknown'
+  message: string
+  expectedKind: 'docx' | 'xlsx'
+  retryAttempted: boolean
+  retryFailed?: boolean
+  retryMessage?: string
+}
 ```
 
-- **Blue** when a newer build is detected on the server OR a SW is `waiting`
-- **Amber** when SW is serving cache and we cannot confirm freshness
-- **Hidden** when on a live, fresh build (or user dismissed for this version)
-
-### 2. Status panel (popover from the existing pill)
-Reorganized into three labeled sections, all visible at once:
+Classifier logic outline:
 
 ```text
-┌─────────────────────── Build ────────────────────────┐
-│ This tab          v20260427-1542                     │
-│ Latest on server  v20260427-1610  (newer)            │
-│ Mode              production · prod assets           │
-│ Asset source      Service Worker (cached)            │
-├─────────────────── Service Worker ───────────────────┤
-│ State             ● Installed — waiting to activate  │
-│ Controller        Yes (this page is under SW)        │
-│ Scope             /                                   │
-├──────────────────── Timeline ────────────────────────┤
-│ Tab loaded        4m ago                             │
-│ Last server check 12s ago                            │
-│ Update detected   2m ago                             │
-│ Update applied    yesterday 18:42                    │
-└──────────────────────────────────────────────────────┘
-[ Apply update & reload ]  [ Check now ]  [ Hard reload ]
-[ 🗑 Refresh & Clear Cache ]
+if status in (401, 403) or /not authorized|row-level|permission/i  -> permission
+else if status == 413 or /quota|exceeded|payload too large|storage is full/i or name == 'QuotaExceededError' -> quota
+else if /failed to fetch|networkerror|timeout|offline/i or !navigator.onLine -> network
+else if step == 'build blob' and validation failed -> validation
+else -> unknown
 ```
 
-## Detection logic
+## 5. Out of scope
 
-Centralized into a new shared hook `useBuildStatus()` so the pill, banner, and any future surface read from one source of truth.
+- No changes to Supabase schema, RLS, or buckets.
+- No changes to `DocxEditor` / `XlsxEditor` internals.
+- No changes to `payrollDocs.ts` generation logic.
 
-- **Build identity** — `BUILD_ID` baked at build time (already done in last task) compared against the server's `<meta name="build-id">` polled every 60s, on `focus`, and on `online`.
-- **SW lifecycle** — derived from `registration.installing | waiting | active.state`. Subscribes to `updatefound` and `statechange` events for live updates.
-- **Asset source** — inferred:
-  - `navigator.serviceWorker.controller != null` → **Service Worker**
-  - SW exists but page predates it → **Cache Storage** (will be SW-controlled on next nav)
-  - No SW → **Network**
-- **Mode label** — `import.meta.env.DEV` + `BUILD_ID === 'dev'` → "development"; otherwise "production".
-- **Last detected / applied** — persisted to `localStorage` so timestamps survive refreshes.
-  - "Detected" set when the polled server id first differs from our bundle id.
-  - "Applied" set on `controllerchange` (a new SW just took control) or after a manual `Apply update` / `Clear Cache` action.
-
-## Files to add / change
-
-**New**
-- `src/lib/file-manager/useBuildStatus.ts` — the shared hook (lifecycle, polling, SW listeners, persistence, actions: `probeServer`, `applyWaiting`, `hardReload`, `clearCachesAndReload`).
-- `src/components/file-manager/BuildStatusBanner.tsx` — the dismissible top banner. Dismissal is keyed by `serverBuildId` so a newer build re-shows the banner.
-
-**Edited**
-- `src/components/file-manager/BuildStatusIndicator.tsx` — refactor to consume `useBuildStatus()`; expand popover into the three-section layout above; add **Refresh & Clear Cache** as a primary destructive action.
-- `src/components/sections/FileManagerSection.tsx` — render `<BuildStatusBanner />` directly above the file list (below the sticky toolbar).
-
-## Mobile considerations
-
-- Banner stacks vertically on screens < 640px, with full-width 44px buttons.
-- Popover already uses Radix Popover which positions safely on mobile; max-width capped at `92vw`.
-- "Refresh & Clear Cache" gets a confirmation toast on mobile (single tap = action; toast offers Undo for 4s).
-
-## Out of scope
-
-- No changes to the actual SW caching strategy in `vite.config.ts` (last task left it intentionally untouched).
-- No global header banner — scoped to File Manager as previously requested. Easy to lift later.
-
-## Acceptance
-
-- Visiting File Manager shows the pill in green when fresh, amber when SW-cached, blue with banner when an update is detected.
-- The popover always shows: SW lifecycle word, dev/prod label, asset-source label, "detected" and "applied" timestamps.
-- Clicking **Refresh & Clear Cache** wipes all caches, unregisters SWs, and reloads — pill returns green within ~2s.
-- After a new deploy lands while the tab is open, the banner appears within 60s, "Update detected" timestamp updates, and applying the update sets "Update applied" to "just now".
+Once you approve, I'll implement all of the above in one pass and you'll see the Profile page, File Manager toolbar, and New File dialog visibly change.

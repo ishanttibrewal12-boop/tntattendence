@@ -65,7 +65,23 @@ interface ConflictItem { id: string; name: string; type: 'folder' | 'file'; exis
 interface MoveConflictsState { targetFolderId: string | null; conflicts: ConflictItem[]; }
 
 type FileCreateStep = 'build blob' | 'upload' | 'metadata';
-type FileCreateError = Error & { step: FileCreateStep };
+type FileCreateCategory = 'permission' | 'quota' | 'network' | 'validation' | 'unknown';
+type FileCreateError = Error & { step: FileCreateStep; category?: FileCreateCategory; statusCode?: number | string };
+
+const classifyCreateError = (step: FileCreateStep, error: unknown): FileCreateCategory => {
+  const anyErr = (error || {}) as any;
+  const status = Number(anyErr.statusCode ?? anyErr.status ?? anyErr.code);
+  const name = String(anyErr.name || '').toLowerCase();
+  const raw = (typeof error === 'string' ? error : anyErr.message || anyErr.error || '') as string;
+  const msg = raw.toLowerCase();
+
+  if (status === 401 || status === 403 || /not authorized|unauthor|forbidden|row-level|rls|permission|bucket not found|policy/i.test(raw)) return 'permission';
+  if (status === 413 || name === 'quotaexceedederror' || /quota|exceeded|payload too large|storage is full|insufficient storage|disk/i.test(raw)) return 'quota';
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'network';
+  if (/failed to fetch|networkerror|network error|timeout|aborted|offline|connection/i.test(msg)) return 'network';
+  if (step === 'build blob' && /validation|invalid|could not be opened|generated/i.test(raw)) return 'validation';
+  return 'unknown';
+};
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
@@ -186,19 +202,29 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
   };
 
   const makeCreateError = (step: FileCreateStep, error: unknown): FileCreateError => {
+    const anyErr = (error || {}) as any;
     const message = error instanceof Error
       ? error.message
       : typeof error === 'string'
         ? error
-        : 'Unknown error';
+        : anyErr.message || anyErr.error || 'Unknown error';
     const wrapped = new Error(message) as FileCreateError;
     wrapped.step = step;
+    wrapped.category = classifyCreateError(step, error);
+    wrapped.statusCode = anyErr.statusCode ?? anyErr.status ?? anyErr.code;
     return wrapped;
   };
 
-  const showCreateErrorToast = (kind: 'docx' | 'xlsx', step: FileCreateStep, message: string) => {
-    toast.error(`Failed to create ${kind === 'docx' ? 'Word' : 'Excel'} file`, {
-      description: `Step: ${step} · Error: ${message}`,
+  const categoryLabel = (c: FileCreateCategory) =>
+    c === 'permission' ? 'Permission issue'
+    : c === 'quota' ? 'Storage quota'
+    : c === 'network' ? 'Network problem'
+    : c === 'validation' ? 'File validation'
+    : 'Unexpected error';
+
+  const showCreateErrorToast = (kind: 'docx' | 'xlsx', step: FileCreateStep, message: string, category: FileCreateCategory = 'unknown') => {
+    toast.error(`Couldn't create ${kind === 'docx' ? 'Word' : 'Excel'} file (${categoryLabel(category)})`, {
+      description: `Step: ${step} · ${message}`,
     });
   };
 
@@ -307,8 +333,9 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       return true;
     } catch (error) {
       const firstError = error as FileCreateError;
+      const firstCategory = firstError.category ?? classifyCreateError(firstError.step, firstError);
       console.error('[NewFile] Create file error', firstError);
-      showCreateErrorToast(spec.kind, firstError.step, firstError.message);
+      showCreateErrorToast(spec.kind, firstError.step, firstError.message, firstCategory);
 
       try {
         await createAndPersistSpec(makeSimplifiedNewFileSpec(spec));
@@ -322,6 +349,7 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
         setNewFileTroubleshooting({
           step: firstError.step,
           message: firstError.message,
+          category: firstCategory,
           expectedKind: spec.kind,
           retryAttempted: true,
           retryFailed: true,
@@ -355,11 +383,13 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       return true;
     } catch (error) {
       const createError = error as FileCreateError;
+      const cat = createError.category ?? classifyCreateError(createError.step, createError);
       console.error('[NewFile] Manual template upload failed', createError);
-      showCreateErrorToast(kind, createError.step, createError.message);
+      showCreateErrorToast(kind, createError.step, createError.message, cat);
       setNewFileTroubleshooting({
         step: createError.step,
         message: createError.message,
+        category: cat,
         expectedKind: kind,
         retryAttempted: false,
       });
@@ -391,11 +421,13 @@ const FileManagerSection = ({ onBack }: FileManagerSectionProps) => {
       return true;
     } catch (error) {
       const createError = error as FileCreateError;
+      const cat = createError.category ?? classifyCreateError(createError.step, createError);
       console.error('[NewFile] Local-first create failed', createError);
-      showCreateErrorToast(spec.kind, createError.step, createError.message);
+      showCreateErrorToast(spec.kind, createError.step, createError.message, cat);
       setNewFileTroubleshooting({
         step: createError.step,
         message: createError.message,
+        category: cat,
         expectedKind: spec.kind,
         retryAttempted: false,
       });
