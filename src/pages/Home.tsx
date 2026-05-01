@@ -105,15 +105,14 @@ interface SidebarNavItemProps {
 
 const SidebarNavItem = ({ icon: Icon, label, active, onClick, indent }: SidebarNavItemProps) => (
   <motion.button
-    whileHover={{ x: 3 }}
-    whileTap={{ scale: 0.97 }}
-    transition={{ duration: 0.15 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ duration: 0.12 }}
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors relative ${
       indent ? 'pl-9' : ''
     } ${
       active
-        ? 'bg-sidebar-accent text-sidebar-primary sidebar-glow'
+        ? 'bg-sidebar-accent text-sidebar-foreground sidebar-glow'
         : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground'
     }`}
   >
@@ -139,8 +138,8 @@ const MobileBottomNav = ({ activeDepartment, activeSection, onHome, onDept }: {
   const activeId = !activeDepartment && !activeSection ? 'home' : activeDepartment || '';
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-header border-t border-border">
-      <div className="flex items-center justify-around py-2 px-1 safe-area-bottom">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-header safe-area-bottom">
+      <div className="flex items-center justify-around py-2 px-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeId === tab.id;
@@ -148,12 +147,15 @@ const MobileBottomNav = ({ activeDepartment, activeSection, onHome, onDept }: {
             <button
               key={tab.id}
               onClick={() => tab.id === 'home' ? onHome() : onDept(tab.id as DepartmentType)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors ${
-                isActive ? 'text-accent' : 'text-muted-foreground'
+              className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors ${
+                isActive ? 'text-foreground' : 'text-muted-foreground'
               }`}
             >
+              {isActive && (
+                <span aria-hidden className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent" />
+              )}
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-semibold">{tab.label}</span>
+              <span className="text-[10px] font-medium">{tab.label}</span>
             </button>
           );
         })}
@@ -399,7 +401,7 @@ const Home = () => {
 
   // --- Glass Header ---
   const renderHeader = () => (
-    <header className="sticky top-0 z-40 h-16 glass-header border-b border-border/50 flex items-center justify-between px-4 lg:px-8">
+    <header className="sticky top-0 z-40 h-16 glass-header flex items-center justify-between px-4 lg:px-8">
       <div className="flex items-center gap-3">
         {isMobile && (
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -407,25 +409,19 @@ const Home = () => {
           </Button>
         )}
         <div>
-          <h2 className="text-sm font-bold text-foreground tracking-tight">
+          <h2 className="text-base font-semibold text-foreground tracking-tight">
             {activeSection ? getSectionTitle(activeSection) : activeDepartment ? getDeptTitle(activeDepartment) : 'Command Center'}
           </h2>
           {!isMobile && (
-            <p className="text-[11px] text-muted-foreground font-medium">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+            <p className="text-xs text-muted-foreground">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
           )}
         </div>
       </div>
       <div className="flex items-center gap-3">
         {!isMobile && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
-            <div className="h-2 w-2 rounded-full bg-chart-1 animate-pulse" />
-            <span className="text-[11px] font-medium text-muted-foreground">Live</span>
-          </div>
-        )}
-        {!isMobile && (
           <button
             onClick={() => navigateToSection('profile')}
-            className="text-xs font-semibold text-foreground/70 hover:text-foreground transition-colors"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
             title="View profile"
           >
             {user?.full_name}
@@ -550,23 +546,23 @@ const Home = () => {
           {/* Primary Actions */}
           {primarySections.length > 0 && (
             <>
-              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Quick Actions</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-3 uppercase tracking-[0.14em]">Quick Actions</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {primarySections.map((section, i) => {
                   const Icon = section.icon;
                   return (
                     <motion.div
                       key={section.id}
-                      initial={{ opacity: 0, y: 12 }}
+                      initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.3 }}
+                      transition={{ delay: i * 0.04, duration: 0.2 }}
                     >
-                      <Card className="cursor-pointer card-hover border border-border/50 overflow-hidden" onClick={() => navigateToSection(section.id)}>
+                      <Card className="cursor-pointer card-hover rounded-2xl overflow-hidden" onClick={() => navigateToSection(section.id)}>
                         <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-                          <div className="p-3.5 rounded-xl bg-primary glow-accent">
-                            <Icon className="h-6 w-6 text-primary-foreground" />
+                          <div className="p-3 rounded-xl bg-muted">
+                            <Icon className="h-5 w-5 text-foreground" />
                           </div>
-                          <p className="text-sm font-bold text-foreground tracking-tight">{section.title}</p>
+                          <p className="text-sm font-semibold text-foreground tracking-tight">{section.title}</p>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -579,22 +575,22 @@ const Home = () => {
           {/* Management */}
           {secondarySections.length > 0 && (
             <>
-              <p className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.15em]">Management</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-3 uppercase tracking-[0.14em]">Management</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {secondarySections.map((section, i) => {
                   const Icon = section.icon;
                   return (
                     <motion.div
                       key={section.id}
-                      initial={{ opacity: 0, y: 8 }}
+                      initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + i * 0.04, duration: 0.25 }}
+                      transition={{ delay: 0.15 + i * 0.03, duration: 0.2 }}
                     >
-                      <Card className="cursor-pointer card-hover border border-border/50" onClick={() => navigateToSection(section.id)}>
+                      <Card className="cursor-pointer card-hover rounded-2xl" onClick={() => navigateToSection(section.id)}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-primary/10">
-                              <Icon className="h-5 w-5 text-primary" />
+                            <div className="p-2.5 rounded-xl bg-muted">
+                              <Icon className="h-4.5 w-4.5 text-foreground/70" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-[13px] font-semibold text-foreground tracking-tight">{section.title}</p>
