@@ -81,12 +81,12 @@ const LandingContent = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0d14' }}>
+    <div className="min-h-screen bg-background text-foreground antialiased">
       {/* Top-right 3-dot menu */}
       <div className="fixed top-4 right-4 z-50">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full" style={{ background: 'rgba(0,0,0,0.3)', color: 'white' }}>
+            <Button variant="ghost" size="icon" className="rounded-full bg-background/70 backdrop-blur border border-border text-foreground hover:bg-background">
               <MoreVertical className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -101,28 +101,28 @@ const LandingContent = () => {
 
       <StickyNav />
       <HeroSection />
-      <ImageGallery />
-      <div id="about"><WhyChooseUs /></div>
-      <AnimatedStats />
-      <BeforeAfterSlider />
       <CompanySection />
+      <AnimatedStats />
+      <ImageGallery />
+      <WhyChooseUs />
+      <BeforeAfterSlider />
       <Timeline />
-      <div id="companies"><CompanyShowcase /></div>
-      <div id="clients"><TrustedBySection /></div>
+      <CompanyShowcase />
+      <TrustedBySection />
       <TestimonialsSection />
-      <div id="leadership"><LeadershipShowcase /></div>
-      <div id="gallery"><PhotoGallery /></div>
+      <LeadershipShowcase />
+      <PhotoGallery />
       <PoliciesSection />
       <CTABanner />
       <ContactSection />
 
       {/* Footer */}
-      <footer className="py-8" style={{ background: '#060810' }}>
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-sm font-semibold mb-1 text-white/50">Tibrewal Group</p>
-          <p className="text-xs mb-3 text-white/30">Mining | Petroleum | Tyres | Agro | Ventures | Tibrewal Mines & Minerals Pvt. Ltd.</p>
-          <p className="text-xs text-white/20">Jharkhand, India</p>
-          <p className="text-xs mt-4 text-white/20">© {currentYear} Tibrewal Group. All rights reserved.</p>
+      <footer className="py-12 bg-muted/30 border-t border-border">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <p className="text-sm font-semibold tracking-[-0.012em] text-foreground mb-1">Tibrewal Group</p>
+          <p className="text-[12px] text-muted-foreground mb-3">Mining · Petroleum · Tyres · Agro · Ventures · Tibrewal Mines & Minerals Pvt. Ltd.</p>
+          <p className="text-[12px] text-muted-foreground">Jharkhand, India</p>
+          <p className="text-[11px] mt-5 text-muted-foreground">© {currentYear} Tibrewal Group. All rights reserved.</p>
         </div>
       </footer>
 
