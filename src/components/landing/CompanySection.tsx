@@ -2,25 +2,28 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import heroImg from '@/assets/hero-mining-operations.jpg';
+import { useParallax, useSplitTextReveal } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const CompanySection = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useParallax(sectionRef, '[data-parallax]', 14);
+  useSplitTextReveal(headingRef, { type: 'words', stagger: 0.06, skew: 6 });
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
       gsap.from('.about-text > *', {
-        opacity: 0, y: 14, duration: 0.6, ease: 'power2.out', stagger: 0.08,
+        opacity: 0, y: 20, duration: 0.8, ease: 'power3.out', stagger: 0.1,
         scrollTrigger: { trigger: '.about-text', start: 'top 85%' },
       });
       gsap.from('.about-image', {
-        opacity: 0, y: 14, duration: 0.7, ease: 'power2.out',
+        opacity: 0, y: 30, scale: 0.96, duration: 1.0, ease: 'power3.out',
         scrollTrigger: { trigger: '.about-image', start: 'top 85%' },
       });
     }, section);
@@ -33,14 +36,22 @@ const CompanySection = () => {
       <div className="max-w-5xl mx-auto px-6">
         <div className="text-center mb-14">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">About Us</p>
-          <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+          <h2 ref={headingRef} className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
             Powering growth since 2013.
           </h2>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="about-image rounded-2xl overflow-hidden border border-border">
-            <img src={heroImg} alt="Mining Operations" className="w-full aspect-video object-cover" loading="lazy" />
+          <div className="about-image rounded-2xl overflow-hidden border border-border relative">
+            <div className="overflow-hidden">
+              <img
+                data-parallax="14"
+                src={heroImg}
+                alt="Mining Operations"
+                className="w-full aspect-video object-cover scale-110"
+                loading="lazy"
+              />
+            </div>
           </div>
 
           <div className="about-text space-y-5">
