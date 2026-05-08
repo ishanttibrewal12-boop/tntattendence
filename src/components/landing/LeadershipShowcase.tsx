@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Phone, MapPin, GraduationCap, Award, Mail } from 'lucide-react';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.jpg';
+import { useParallax, useSplitTextReveal } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
