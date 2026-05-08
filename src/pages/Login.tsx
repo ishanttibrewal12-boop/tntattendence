@@ -127,7 +127,7 @@ const Login = () => {
       </div>
 
       {/* Cinematic curtain (slides up on mount) */}
-      <div aria-hidden className="login-curtain absolute inset-0 z-[60] bg-[#0b1f33]" />
+      <div aria-hidden className="login-curtain absolute inset-0 z-[60] bg-[#0b1f33] pointer-events-none" />
 
       {/* Left Side - Company Info (Desktop) */}
       <div className="login-side hidden lg:flex lg:w-1/2 relative z-10 p-12 flex-col justify-between">
