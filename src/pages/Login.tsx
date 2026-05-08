@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Lock, User, MapPin, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import companyLogo from '@/assets/company-logo.png';
 import heroImg from '@/assets/hero-mining-operations.jpg';
+import gsap from 'gsap';
+import { useMagneticGroup, useSplitTextReveal } from '@/lib/motion/gsapUtils';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -18,39 +20,60 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useMagneticGroup(rootRef, '[data-magnetic]', 0.4);
+  useSplitTextReveal(headingRef, { type: 'chars', stagger: 0.025, skew: 8, duration: 1.0 });
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const ctx = gsap.context(() => {
+      // Ken Burns slow zoom on bg
+      gsap.fromTo(
+        '.login-bg',
+        { scale: 1.05, xPercent: -2 },
+        { scale: 1.18, xPercent: 2, duration: 22, ease: 'sine.inOut', repeat: -1, yoyo: true },
+      );
+
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      tl.from('.login-card', { opacity: 0, y: 32, scale: 0.94, filter: 'blur(8px)', duration: 0.9 })
+        .from('.login-side > *', { opacity: 0, x: -24, duration: 0.7, stagger: 0.08 }, 0.1)
+        .from('.login-field', { opacity: 0, y: 14, duration: 0.5, stagger: 0.08 }, 0.4)
+        .from('.login-submit', { opacity: 0, y: 10, duration: 0.45 }, 0.7);
+    }, root);
+
+    return () => ctx.revert();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     const success = await login(username, password);
-    
+
     if (success) {
-      toast({
-        title: 'Welcome!',
-        description: 'You have successfully logged in.',
-      });
+      toast({ title: 'Welcome!', description: 'You have successfully logged in.' });
       navigate('/dashboard');
     } else {
-      toast({
-        title: 'Login Failed',
-        description: 'Invalid username or password.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Login Failed', description: 'Invalid username or password.', variant: 'destructive' });
     }
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex relative">
-      {/* Full-screen background */}
+    <div ref={rootRef} className="min-h-screen flex relative overflow-hidden">
+      {/* Full-screen background with Ken Burns */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="login-bg absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
         style={{ backgroundImage: `url(${heroImg})` }}
       />
       <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.85) 50%, rgba(11,31,51,0.95) 100%)' }} />
 
       {/* Left Side - Company Info (Desktop) */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 p-12 flex-col justify-between">
+      <div className="login-side hidden lg:flex lg:w-1/2 relative z-10 p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-4 mb-10">
             <img src={companyLogo} alt="T&T" className="h-14 w-14 object-contain rounded-xl" />
@@ -59,15 +82,13 @@ const Login = () => {
               <p className="text-white/50 text-sm font-medium">Industrial Business Group</p>
             </div>
           </div>
-          
+
           <div className="space-y-6 mt-12">
-            <h2 className="text-4xl font-extrabold text-white leading-tight tracking-tight">
-              Enterprise Resource<br />Management System
+            <h2 ref={headingRef} className="text-4xl font-extrabold text-white leading-tight tracking-tight">
+              Enterprise Resource Management System
             </h2>
             <div className="w-16 h-1 rounded-full" style={{ background: '#f97316' }} />
-            <p className="text-white/50 text-lg font-medium">
-              Mining · Logistics · Petroleum · Tyres
-            </p>
+            <p className="text-white/50 text-lg font-medium">Mining · Logistics · Petroleum · Tyres</p>
           </div>
         </div>
 
@@ -85,58 +106,44 @@ const Login = () => {
 
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10">
-        <Card className="w-full max-w-md border-border/30 bg-card/80 backdrop-blur-xl shadow-2xl">
+        <Card className="login-card w-full max-w-md border-border/30 bg-card/80 backdrop-blur-xl shadow-2xl">
           <CardHeader className="text-center pb-4">
             <div className="flex justify-center mb-4">
               <img src={companyLogo} alt="T&T" className="h-14 w-14 object-contain rounded-xl" />
             </div>
             <CardTitle className="text-xl font-bold">Admin Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access the dashboard
-            </CardDescription>
+            <CardDescription>Enter your credentials to access the dashboard</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
+              <div className="login-field space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="Enter your username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+                  <Input id="username" type="text" placeholder="Enter your username"
+                    value={username} onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10" required />
                 </div>
               </div>
-              
-              <div className="space-y-2">
+
+              <div className="login-field space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+                  <Input id="password" type="password" placeholder="Enter your password"
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10" required />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Login'}
-              </Button>
+              <span data-magnetic className="login-submit block">
+                <Button type="submit" className="w-full glow-pulse-amber shine-on-hover" disabled={isLoading}>
+                  {isLoading ? 'Logging in...' : 'Login'}
+                </Button>
+              </span>
             </form>
 
-            <p className="text-center text-[11px] text-muted-foreground/50 mt-6">
-              Tibrewal Group · Jharkhand
-            </p>
+            <p className="text-center text-[11px] text-muted-foreground/50 mt-6">Tibrewal Group · Jharkhand</p>
           </CardContent>
         </Card>
       </div>
