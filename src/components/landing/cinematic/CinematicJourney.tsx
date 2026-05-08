@@ -84,6 +84,11 @@ const CinematicJourney = () => {
         scrollTrigger: { trigger: root, start: 'top top', end: 'bottom bottom', scrub: 0.3 },
       });
 
+      const setActive = (i: number) => {
+        dotsRef.current.forEach((d, j) => d?.classList.toggle('active', j === i));
+        navItemsRef.current.forEach((n, j) => n?.classList.toggle('active', j === i));
+      };
+
       SECTIONS.forEach((s, i) => {
         ScrollTrigger.create({
           trigger: '#' + s.id,
@@ -93,11 +98,6 @@ const CinematicJourney = () => {
           onEnterBack: () => setActive(i),
         });
       });
-
-      const setActive = (i: number) => {
-        dotsRef.current.forEach((d, j) => d?.classList.toggle('active', j === i));
-        navItemsRef.current.forEach((n, j) => n?.classList.toggle('active', j === i));
-      };
     }, root);
 
     return () => ctx.revert();
