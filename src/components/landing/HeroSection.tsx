@@ -44,10 +44,17 @@ const HeroSection = () => {
         scrollTrigger: { trigger: section, start: 'top top', end: 'bottom top', scrub: true },
       });
 
-      // Hero fade out as it scrolls
+      // Pinned hero with parallax fade as user scrolls past
       gsap.to('.hero-inner', {
-        opacity: 0.2, scale: 0.96, y: -40, ease: 'none',
-        scrollTrigger: { trigger: section, start: 'top top', end: 'bottom 30%', scrub: true },
+        opacity: 0.15, scale: 0.92, y: -60, filter: 'blur(4px)', ease: 'none',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top top',
+          end: '+=80%',
+          scrub: 0.6,
+          pin: true,
+          pinSpacing: true,
+        },
       });
     }, section);
 
