@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Calendar, IndianRupee, Settings } from 'lucide-react';
 import gsap from 'gsap';
@@ -18,7 +18,6 @@ import {
 import companyLogo from '@/assets/tibrewal-logo.png';
 import { useAppAuth } from '@/contexts/AppAuthContext';
 import { useTheme } from '@/hooks/useTheme';
-import { useMagneticGroup } from '@/lib/motion/gsapUtils';
 import { Button } from '@/components/ui/button';
 import { LogOut, Sun, Moon } from 'lucide-react';
 
@@ -42,19 +41,16 @@ const AppSidebar = () => {
   const { pathname } = useLocation();
   const { user, requestLogout } = useAppAuth();
   const { theme, toggle: toggleTheme } = useTheme();
-  const sidebarRef = useRef<HTMLDivElement>(null);
-
-  useMagneticGroup(sidebarRef, '[data-sidebar="menu-button"]', 0.2);
 
   useEffect(() => {
-    const root = sidebarRef.current;
-    if (!root) return;
     const ctx = gsap.context(() => {
-      gsap.from(root, { x: -40, opacity: 0, duration: 0.7, ease: 'power3.out' });
-      gsap.from(root.querySelectorAll('[data-sidebar="menu-item"]'), {
-        opacity: 0, x: -16, duration: 0.45, stagger: 0.04, ease: 'power3.out', delay: 0.15,
-      });
-    }, root);
+      const items = document.querySelectorAll('[data-sidebar="menu-item"]');
+      if (items.length) {
+        gsap.from(items, {
+          opacity: 0, x: -16, duration: 0.45, stagger: 0.04, ease: 'power3.out', delay: 0.1,
+        });
+      }
+    });
     return () => ctx.revert();
   }, []);
 
