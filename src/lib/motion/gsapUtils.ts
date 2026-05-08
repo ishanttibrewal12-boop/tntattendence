@@ -329,3 +329,103 @@ export const useCountUp = (
 };
 
 export const useElRef = <T extends HTMLElement = HTMLDivElement>() => useRef<T>(null);
+
+/* ---------- Ripple effect on click ---------- */
+export const triggerRipple = (e: React.MouseEvent<HTMLElement>) => {
+  const host = e.currentTarget as HTMLElement;
+  if (!host) return;
+  const rect = host.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 2.2;
+  const x = e.clientX - rect.left - size / 2;
+  const y = e.clientY - rect.top - size / 2;
+  const ripple = document.createElement('span');
+  ripple.className = 'gsap-ripple';
+  ripple.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${size}px;height:${size}px;border-radius:9999px;pointer-events:none;background:radial-gradient(circle,hsla(0,0%,100%,0.55),hsla(0,0%,100%,0) 70%);transform:scale(0);opacity:0.9;mix-blend-mode:screen;`;
+  const prevPos = getComputedStyle(host).position;
+  if (prevPos === 'static') host.style.position = 'relative';
+  const prevOverflow = host.style.overflow;
+  host.style.overflow = 'hidden';
+  host.appendChild(ripple);
+  gsap.to(ripple, {
+    scale: 1, opacity: 0, duration: 0.7, ease: 'power3.out',
+    onComplete: () => { ripple.remove(); host.style.overflow = prevOverflow; },
+  });
+};
+
+/* ---------- Auto-attach magnetic + ripple to a single element ---------- */
+export const useMagneticRipple = (
+  ref: React.RefObject<HTMLElement>,
+  opts: { strength?: number; ripple?: boolean } = {},
+) => {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const strength = opts.strength ?? 0.28;
+    const xTo = gsap.quickTo(el, 'x', { duration: 0.45, ease: 'power3.out' });
+    const yTo = gsap.quickTo(el, 'y', { duration: 0.45, ease: 'power3.out' });
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      xTo((e.clientX - (r.left + r.width / 2)) * strength);
+      yTo((e.clientY - (r.top + r.height / 2)) * strength);
+    };
+    const onLeave = () => { xTo(0); yTo(0); };
+    const onDown = (e: MouseEvent) => {
+      if (opts.ripple === false) return;
+      triggerRipple({ currentTarget: el, clientX: e.clientX, clientY: e.clientY } as any);
+      gsap.fromTo(el, { scale: 0.94 }, { scale: 1, duration: 0.5, ease: 'elastic.out(1,0.45)' });
+    };
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+    el.addEventListener('mousedown', onDown);
+    return () => {
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
+      el.removeEventListener('mousedown', onDown);
+    };
+  }, [ref, opts.strength, opts.ripple]);
+};
+
+/* ---------- Reveal EVERY heading inside a scope (h1-h4) ---------- */
+export const useAllHeadingsReveal = (
+  scopeRef: React.RefObject<HTMLElement>,
+  selector = 'h1, h2, h3, h4',
+) => {
+  useEffect(() => {
+    const scope = scopeRef.current;
+    if (!scope) return;
+    const splits: any[] = [];
+    const ctx = gsap.context(() => {
+      const headings = Array.from(scope.querySelectorAll<HTMLElement>(selector));
+      headings.forEach((el) => {
+        if (el.dataset.splitDone === '1' || el.closest('[data-no-split]')) return;
+        el.dataset.splitDone = '1';
+        const text = (el.textContent || '').trim();
+        const useChars = text.length <= 36;
+        try {
+          const split = new SplitText(el, {
+            type: useChars ? 'chars,words' : 'words',
+            charsClass: 'st-char',
+            wordsClass: 'st-word',
+          });
+          splits.push(split);
+          const targets = useChars ? split.chars : split.words;
+          gsap.set(el, { perspective: 600 });
+          gsap.fromTo(
+            targets,
+            { yPercent: 110, opacity: 0, skewY: 6, rotateX: -25 },
+            {
+              yPercent: 0, opacity: 1, skewY: 0, rotateX: 0,
+              duration: 0.9, ease: 'power4.out',
+              stagger: useChars ? 0.018 : 0.045,
+              scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+            },
+          );
+        } catch { /* noop */ }
+      });
+    }, scope);
+    return () => {
+      try { splits.forEach((s) => s?.revert()); } catch { /* noop */ }
+      ctx.revert();
+    };
+  }, [scopeRef, selector]);
+};
