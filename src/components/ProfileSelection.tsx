@@ -93,21 +93,11 @@ const LandingContent = () => {
         </DropdownMenu>
       </div>
 
-      <StickyNav />
-      <HeroSection />
-      <CompanySection />
-      <AnimatedStats />
-      <ImageGallery />
-      <WhyChooseUs />
-      <BeforeAfterSlider />
-      <Timeline />
-      <CompanyShowcase />
-      <TrustedBySection />
-      <TestimonialsSection />
+      <CinematicJourney />
       <LeadershipShowcase />
+      <ImageGallery />
       <PhotoGallery />
       <PoliciesSection />
-      <CTABanner />
       <ContactSection />
 
       {/* Footer */}
