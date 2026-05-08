@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Shield, Truck, Mountain, Fuel, TrendingUp, Users } from 'lucide-react';
+import { useTiltCards, useCursorSpotlight, useSplitTextReveal } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,6 +17,11 @@ const features = [
 
 const WhyChooseUs = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useTiltCards(sectionRef, '.wcu-card', 10);
+  useCursorSpotlight(sectionRef, 'hsla(36,100%,55%,0.14)');
+  useSplitTextReveal(headingRef, { type: 'words', stagger: 0.05, skew: 6 });
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -37,17 +43,17 @@ const WhyChooseUs = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 bg-background">
-      <div className="max-w-6xl mx-auto px-6">
+    <section ref={sectionRef} className="py-24 md:py-32 bg-background relative">
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="text-center mb-14">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Why Choose Us</p>
-          <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
-            Built on strength.<br /><span className="text-muted-foreground">Driven by purpose.</span>
+          <h2 ref={headingRef} className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+            Built on strength. Driven by purpose.
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ perspective: 1000 }}>
           {features.map((f, i) => (
-            <div key={i} className="wcu-card p-6 rounded-2xl border border-border bg-card transition-colors hover:border-foreground/20">
+            <div key={i} className="wcu-card p-6 rounded-2xl border border-border bg-card transition-colors hover:border-foreground/30 hover:shadow-lg">
               <div className="w-10 h-10 rounded-full flex items-center justify-center mb-5 bg-muted">
                 <f.icon className="h-5 w-5 text-foreground" />
               </div>
