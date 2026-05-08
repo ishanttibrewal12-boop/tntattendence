@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAllHeadingsReveal } from '@/lib/motion/gsapUtils';
 import { User, Lock, Eye, EyeOff, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,8 +81,11 @@ const LandingContent = () => {
 
   const currentYear = new Date().getFullYear();
 
+  const landingRootRef = useRef<HTMLDivElement>(null);
+  useAllHeadingsReveal(landingRootRef, 'h2, h3');
+
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
+    <div ref={landingRootRef} className="min-h-screen bg-background text-foreground antialiased">
       {/* Top-right 3-dot menu */}
       <div className="fixed top-4 right-4 z-50">
         <DropdownMenu>

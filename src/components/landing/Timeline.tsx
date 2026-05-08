@@ -21,6 +21,16 @@ const Timeline = () => {
     if (!section) return;
 
     const ctx = gsap.context(() => {
+      // Pin the timeline section while line draws
+      ScrollTrigger.create({
+        trigger: section,
+        start: 'top top',
+        end: '+=120%',
+        pin: '.tl-pin-wrap',
+        pinSpacing: true,
+        scrub: false,
+      });
+
       // Scrubbed line draw
       gsap.fromTo(
         '.tl-line',
@@ -29,9 +39,9 @@ const Timeline = () => {
           scaleY: 1,
           ease: 'none',
           scrollTrigger: {
-            trigger: '.tl-track',
-            start: 'top 70%',
-            end: 'bottom 80%',
+            trigger: section,
+            start: 'top top',
+            end: '+=120%',
             scrub: 0.6,
           },
         },
@@ -56,8 +66,8 @@ const Timeline = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 bg-muted/30">
-      <div className="max-w-3xl mx-auto px-6">
+    <section ref={sectionRef} className="py-24 md:py-32 bg-muted/30 relative">
+      <div className="tl-pin-wrap max-w-3xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Our Journey</p>
           <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">

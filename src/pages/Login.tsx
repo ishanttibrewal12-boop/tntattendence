@@ -31,21 +31,57 @@ const Login = () => {
     if (!root) return;
 
     const ctx = gsap.context(() => {
+      // Cinematic curtain reveal
+      gsap.fromTo('.login-curtain',
+        { yPercent: 0 },
+        { yPercent: -100, duration: 1.2, ease: 'expo.inOut', delay: 0.05 });
+
       // Ken Burns slow zoom on bg
       gsap.fromTo(
         '.login-bg',
-        { scale: 1.05, xPercent: -2 },
-        { scale: 1.18, xPercent: 2, duration: 22, ease: 'sine.inOut', repeat: -1, yoyo: true },
+        { scale: 1.18, xPercent: -2 },
+        { scale: 1.28, xPercent: 2, duration: 22, ease: 'sine.inOut', repeat: -1, yoyo: true },
       );
 
-      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      // Floating ambient particles
+      gsap.utils.toArray<HTMLElement>('.login-particle').forEach((p, i) => {
+        gsap.to(p, {
+          y: gsap.utils.random(-40, 40),
+          x: gsap.utils.random(-30, 30),
+          opacity: gsap.utils.random(0.15, 0.55),
+          duration: gsap.utils.random(4, 8),
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: i * 0.2,
+        });
+      });
+
+      // Mouse parallax on bg + card
+      const xToBg = gsap.quickTo('.login-bg', 'x', { duration: 1.2, ease: 'power3.out' });
+      const yToBg = gsap.quickTo('.login-bg', 'y', { duration: 1.2, ease: 'power3.out' });
+      const xToCard = gsap.quickTo('.login-card', 'x', { duration: 0.8, ease: 'power3.out' });
+      const yToCard = gsap.quickTo('.login-card', 'y', { duration: 0.8, ease: 'power3.out' });
+      const onMove = (e: MouseEvent) => {
+        const cx = (e.clientX / window.innerWidth - 0.5);
+        const cy = (e.clientY / window.innerHeight - 0.5);
+        xToBg(cx * -30); yToBg(cy * -30);
+        xToCard(cx * 12); yToCard(cy * 12);
+      };
+      window.addEventListener('mousemove', onMove);
+      (root as any)._loginCleanup = () => window.removeEventListener('mousemove', onMove);
+
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' }, delay: 0.6 });
       tl.from('.login-card', { opacity: 0, y: 32, scale: 0.94, filter: 'blur(8px)', duration: 0.9 })
         .from('.login-side > *', { opacity: 0, x: -24, duration: 0.7, stagger: 0.08 }, 0.1)
         .from('.login-field', { opacity: 0, y: 14, duration: 0.5, stagger: 0.08 }, 0.4)
         .from('.login-submit', { opacity: 0, y: 10, duration: 0.45 }, 0.7);
     }, root);
 
-    return () => ctx.revert();
+    return () => {
+      try { (rootRef.current as any)?._loginCleanup?.(); } catch { /* noop */ }
+      ctx.revert();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,6 +107,27 @@ const Login = () => {
         style={{ backgroundImage: `url(${heroImg})` }}
       />
       <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(11,31,51,0.92) 0%, rgba(11,31,51,0.85) 50%, rgba(11,31,51,0.95) 100%)' }} />
+
+      {/* Floating ambient particles */}
+      <div aria-hidden className="absolute inset-0 z-[5] pointer-events-none">
+        {Array.from({ length: 14 }).map((_, i) => (
+          <span
+            key={i}
+            className="login-particle absolute rounded-full"
+            style={{
+              left: `${(i * 73) % 100}%`,
+              top: `${(i * 41) % 100}%`,
+              width: `${4 + (i % 4) * 2}px`,
+              height: `${4 + (i % 4) * 2}px`,
+              background: 'radial-gradient(circle, rgba(249,115,22,0.55), rgba(249,115,22,0) 70%)',
+              opacity: 0.3,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Cinematic curtain (slides up on mount) */}
+      <div aria-hidden className="login-curtain absolute inset-0 z-[60] bg-[#0b1f33] pointer-events-none" />
 
       {/* Left Side - Company Info (Desktop) */}
       <div className="login-side hidden lg:flex lg:w-1/2 relative z-10 p-12 flex-col justify-between">
