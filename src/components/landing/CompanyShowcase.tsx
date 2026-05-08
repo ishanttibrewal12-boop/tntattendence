@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Star } from 'lucide-react';
+import { useTiltCards } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -59,16 +60,16 @@ const companies = [
 const CompanyShowcase = () => {
   const sectionRef = useRef<HTMLElement>(null);
 
+  useTiltCards(sectionRef, '.company-card', 6);
+
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>('.company-card').forEach((el) => {
         gsap.from(el, {
-          opacity: 0, y: 14, duration: 0.55, ease: 'power2.out',
+          opacity: 0, y: 30, scale: 0.95, duration: 0.9, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 88%' },
         });
       });

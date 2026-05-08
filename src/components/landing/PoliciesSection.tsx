@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Shield, Scale, FileCheck, Globe, Heart, Award, Users, Building2 } from 'lucide-react';
+import { useTiltCards, useCursorSpotlight } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
