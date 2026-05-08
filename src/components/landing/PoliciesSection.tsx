@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Shield, Scale, FileCheck, Globe, Heart, Award, Users, Building2 } from 'lucide-react';
+import { useTiltCards, useCursorSpotlight } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,18 +20,19 @@ const policies = [
 const PoliciesSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
 
+  useTiltCards(sectionRef, '.policy-card', 10);
+  useCursorSpotlight(sectionRef, 'hsla(36,100%,55%,0.12)');
+
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>('.policy-card').forEach((el, i) => {
         gsap.from(el, {
-          opacity: 0, y: 12, duration: 0.45, ease: 'power2.out',
+          opacity: 0, y: 24, scale: 0.94, rotateX: 12, duration: 0.7, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 92%' },
-          delay: (i % 4) * 0.05,
+          delay: (i % 4) * 0.07,
         });
       });
     }, section);
@@ -39,8 +41,8 @@ const PoliciesSection = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 bg-muted/30">
-      <div className="max-w-6xl mx-auto px-6">
+    <section ref={sectionRef} className="py-24 md:py-32 bg-muted/30 relative">
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="text-center mb-14">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Corporate Standards</p>
           <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
@@ -51,7 +53,7 @@ const PoliciesSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" style={{ perspective: 1200 }}>
           {policies.map((policy, i) => {
             const Icon = policy.icon;
             return (

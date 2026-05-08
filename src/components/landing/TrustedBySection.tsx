@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useMarquee, useTiltCards } from '@/lib/motion/gsapUtils';
 
 import montecarloLogo from '@/assets/clients/montecarlo.png';
 import ultratechLogo from '@/assets/clients/ultratech.jpeg';
@@ -28,32 +29,32 @@ const clients = [
 
 const TrustedBySection = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const reverseRef = useRef<HTMLDivElement>(null);
+
+  useMarquee(marqueeRef, { speed: 40, direction: -1 });
+  useMarquee(reverseRef, { speed: 30, direction: 1 });
+  useTiltCards(sectionRef, '.client-tile', 8);
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
       gsap.from('.trusted-head > *', {
-        opacity: 0, y: 14, duration: 0.6, ease: 'power2.out', stagger: 0.08,
+        opacity: 0, y: 24, duration: 0.9, ease: 'power3.out', stagger: 0.1,
         scrollTrigger: { trigger: section, start: 'top 80%' },
-      });
-      gsap.utils.toArray<HTMLElement>('.client-tile').forEach((el, i) => {
-        gsap.from(el, {
-          opacity: 0, y: 10, duration: 0.4, ease: 'power2.out',
-          scrollTrigger: { trigger: el, start: 'top 92%' },
-          delay: (i % 4) * 0.04,
-        });
       });
     }, section);
 
     return () => ctx.revert();
   }, []);
 
+  // duplicate for marquee loop
+  const marqueeClients = [...clients, ...clients];
+
   return (
-    <section ref={sectionRef} id="clients" className="py-24 md:py-32 bg-background">
+    <section ref={sectionRef} id="clients" className="py-24 md:py-32 bg-background overflow-hidden">
       <div className="max-w-6xl mx-auto px-6">
         <div className="trusted-head text-center mb-14">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Our Clients</p>
@@ -64,25 +65,37 @@ const TrustedBySection = () => {
             Premium materials and services for India's most respected infrastructure and engineering companies.
           </p>
         </div>
+      </div>
 
-        {/* Client logos grid (no marquee — clean static grid like Apple) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3 md:gap-4 mb-14">
-          {clients.map((client, i) => (
+      {/* Infinite marquee — row 1 */}
+      <div className="relative w-full overflow-hidden mb-4 mask-fade-x">
+        <div ref={marqueeRef} className="flex items-center gap-4 will-change-transform" style={{ width: 'max-content' }}>
+          {marqueeClients.map((client, i) => (
             <div
-              key={i}
-              className="client-tile flex items-center justify-center rounded-2xl border border-border bg-card aspect-[2/1] p-6 hover:border-foreground/20 transition-colors"
+              key={`r1-${i}`}
+              className="client-tile flex items-center justify-center rounded-2xl border border-border bg-card w-[220px] h-[110px] p-6 shrink-0 hover:border-foreground/30 transition-colors"
             >
-              <img
-                src={client.logo}
-                alt={client.name}
-                className="max-h-12 md:max-h-14 w-auto object-contain"
-                loading="lazy"
-              />
+              <img src={client.logo} alt={client.name} className="max-h-12 w-auto object-contain" loading="lazy" />
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Company name pills */}
+      {/* Infinite marquee — row 2 reverse */}
+      <div className="relative w-full overflow-hidden mb-12 mask-fade-x">
+        <div ref={reverseRef} className="flex items-center gap-4 will-change-transform" style={{ width: 'max-content' }}>
+          {marqueeClients.slice().reverse().map((client, i) => (
+            <div
+              key={`r2-${i}`}
+              className="client-tile flex items-center justify-center rounded-2xl border border-border bg-card w-[200px] h-[100px] p-5 shrink-0 hover:border-foreground/30 transition-colors"
+            >
+              <img src={client.logo} alt={client.name} className="max-h-10 w-auto object-contain" loading="lazy" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
           {clients.map((c, i) => (
             <span
@@ -95,6 +108,13 @@ const TrustedBySection = () => {
           ))}
         </div>
       </div>
+
+      <style>{`
+        .mask-fade-x {
+          -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+                  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+        }
+      `}</style>
     </section>
   );
 };

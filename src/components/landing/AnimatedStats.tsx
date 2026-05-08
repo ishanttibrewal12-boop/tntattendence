@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Shield, Truck, Users, Building2 } from 'lucide-react';
+import { useTiltCards } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -46,16 +47,16 @@ const CountUp = ({ target, suffix = '' }: { target: number; suffix?: string }) =
 const AnimatedStats = () => {
   const sectionRef = useRef<HTMLElement>(null);
 
+  useTiltCards(sectionRef, '.stat-card', 12);
+
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>('.stat-card').forEach((el, i) => {
         gsap.from(el, {
-          opacity: 0, y: 12, duration: 0.5, ease: 'power2.out', delay: i * 0.06,
+          opacity: 0, y: 30, scale: 0.92, duration: 0.8, ease: 'power3.out', delay: i * 0.08,
           scrollTrigger: { trigger: el, start: 'top 92%' },
         });
       });
@@ -67,7 +68,7 @@ const AnimatedStats = () => {
   return (
     <section ref={sectionRef} className="py-20 md:py-28 bg-muted/30">
       <div className="max-w-5xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" style={{ perspective: 1200 }}>
           {stats.map((stat, i) => {
             const Icon = stat.icon;
             return (

@@ -353,14 +353,34 @@
   .hover-lift { transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease; }
   .hover-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-  /* Shine + magnetic — neutralized to plain hover for Apple-clean */
-  .shine-on-hover { position: relative; }
-  .shine-on-hover::before { content: none; }
+  /* Cinematic motion helpers */
+  .gsap-spotlight { position: relative; isolation: isolate; }
+  .gsap-spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(420px circle at var(--spot-x, 50%) var(--spot-y, 50%), var(--spot-color, hsla(36,100%,55%,0.18)), transparent 60%);
+    z-index: 0;
+    mix-blend-mode: screen;
+    transition: opacity 0.3s ease;
+  }
+  .gsap-spotlight > * { position: relative; z-index: 1; }
 
-  .magnetic { transform: none; transition: transform 0.18s ease-out; }
+  .tilt-3d { transform-style: preserve-3d; perspective: 800px; will-change: transform; }
+  .tilt-layer { transform: translateZ(20px); }
 
-  /* Glow pulse / marquee — disabled (no infinite motion in Apple-clean) */
-  .glow-pulse-amber { box-shadow: none; animation: none; }
+  .magnetic { will-change: transform; }
+  .glow-pulse-amber { box-shadow: 0 0 24px -6px hsl(var(--accent) / 0.45); }
+  .shine-on-hover { position: relative; overflow: hidden; }
+  .shine-on-hover::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 30%, hsl(0 0% 100% / 0.18) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.8s cubic-bezier(0.22,1,0.36,1);
+    pointer-events: none;
+  }
+  .shine-on-hover:hover::before { transform: translateX(100%); }
   .marquee-track {
     display: inline-flex;
     will-change: transform;
@@ -401,9 +421,5 @@
     background: hsl(var(--accent));
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .reveal-up, .reveal-fade, .reveal-scale { opacity: 1 !important; transform: none !important; }
-    .marquee-track { animation: none !important; }
-    .text-reveal-mask > span { animation: none !important; transform: none !important; }
-  }
+  /* Cinematic mode: prefers-reduced-motion is intentionally ignored per project decision */
 }

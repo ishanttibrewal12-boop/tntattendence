@@ -19,15 +19,36 @@ const Timeline = () => {
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
+      // Scrubbed line draw
+      gsap.fromTo(
+        '.tl-line',
+        { scaleY: 0, transformOrigin: 'top' },
+        {
+          scaleY: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.tl-track',
+            start: 'top 70%',
+            end: 'bottom 80%',
+            scrub: 0.6,
+          },
+        },
+      );
+
       gsap.utils.toArray<HTMLElement>('.tl-item').forEach((el) => {
         gsap.from(el, {
-          opacity: 0, y: 14, duration: 0.5, ease: 'power2.out',
+          opacity: 0, x: -30, y: 14, scale: 0.96, duration: 0.85, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 88%' },
         });
+        const dot = el.querySelector('.tl-dot');
+        if (dot) {
+          gsap.from(dot, {
+            scale: 0, duration: 0.6, ease: 'back.out(2.5)',
+            scrollTrigger: { trigger: el, start: 'top 88%' },
+          });
+        }
       });
     }, section);
 
@@ -47,12 +68,13 @@ const Timeline = () => {
           </p>
         </div>
 
-        <div className="relative">
-          <div className="absolute left-4 top-2 bottom-2 w-px bg-border" />
+        <div className="tl-track relative">
+          <div className="absolute left-4 top-2 bottom-2 w-px bg-border/40" />
+          <div className="tl-line absolute left-4 top-2 bottom-2 w-px bg-accent" />
           <div className="space-y-10">
             {milestones.map((m, i) => (
               <div key={i} className="tl-item relative pl-12">
-                <span className="absolute left-[13px] top-2 w-2 h-2 rounded-full bg-accent ring-4 ring-background" />
+                <span className="tl-dot absolute left-[13px] top-2 w-2 h-2 rounded-full bg-accent ring-4 ring-background" />
                 <div className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-1.5">{m.year}</div>
                 <h3 className="text-lg md:text-xl font-semibold tracking-[-0.012em] text-foreground mb-2">{m.title}</h3>
                 <p className="text-[15px] leading-relaxed text-muted-foreground">{m.desc}</p>

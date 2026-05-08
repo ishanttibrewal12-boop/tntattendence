@@ -4,26 +4,29 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Phone, MapPin, GraduationCap, Award, Mail } from 'lucide-react';
 import proprietorPhoto from '@/assets/proprietor-photo.jpeg';
 import founderPhoto from '@/assets/founder-sunil-tibrewal.jpg';
+import { useParallax, useSplitTextReveal } from '@/lib/motion/gsapUtils';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const LeadershipShowcase = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useParallax(sectionRef, '[data-parallax]', 12);
+  useSplitTextReveal(headingRef, { type: 'words', stagger: 0.06, skew: 6 });
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const ctx = gsap.context(() => {
       gsap.from('.lead-head > *', {
-        opacity: 0, y: 14, duration: 0.6, ease: 'power2.out', stagger: 0.08,
+        opacity: 0, y: 20, duration: 0.8, ease: 'power3.out', stagger: 0.1,
         scrollTrigger: { trigger: section, start: 'top 80%' },
       });
       gsap.utils.toArray<HTMLElement>('.leader-card').forEach((el) => {
         gsap.from(el, {
-          opacity: 0, y: 16, duration: 0.6, ease: 'power2.out',
+          opacity: 0, y: 36, scale: 0.96, duration: 1.0, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 88%' },
         });
       });
@@ -37,7 +40,7 @@ const LeadershipShowcase = () => {
       <div className="max-w-5xl mx-auto px-6">
         <div className="lead-head text-center mb-14">
           <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-4">Leadership</p>
-          <h2 className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
+          <h2 ref={headingRef} className="font-display text-[clamp(1.9rem,4.4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.024em] text-foreground">
             The minds behind the group.
           </h2>
           <p className="mt-4 max-w-xl mx-auto text-base md:text-lg text-muted-foreground">

@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Calendar, IndianRupee, Settings } from 'lucide-react';
+import gsap from 'gsap';
 import {
   Sidebar,
   SidebarContent,
@@ -39,6 +41,18 @@ const AppSidebar = () => {
   const { pathname } = useLocation();
   const { user, requestLogout } = useAppAuth();
   const { theme, toggle: toggleTheme } = useTheme();
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const items = document.querySelectorAll('[data-sidebar="menu-item"]');
+      if (items.length) {
+        gsap.from(items, {
+          opacity: 0, x: -16, duration: 0.45, stagger: 0.04, ease: 'power3.out', delay: 0.1,
+        });
+      }
+    });
+    return () => ctx.revert();
+  }, []);
 
   const isActive = (p: string) => pathname === p;
 
